@@ -10,9 +10,21 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@radix-ui/react-slot": "^1.1.1",
+    "@rainbow-me/rainbowkit": "^2.2.3",
+    "@tanstack/react-query": "^5.65.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "ethers": "^6.13.5",
+    "fhevmjs": "^0.5.7",
+    "lucide-react": "^0.474.0",
     "next": "14.2.16",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss-animate": "^1.0.7",
+    "viem": "^2.22.17",
+    "wagmi": "^2.14.9"
   },
   "devDependencies": {
     "eslint": "^8",

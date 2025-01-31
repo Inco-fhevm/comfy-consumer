@@ -1,9 +1,14 @@
-export const metadata = {
-  manifest: "/manifest.json",
-};
+"use client";
+import ConfidentialERC20 from "@/components/balance";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const Page = () => {
-  return <div>Page</div>;
+  return (
+    <div>
+      {/* <ConnectButton /> */}
+      <ConfidentialERC20 />
+    </div>
+  );
 };
 
 export default Page;
