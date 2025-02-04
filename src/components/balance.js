@@ -274,7 +274,7 @@ const ConfidentialWallet = () => {
             <div className="mt-6 flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1 border-zinc-700 bg-transparent hover:bg-zinc-800"
+                className="flex-1 border-zinc-700 bg-transparent hover:bg-zinc-800 text-white"
                 onClick={() => setActiveSheet("")}
               >
                 Cancel
