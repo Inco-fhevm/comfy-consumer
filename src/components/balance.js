@@ -27,11 +27,11 @@ const ConfidentialWallet = () => {
 
   const chains = [
     { id: "BASE", name: "BASE", totalBalance: "Hidden" },
-    { id: "BASE", name: "BASE", totalBalance: "Hidden" },
+    // { id: "BASE", name: "BASE", totalBalance: "Hidden" },
   ];
 
   const assets = [
-    { chain: "BASE", symbol: "USDC", balance: "Hidden", wrapped: true },
+    // { chain: "BASE", symbol: "USDC", balance: "Hidden", wrapped: true },
     { chain: "BASE", symbol: "USDT", balance: "Hidden", wrapped: false },
   ];
 
