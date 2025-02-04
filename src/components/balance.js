@@ -31,8 +31,8 @@ const ConfidentialWallet = () => {
   ];
 
   const assets = [
-    { chain: "Ethereum", symbol: "USDC", balance: "Hidden", wrapped: true },
-    { chain: "Polygon", symbol: "USDT", balance: "Hidden", wrapped: false },
+    { chain: "BASE", symbol: "USDC", balance: "Hidden", wrapped: true },
+    { chain: "BASE", symbol: "USDT", balance: "Hidden", wrapped: false },
   ];
 
   const transactions = [
