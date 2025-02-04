@@ -26,8 +26,8 @@ const ConfidentialWallet = () => {
   const { data: walletClient } = useWalletClient();
 
   const chains = [
-    { id: "ethereum", name: "Ethereum", totalBalance: "Hidden" },
-    { id: "polygon", name: "Polygon", totalBalance: "Hidden" },
+    { id: "BASE", name: "BASE", totalBalance: "Hidden" },
+    { id: "BASE", name: "BASE", totalBalance: "Hidden" },
   ];
 
   const assets = [
