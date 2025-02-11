@@ -19,7 +19,7 @@ const TokenSelector = ({ selected, onSelect }) => {
           <ChevronDown className="w-4 h-4 text-gray-600" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-2 rounded-[16px]">
+      <PopoverContent className="w-64 max-h-[300px] overflow-auto p-2 rounded-[16px]">
         <div className="space-y-2">
           {assets.map((token) => (
             <button
