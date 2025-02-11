@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useState, useMemo } from "react";
 import { MoreVertical, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import ConfidentialSendDialog from "@/components/confidential-send-dialouge";
 
 const Page = () => {
   const [selectedChain, setSelectedChain] = useState("All Chains");
-  
+
   const chains = ["All Chains", "Ethereum", "Polygon", "Arbitrum", "Optimism"];
 
   const assets = [
@@ -19,14 +20,14 @@ const Page = () => {
       amount: "12,000 USDC",
       value: "$12,000",
       icon: "/icons/usdc.svg",
-      chain: "Ethereum"
+      chain: "Ethereum",
     },
-    { 
-      name: "ETH", 
-      amount: "2 ETH", 
-      value: "$4,000", 
+    {
+      name: "ETH",
+      amount: "2 ETH",
+      value: "$4,000",
       icon: "/icons/eth.svg",
-      chain: "Ethereum"
+      chain: "Ethereum",
     },
     {
       name: "USDT",
@@ -53,15 +54,15 @@ const Page = () => {
 
   const filteredAssets = useMemo(() => {
     if (selectedChain === "All Chains") return assets;
-    return assets.filter(asset => 
-      asset.chain === selectedChain || 
-      (asset.chain === "on " + selectedChain)
+    return assets.filter(
+      (asset) =>
+        asset.chain === selectedChain || asset.chain === "on " + selectedChain
     );
   }, [selectedChain]);
 
   const totalBalance = useMemo(() => {
     return filteredAssets.reduce((sum, asset) => {
-      const value = parseInt(asset.value.replace(/[$,]/g, ''));
+      const value = parseInt(asset.value.replace(/[$,]/g, ""));
       return sum + value;
     }, 0);
   }, [filteredAssets]);
@@ -69,7 +70,9 @@ const Page = () => {
   return (
     <div>
       <div className="flex items-center gap-4 mb-8">
-        <div className="text-3xl font-semibold">${totalBalance.toLocaleString()}</div>
+        <div className="text-3xl font-semibold">
+          ${totalBalance.toLocaleString()}
+        </div>
         <div className="hidden md:block">
           <Popover>
             <PopoverTrigger asChild>
@@ -113,7 +116,9 @@ const Page = () => {
                   <div>
                     <div className="font-medium">{asset.name}</div>
                     {asset.chain && asset.chain !== "Ethereum" && (
-                      <div className="text-sm text-gray-500">on {asset.chain}</div>
+                      <div className="text-sm text-gray-500">
+                        on {asset.chain}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -123,9 +128,7 @@ const Page = () => {
                 <div className="flex items-center justify-between">
                   <span>{asset.value}</span>
                   <div className="flex gap-1">
-                    <button className="p-2 hover:bg-gray-100 rounded-full border">
-                      <img src="/icons/send.svg" alt="send" />
-                    </button>
+                    <ConfidentialSendDialog />
                     <button className="p-2 hover:bg-gray-100 rounded-full border">
                       <MoreVertical size={20} />
                     </button>

@@ -16,11 +16,11 @@ import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ChainSelector } from "./chain-selector";
 import { AssetList } from "./asset-list";
-import { DepositForm } from "./deposit-form";
+import { TransactionForm } from "./transaction-form";
 import { toast } from "sonner";
 import { assets } from "@/utils/constants";
 
-const DepositDialog = ({ open, onOpenChange }) => {
+const TransactionDialog = ({ open, onOpenChange, mode = "deposit" }) => {
   const [selectedChain, setSelectedChain] = useState("All Chains");
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [amount, setAmount] = useState("0");
@@ -34,8 +34,8 @@ const DepositDialog = ({ open, onOpenChange }) => {
     setAmount("0");
     onOpenChange(false);
 
-    if (type === "deposit") {
-      toast.success("Deposit Complete");
+    if (type === mode) {
+      toast.success(`${mode.charAt(0).toUpperCase() + mode.slice(1)} Complete`);
     }
   };
 
@@ -53,7 +53,7 @@ const DepositDialog = ({ open, onOpenChange }) => {
     <DialogHeaderComponent className="px-8 py-6 pb-2 flex flex-row items-center justify-between">
       <div className="flex items-center gap-4">
         <DialogTitleComponent className="text-xl font-semibold">
-          Deposit
+          {mode.charAt(0).toUpperCase() + mode.slice(1)}
         </DialogTitleComponent>
         {!selectedAsset && (
           <ChainSelector
@@ -79,7 +79,8 @@ const DepositDialog = ({ open, onOpenChange }) => {
     <div className="transition-opacity duration-200">
       {selectedAsset ? (
         <div className="px-8">
-          <DepositForm
+          <TransactionForm
+            mode={mode}
             handleClose={handleClose}
             selectedAsset={selectedAsset}
             amount={amount}
@@ -109,4 +110,4 @@ const DepositDialog = ({ open, onOpenChange }) => {
   );
 };
 
-export default DepositDialog;
+export default TransactionDialog;

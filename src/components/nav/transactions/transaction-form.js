@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/popover";
 import { assets } from "@/utils/constants";
 
-export const DepositForm = ({
+export const TransactionForm = ({
+  mode,
   selectedAsset: defaultSelectedAsset,
   handleClose,
 }) => {
@@ -23,45 +24,74 @@ export const DepositForm = ({
     const value = e.target.value.replace(/[^0-9.]/g, "");
     if (value.split(".").length > 2) return;
     setAmount(value);
-    
+
     if (Number(value) > Number(selectedAsset?.amount)) {
-      setError(`Insufficient balance. Maximum available: ${selectedAsset?.amount} ${selectedAsset?.name}`);
+      setError(
+        `Insufficient balance. Maximum available: ${selectedAsset?.amount} ${selectedAsset?.name}`
+      );
     } else {
       setError("");
     }
   };
 
-  const handleDeposit = async () => {
+  const handleTransaction = async () => {
     try {
       setIsLoading(true);
-      console.log("Depositing", amount, selectedAsset);
-      handleClose("deposit");
+      console.log(`${mode}ing`, amount, selectedAsset);
+      handleClose(mode);
     } catch (error) {
-      console.error("Deposit failed:", error);
+      console.error(`${mode} failed:`, error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isAmountValid = Number(amount) > 0 && Number(amount) <= Number(selectedAsset?.amount);
+  const isAmountValid =
+    Number(amount) > 0 && Number(amount) <= Number(selectedAsset?.amount);
+
+  const renderDestination = () => {
+    if (mode === "deposit") {
+      return (
+        <>
+          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+            <img
+              src="/profile/pf.svg"
+              alt="Avatar"
+              className="w-6 h-6 rounded-full"
+            />
+            <span className="text-sm">0xBA...53DD</span>
+          </div>
+          <ArrowRight className="h-10 w-10" />
+          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+            <div className="w-6 h-6 bg-blue-500 rounded-full" />
+            <span className="text-sm">Comfy</span>
+          </div>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+            <div className="w-6 h-6 bg-blue-500 rounded-full" />
+            <span className="text-sm">Comfy</span>
+          </div>
+          <ArrowRight className="h-10 w-10" />
+          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+            <img
+              src="/profile/pf.svg"
+              alt="Destination"
+              className="w-6 h-6 rounded-full"
+            />
+            <span className="text-sm">Dark-3200</span>
+          </div>
+        </>
+      );
+    }
+  };
 
   return (
     <div className="relative pb-8">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
-          <img
-            src="/profile/pf.svg"
-            alt="Avatar"
-            className="w-6 h-6 rounded-full"
-          />
-          <span className="text-sm">0xBA...53DD</span>
-        </div>
-        <ArrowRight className="h-10 w-10" />
-        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
-          <div className="w-6 h-6 bg-blue-500 rounded-full" />
-          <span className="text-sm">Comfy</span>
-        </div>
-      </div>
+      <div className="flex items-center gap-3 mb-4">{renderDestination()}</div>
 
       <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger asChild>
@@ -104,9 +134,9 @@ export const DepositForm = ({
           className="w-[var(--radix-popper-anchor-width)] p-2"
         >
           <div className="grid gap-2">
-            {assets.map((asset) => (
+            {assets.map((asset, idx) => (
               <div
-                key={asset.name}
+                key={idx}
                 className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
                 onClick={() => {
                   setSelectedAsset(asset);
@@ -145,9 +175,7 @@ export const DepositForm = ({
           <div className="text-[#AFAFAF]">
             {amount || "0"} {selectedAsset?.name}
           </div>
-          {error && (
-            <div className="text-red-500 text-sm mt-2">{error}</div>
-          )}
+          {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
         </div>
       </div>
 
@@ -155,23 +183,25 @@ export const DepositForm = ({
         <Button
           className="w-full rounded-full"
           disabled={!isAmountValid || isLoading}
-          onClick={handleDeposit}
+          onClick={handleTransaction}
         >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Depositing...
+              {mode.charAt(0).toUpperCase() + mode.slice(1)}ing...
             </>
           ) : (
-            "Deposit"
+            mode.charAt(0).toUpperCase() + mode.slice(1)
           )}
         </Button>
-        <div className="text-center text-muted-foreground">
-          <p>Your deposit amount will be hidden onchain.</p>
-        </div>
+        {mode === "deposit" && (
+          <div className="text-center text-muted-foreground">
+            <p>Your {mode} amount will be hidden onchain.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default DepositForm;
+export default TransactionForm;
