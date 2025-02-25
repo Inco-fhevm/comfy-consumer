@@ -8,6 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import ConfidentialSendDialog from "@/components/confidential-send-dialouge";
+import TotalBalance from "@/components/total-balance";
 
 const Page = () => {
   const [selectedChain, setSelectedChain] = useState("All Chains");
@@ -70,9 +71,7 @@ const Page = () => {
   return (
     <div>
       <div className="flex items-center gap-4 mb-8">
-        <div className="text-3xl font-semibold">
-          ${totalBalance.toLocaleString()}
-        </div>
+        <TotalBalance totalBalance={totalBalance} />
         <div className="hidden md:block">
           <Popover>
             <PopoverTrigger asChild>

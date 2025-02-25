@@ -1,4 +1,3 @@
-// import { BrowserProvider } from "ethers";
 import { createInstance, initFhevm } from "fhevmjs";
 
 let fhevmInstance = null;
