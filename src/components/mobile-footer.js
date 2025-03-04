@@ -35,7 +35,7 @@ const MobileFooter = () => {
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t dark:border-gray-800 shadow-lg flex justify-between items-center px-2 py-3 z-10">
+    <div className="lg:hidden fixed bottom-0 pb-6 left-0 right-0 bg-white dark:bg-gray-900 border-t dark:border-gray-800 shadow-lg flex justify-between items-center px-2 py-3 z-10">
       {footerLinks.map((link) => {
         const isActive = pathname === link.path;
         return (
