@@ -10,22 +10,17 @@ export default function ComfyLanding() {
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden">
-      {/* Wave SVG at the bottom - fully responsive approach */}
-      <div className="absolute bottom-0 left-0 right-0 w-full z-0 overflow-hidden">
-        <WaveIcon />
-      </div>
-
       {/* Main Content */}
-      <div className="flex flex-1 relative z-10">
-        {/* Left Content Section - Added flex items-center justify-center */}
-        <div className="w-1/2 p-12 flex flex-col justify-center items-center pb-32">
+      <div className="flex flex-col lg:flex-row lg:flex-1 relative z-10 h-screen">
+        {/* Left Content Section - Full width on mobile, unchanged on desktop */}
+        <div className="w-full lg:w-1/2 p-6 lg:p-12 flex flex-col justify-center items-center pb-16 lg:pb-32 lg:min-h-screen h-[75vh]">
           {/* Logo and Header - Centered with text-center */}
-          <div className="space-y-10 max-w-[27rem]">
+          <div className="space-y-6 lg:space-y-10 max-w-[27rem]">
             <ComfyNotConnectedLogo />
 
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h2 className="text-4xl font-extrabold">
+            <div className="space-y-6 lg:space-y-8">
+              <div className="space-y-3 lg:space-y-4">
+                <h2 className="text-3xl lg:text-4xl font-extrabold">
                   Your net worth doesn&apos;t have to be public
                 </h2>
 
@@ -35,7 +30,7 @@ export default function ComfyLanding() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 grid place-items-center bg-[#E7EEFE] rounded-full">
                     <Image
@@ -94,11 +89,11 @@ export default function ComfyLanding() {
               </div>
             </div>
 
-            {/* Connect Button - Add it here if needed */}
+            {/* Connect Button */}
             {openConnectModal && (
               <Button
                 onClick={openConnectModal}
-                className="mt-8 rounded-full bg-[#3673F5] text-white w-full px-6 py-3"
+                className="mt-6 lg:mt-8 rounded-full bg-[#3673F5] text-white w-full px-6 py-3"
               >
                 Connect Wallet
               </Button>
@@ -106,14 +101,26 @@ export default function ComfyLanding() {
           </div>
         </div>
 
-        {/* Right Image Section */}
-        <div className="w-1/2 relative">
-          <img
-            src="/not-connected/coin.svg"
-            alt="Comfy DeFi Privacy"
-            className="absolute inset-0 h-screen w-full object-cover"
-            draggable={false}
-          />
+        {/* Right Image Section - 25% height on mobile, unchanged on desktop */}
+        <div className="w-full h-[25vh] lg:h-auto lg:min-h-screen lg:w-1/2 relative mt-auto bg-[#3673F5]">
+          {/* Background image - desktop only */}
+          <div className="lg:block absolute inset-0">
+            <img
+              src="/not-connected/coin.svg"
+              alt="Comfy DeFi Privacy Background"
+              className="h-screen w-full object-cover"
+              draggable={false}
+            />
+          </div>
+          {/* Centered foreground image - hidden on mobile */}
+          <div className="absolute inset-0 hidden lg:flex items-center justify-center">
+            <img
+              src="/not-connected/main.svg"
+              alt="Comfy DeFi Privacy"
+              className="max-h-screen max-w-full object-contain z-10"
+              draggable={false}
+            />
+          </div>
         </div>
       </div>
     </div>
