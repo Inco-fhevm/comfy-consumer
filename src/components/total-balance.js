@@ -114,7 +114,6 @@ const PinDialog = ({ isOpen, onClose, onComplete, isLoading, isMobile }) => {
         <DialogHeaderComponent className="px-8 py-6 pb-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              
               <DialogTitleComponent className="text-xl font-semibold">
                 Enter PIN
               </DialogTitleComponent>
@@ -202,10 +201,11 @@ const TotalBalance = memo(({ totalBalance }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className="text-3xl font-semibold">
-          {isEncrypted ? "****" : `$${totalBalance.toLocaleString()}`}
+        <div className="text-4xl md:text-3xl font-semibold">
+          $310,000
+          {/* {isEncrypted ? "****" : `$${totalBalance.toLocaleString()}`} */}
         </div>
-        <Button
+        {/* <Button
           variant="outline"
           size="icon"
           onClick={handleDecrypt}
@@ -216,7 +216,7 @@ const TotalBalance = memo(({ totalBalance }) => {
           ) : (
             <Unlock className="h-4 w-4" />
           )}
-        </Button>
+        </Button> */}
       </div>
 
       {isLoading && (

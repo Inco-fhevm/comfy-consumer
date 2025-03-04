@@ -5,15 +5,16 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import CustomConnectButton from "./custom-connect-button";
 import Navbar from "./navbar";
+import ThemeToggle from "./toggle-theme";
+import MobileFooter from "./mobile-footer";
 
 const Layout = ({ children }) => {
   const pathname = usePathname();
 
   const sidebarLinks = [
     {
-      name: "Private Assets",
+      name: "My Assets",
       basePath: "private-assets",
       path: "/private-assets",
     },
@@ -29,31 +30,48 @@ const Layout = ({ children }) => {
   ];
 
   const Sidebar = () => (
-    <aside className="w-64 h-screen bg-gray-50 p-4 border-r">
-      <div className="text-blue-500 text-xl font-bold mb-8">Comfy</div>
-      {sidebarLinks.map((link) => {
-        const isSelected = pathname === link.path;
-        const iconPath = `/icons/${link.basePath}-${
-          isSelected ? "selected" : "notselected"
-        }.svg`;
+    <aside className="w-64 h-screen bg-gray-50 dark:bg-gray-900 p-4 border-r dark:border-gray-800 flex flex-col">
+      <div className="text-blue-500 text-xl font-bold mb-8">
+        <img src="/icons/comfy-logo.svg" className="w-full h-full" />
+      </div>
 
-        return (
-          <Link key={link.name} href={link.path}>
-            <div
-              className={`flex items-center gap-3 rounded-full p-3 hover:bg-gray-100 cursor-pointer mb-2 ${
-                isSelected ? "bg-[#E7EEFE] hover:bg-[#E7EEFE]" : ""
-              }`}
-            >
-              <Image src={iconPath} alt={link.name} width={20} height={20} />
-              <span
-                className={`${isSelected ? "text-blue-500" : ""} font-semibold`}
+      <div className="flex-1">
+        {sidebarLinks.map((link) => {
+          const isSelected = pathname === link.path;
+          const iconPath = `/icons/${link.basePath}-${
+            isSelected ? "selected" : "notselected"
+          }.svg`;
+
+          return (
+            <Link key={link.name} href={link.path}>
+              <div
+                className={`flex items-center gap-3 rounded-full p-3 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer mb-2 ${
+                  isSelected
+                    ? "bg-[#E7EEFE] dark:bg-[#1E3A8A] hover:bg-[#E7EEFE] dark:hover:bg-[#1E3A8A]"
+                    : ""
+                }`}
               >
-                {link.name}
-              </span>
-            </div>
-          </Link>
-        );
-      })}
+                <Image src={iconPath} alt={link.name} width={20} height={20} />
+                <span
+                  className={`${
+                    isSelected
+                      ? "text-blue-500 dark:text-blue-400"
+                      : "dark:text-gray-300"
+                  } font-semibold`}
+                >
+                  {link.name}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+        </div>
+      </div>
     </aside>
   );
 
@@ -62,12 +80,12 @@ const Layout = ({ children }) => {
     "Private Assets";
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <div className="hidden lg:block">
         <Sidebar />
       </div>
 
-      <Sheet>
+      {/* <Sheet>
         <SheetTrigger asChild className="lg:hidden absolute top-4 left-4">
           <Button variant="ghost" size="icon">
             <Image src="/icons/menu.svg" alt="Menu" width={24} height={24} />
@@ -76,12 +94,17 @@ const Layout = ({ children }) => {
         <SheetContent side="left" className="p-0 w-64">
           <Sidebar />
         </SheetContent>
-      </Sheet>
+      </Sheet> */}
 
       <div className="flex-1 flex flex-col">
         <Navbar currentPage={currentPage} />
 
-        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+        <main className="flex-1 md:p-6 overflow-y-auto pb-20 lg:pb-6">
+          {children}
+        </main>
+
+        {/* Mobile Footer */}
+        <MobileFooter />
       </div>
     </div>
   );

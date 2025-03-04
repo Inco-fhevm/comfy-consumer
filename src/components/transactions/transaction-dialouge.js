@@ -22,15 +22,26 @@ import { assets } from "@/utils/constants";
 
 const TransactionDialog = ({ open, onOpenChange, mode = "deposit" }) => {
   const [selectedChain, setSelectedChain] = useState("All Chains");
-  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [selectedAsset, setSelectedAsset] = useState({
+    id: "usdc-ethereum",
+    name: "USDC",
+    symbol: "USDC",
+    amount: "12000",
+    value: "$12,000",
+    icon: "/icons/usdc.svg",
+    chain: "Ethereum",
+    chainId: 1,
+    decimals: 6,
+    address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  });
   const [amount, setAmount] = useState("0");
   const isMobile = useMediaQuery("(max-width: 640px)");
-
+  console.log(selectedAsset);
   const chains = ["All Chains", "Ethereum", "Polygon", "Arbitrum", "Optimism"];
 
   const handleClose = (type) => {
     setSelectedAsset(null);
-    setSelectedChain("All Chains");
+    // setSelectedChain("All Chains");
     setAmount("0");
     onOpenChange(false);
 
@@ -53,7 +64,7 @@ const TransactionDialog = ({ open, onOpenChange, mode = "deposit" }) => {
     <DialogHeaderComponent className="px-8 py-6 pb-2 flex flex-row items-center justify-between">
       <div className="flex items-center gap-4">
         <DialogTitleComponent className="text-xl font-semibold">
-          {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          {mode === "shield" ? "Encrypt" : "Decrypt"}
         </DialogTitleComponent>
         {!selectedAsset && (
           <ChainSelector
@@ -66,9 +77,7 @@ const TransactionDialog = ({ open, onOpenChange, mode = "deposit" }) => {
       <Button
         variant="ghost"
         className="h-8 w-8 p-0"
-        onClick={() =>
-          selectedAsset ? setSelectedAsset(null) : onOpenChange(false)
-        }
+        onClick={() => onOpenChange(false)}
       >
         <X className="h-4 w-4" />
       </Button>

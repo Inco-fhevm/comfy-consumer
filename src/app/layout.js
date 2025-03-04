@@ -4,10 +4,13 @@ import { RainbowKitWrapper } from "@/rainbow-wallet/rainbow-provider";
 import Layout from "@/components/layout";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import AuthWrapper from "@/auth/auth-wrapper";
+import { AuthProvider } from "@/context/auth-context";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
 });
 
 export const metadata = {
@@ -19,10 +22,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light">
           <RainbowKitWrapper>
-            <Layout>{children}</Layout>
+            <AuthProvider>
+              <AuthWrapper>
+                <Layout>{children}</Layout>
+              </AuthWrapper>
+            </AuthProvider>
           </RainbowKitWrapper>
         </ThemeProvider>
         <Toaster />

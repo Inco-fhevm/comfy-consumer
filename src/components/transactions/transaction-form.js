@@ -22,7 +22,7 @@ export const TransactionForm = ({
   selectedAsset: defaultSelectedAsset,
   handleClose,
 }) => {
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState("0");
   const [isApproving, setIsApproving] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState(defaultSelectedAsset);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -56,7 +56,8 @@ export const TransactionForm = ({
   // Contract interactions
   const { writeContractAsync: approve } = useWriteContract();
   const { writeContractAsync: wrap } = useWriteContract();
-  const { data: txData, waitForTransactionReceipt } = useWaitForTransactionReceipt();
+  const { data: txData, waitForTransactionReceipt } =
+    useWaitForTransactionReceipt();
 
   // Contract reads
   const { data: allowance } = useReadContract({
@@ -79,6 +80,7 @@ export const TransactionForm = ({
     if (!amount || !address) return;
     setError("");
     setIsProcessing(true);
+    setIsApproving(true);
 
     try {
       const parsedAmount = parseUnits(amount, 6);
@@ -138,6 +140,7 @@ export const TransactionForm = ({
       console.error("Transaction failed:", error);
       setError("Transaction failed. Please try again.");
     } finally {
+      setIsApproving(false);
       setIsProcessing(false);
     }
   };
@@ -219,45 +222,85 @@ export const TransactionForm = ({
 
   return (
     <div className="relative pb-8">
-      <div className="flex items-center gap-3 mb-4">{renderDestination()}</div>
+      {/* <div className="flex items-center gap-3 mb-4">{renderDestination()}</div> */}
 
-      <div className="relative">
-        {/* Custom dropdown trigger */}
-        <div 
-          ref={triggerRef}
-          onClick={toggleDropdown}
-          className="p-4 border rounded-xl mb-4 cursor-pointer hover:bg-gray-50"
-        >
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <img
-                src={selectedAsset?.icon}
-                alt={selectedAsset?.name}
-                className="w-10 h-10"
-              />
+      {isApproving && isProcessing && (
+        <div>
+          {" "}
+          <div className="border bg-[#E8E8E8] rounded-xl md:h-48 p-6 mb-6 text-center grid place-items-center">
+            <div>
+              <p className="font-medium text-[#AFAFAF]">
+                Animated loading state (placeholder)
+              </p>
+            </div>
+          </div>{" "}
+        </div>
+      )}
+
+      {!isApproving && !isProcessing && (
+        <div className="relative">
+          {mode === "withdraw" && (
+            <div className="border rounded-xl md:h-64 p-6 mb-6 text-center grid place-items-center">
               <div>
-                <p>{selectedAsset?.name}</p>
-                <div className="text-sm text-gray-500">
-                  Balance: {selectedAsset?.amount} {selectedAsset?.name}
+                <div className="grid place-items-center gap-6">
+                  <img
+                    src={"/tokens/confidential/usdt-polygon.png"}
+                    alt={selectedAsset?.name}
+                    className="w-16"
+                  />
+
+                  <p className="text-3xl font-semibold mb-1 bg-transparent text-center w-full focus:outline-none text-black disabled:opacity-50">
+                    $12,000
+                  </p>
+                </div>
+
+                <div className="text-[#AFAFAF]">
+                  {amount || "0"} {selectedAsset?.name}
+                </div>
+                {error && (
+                  <div className="text-red-500 text-sm mt-2">{error}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {mode === "shield" && (
+            <div
+              ref={triggerRef}
+              onClick={toggleDropdown}
+              className="p-4 border rounded-xl mb-4 cursor-pointer hover:bg-gray-50"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={selectedAsset?.icon}
+                    alt={selectedAsset?.name}
+                    className="w-10 h-10"
+                  />
+                  <div>
+                    <p>{selectedAsset?.name}</p>
+                    <div className="text-sm text-gray-500">
+                      Balance: {selectedAsset?.amount} {selectedAsset?.name}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Max button that stops propagation */}
+                  <div
+                    onClick={handleMaxClick}
+                    className="h-8 px-3 text-sm text-blue-500 cursor-pointer transition-colors hover:bg-blue-50 bg-[#E7EEFE] rounded-full inline-flex items-center justify-center"
+                  >
+                    Max
+                  </div>
+                  {/* <ChevronDown className="h-5 w-5" /> */}
                 </div>
               </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-2">
-              {/* Max button that stops propagation */}
-              <div 
-                onClick={handleMaxClick}
-                className="h-8 px-3 text-sm text-blue-500 cursor-pointer transition-colors hover:bg-blue-50 bg-[#E7EEFE] rounded-full inline-flex items-center justify-center"
-              >
-                Max
-              </div>
-              <ChevronDown className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Custom dropdown menu */}
-        {isDropdownOpen && (
+          {/* Custom dropdown menu */}
+          {/* {isDropdownOpen && (
           <div 
             ref={dropdownRef}
             className="absolute z-50 w-full bg-white rounded-md border shadow-md p-1 mt-1"
@@ -289,48 +332,82 @@ export const TransactionForm = ({
               ))}
             </div>
           </div>
-        )}
-      </div>
-
-      <div className="border rounded-xl md:h-48 p-6 mb-6 text-center grid place-items-center">
-        <div>
-          <input
-            type="text"
-            value={amount}
-            onChange={handleAmountChange}
-            className="text-3xl font-medium mb-1 bg-transparent text-center w-full focus:outline-none text-black disabled:opacity-50"
-            placeholder="0"
-            disabled={isProcessing}
-          />
-          <div className="text-[#AFAFAF]">
-            {amount || "0"} {selectedAsset?.name}
-          </div>
-          {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+        )} */}
         </div>
-      </div>
+      )}
 
-      <div className="grid gap-4">
-        <Button
-          className="w-full rounded-full"
-          disabled={!isAmountValid || isProcessing}
-          onClick={handleTransaction}
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isApproving ? "Approving..." : "Processing..."}
-            </>
-          ) : (
-            mode.charAt(0).toUpperCase() + mode.slice(1)
+      {!isApproving && !isProcessing && (
+        <>
+          {mode === "shield" && (
+            <div className="border rounded-xl md:h-48 p-6 mb-6 text-center grid place-items-center">
+              <div>
+                <div>
+                  <input
+                    type="text"
+                    value={amount}
+                    onChange={handleAmountChange}
+                    className="text-3xl font-semibold mb-1 bg-transparent text-center w-full focus:outline-none text-black disabled:opacity-50"
+                    placeholder="0"
+                    disabled={isProcessing}
+                  />
+                </div>
+
+                <div className="text-[#AFAFAF]">
+                  {amount || "0"} {selectedAsset?.name}
+                </div>
+                {error && (
+                  <div className="text-red-500 text-sm mt-2">{error}</div>
+                )}
+              </div>
+            </div>
           )}
-        </Button>
+        </>
+      )}
 
-        {mode === "shield" && (
+      {!isApproving && !isProcessing && (
+        <div className="grid gap-4">
+          {mode === "shield" ? (
+            <Button
+              className="w-full rounded-full"
+              disabled={!isAmountValid || isProcessing}
+              onClick={handleTransaction}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isApproving ? "Approving..." : "Processing..."}
+                </>
+              ) : (
+                <>{mode === "shield" ? "Encrypt" : "Decrypt"}</>
+              )}
+            </Button>
+          ) : (
+            <Button
+              className="w-full rounded-full"
+              // disabled={!isAmountValid || isProcessing}
+              onClick={() => {
+                setIsApproving(true);
+                setIsProcessing(true);
+              }}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isApproving ? "Approving..." : "Processing..."}
+                </>
+              ) : (
+                <>{mode === "shield" ? "Encrypt" : "Decrypt"}</>
+              )}
+            </Button>
+          )}
+
+          {/* {mode === "shield" && (
           <div className="text-center text-muted-foreground">
             <p>Your tokens will be confidential after shielding.</p>
           </div>
-        )}
-      </div>
+        )} */}
+        </div>
+      )}
     </div>
   );
 };
