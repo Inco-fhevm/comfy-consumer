@@ -177,40 +177,40 @@ export const TransactionForm = ({
     if (mode === "shield") {
       return (
         <>
-          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
             <img
               src="/profile/pf.svg"
               alt="Avatar"
               className="w-6 h-6 rounded-full"
             />
-            <span className="text-sm">
+            <span className="text-sm dark:text-white">
               {address
                 ? `${address.slice(0, 4)}...${address.slice(-4)}`
                 : "0x...0000"}
             </span>
           </div>
-          <ArrowRight className="h-10 w-10" />
-          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+          <ArrowRight className="h-10 w-10 dark:text-gray-400" />
+          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
             <div className="w-6 h-6 bg-blue-500 rounded-full" />
-            <span className="text-sm">Confidential</span>
+            <span className="text-sm dark:text-white">Confidential</span>
           </div>
         </>
       );
     }
     return (
       <>
-        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
           <div className="w-6 h-6 bg-blue-500 rounded-full" />
-          <span className="text-sm">Confidential</span>
+          <span className="text-sm dark:text-white">Confidential</span>
         </div>
-        <ArrowRight className="h-10 w-10" />
-        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border w-full rounded-full">
+        <ArrowRight className="h-10 w-10 dark:text-gray-400" />
+        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
           <img
             src="/profile/pf.svg"
             alt="Destination"
             className="w-6 h-6 rounded-full"
           />
-          <span className="text-sm">
+          <span className="text-sm dark:text-white">
             {address
               ? `${address.slice(0, 4)}...${address.slice(-4)}`
               : "0x...0000"}
@@ -227,9 +227,9 @@ export const TransactionForm = ({
       {isApproving && isProcessing && (
         <div>
           {" "}
-          <div className="border bg-[#E8E8E8] rounded-xl md:h-48 p-6 mb-6 text-center grid place-items-center">
+          <div className="border  bg-[#E8E8E8] dark:bg-gray-800 rounded-xl md:h-48 p-6 mb-6 text-center grid place-items-center">
             <div>
-              <p className="font-medium text-[#AFAFAF]">
+              <p className="font-medium text-[#AFAFAF] dark:text-gray-400">
                 Animated loading state (placeholder)
               </p>
             </div>
@@ -249,16 +249,18 @@ export const TransactionForm = ({
                     className="w-16"
                   />
 
-                  <p className="text-3xl font-semibold mb-1 bg-transparent text-center w-full focus:outline-none text-black disabled:opacity-50">
+                  <p className="text-3xl font-semibold mb-1 bg-transparent text-center w-full focus:outline-none text-black dark:text-white disabled:opacity-50">
                     $12,000
                   </p>
                 </div>
 
-                <div className="text-[#AFAFAF]">
+                <div className="text-[#AFAFAF] dark:text-gray-400">
                   {amount || "0"} {selectedAsset?.name}
                 </div>
                 {error && (
-                  <div className="text-red-500 text-sm mt-2">{error}</div>
+                  <div className="text-red-500 dark:text-red-400 text-sm mt-2">
+                    {error}
+                  </div>
                 )}
               </div>
             </div>
@@ -268,7 +270,7 @@ export const TransactionForm = ({
             <div
               ref={triggerRef}
               onClick={toggleDropdown}
-              className="p-4 border rounded-xl mb-4 cursor-pointer hover:bg-gray-50"
+              className="p-4 border rounded-xl mb-4"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
@@ -278,8 +280,8 @@ export const TransactionForm = ({
                     className="w-10 h-10"
                   />
                   <div>
-                    <p>{selectedAsset?.name}</p>
-                    <div className="text-sm text-gray-500">
+                    <p className="dark:text-white">{selectedAsset?.name}</p>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Balance: {selectedAsset?.amount} {selectedAsset?.name}
                     </div>
                   </div>
@@ -289,11 +291,11 @@ export const TransactionForm = ({
                   {/* Max button that stops propagation */}
                   <div
                     onClick={handleMaxClick}
-                    className="h-8 px-3 text-sm text-blue-500 cursor-pointer transition-colors hover:bg-blue-50 bg-[#E7EEFE] rounded-full inline-flex items-center justify-center"
+                    className="h-8 px-3 text-sm text-blue-500 dark:text-blue-400 cursor-pointer transition-colors hover:bg-blue-50 dark:hover:bg-blue-900 bg-[#E7EEFE] dark:bg-[#1E293B] rounded-full inline-flex items-center justify-center"
                   >
                     Max
                   </div>
-                  {/* <ChevronDown className="h-5 w-5" /> */}
+                  {/* <ChevronDown className="h-5 w-5 dark:text-gray-400" /> */}
                 </div>
               </div>
             </div>
@@ -303,13 +305,13 @@ export const TransactionForm = ({
           {/* {isDropdownOpen && (
           <div 
             ref={dropdownRef}
-            className="absolute z-50 w-full bg-white rounded-md border shadow-md p-1 mt-1"
+            className="absolute z-50 w-full bg-white dark:bg-gray-900 rounded-md border dark:border-gray-700 shadow-md p-1 mt-1"
           >
             <div className="max-h-60 overflow-y-auto">
               {assets.map((asset, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                  className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
                   onClick={() => {
                     setSelectedAsset(asset);
                     setIsDropdownOpen(false);
@@ -320,12 +322,12 @@ export const TransactionForm = ({
                   <img src={asset.icon} alt={asset.name} className="w-8 h-8" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="font-medium">{asset.name}</p>
-                      <p className="text-sm text-gray-500">{asset.amount}</p>
+                      <p className="font-medium dark:text-white">{asset.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{asset.amount}</p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-500">{asset.chain}</p>
-                      <p className="text-sm text-gray-500">{asset.value}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{asset.chain}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{asset.value}</p>
                     </div>
                   </div>
                 </div>
@@ -346,17 +348,19 @@ export const TransactionForm = ({
                     type="text"
                     value={amount}
                     onChange={handleAmountChange}
-                    className="text-3xl font-semibold mb-1 bg-transparent text-center w-full focus:outline-none text-black disabled:opacity-50"
+                    className="text-3xl font-semibold mb-1 bg-transparent text-center w-full focus:outline-none text-black dark:text-white disabled:opacity-50"
                     placeholder="0"
                     disabled={isProcessing}
                   />
                 </div>
 
-                <div className="text-[#AFAFAF]">
+                <div className="text-[#AFAFAF] dark:text-gray-400">
                   {amount || "0"} {selectedAsset?.name}
                 </div>
                 {error && (
-                  <div className="text-red-500 text-sm mt-2">{error}</div>
+                  <div className="text-red-500 dark:text-red-400 text-sm mt-2">
+                    {error}
+                  </div>
                 )}
               </div>
             </div>
@@ -368,7 +372,7 @@ export const TransactionForm = ({
         <div className="grid gap-4">
           {mode === "shield" ? (
             <Button
-              className="w-full rounded-full"
+              className="w-full rounded-full dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
               disabled={!isAmountValid || isProcessing}
               onClick={handleTransaction}
             >
@@ -383,7 +387,7 @@ export const TransactionForm = ({
             </Button>
           ) : (
             <Button
-              className="w-full rounded-full"
+              className="w-full rounded-full dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
               // disabled={!isAmountValid || isProcessing}
               onClick={() => {
                 setIsApproving(true);
@@ -402,7 +406,7 @@ export const TransactionForm = ({
           )}
 
           {/* {mode === "shield" && (
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground dark:text-gray-400">
             <p>Your tokens will be confidential after shielding.</p>
           </div>
         )} */}

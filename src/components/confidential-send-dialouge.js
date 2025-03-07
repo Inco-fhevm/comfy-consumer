@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { assets } from "@/utils/constants";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 const ConfidentialSendDialog = () => {
   const [open, setOpen] = useState(false);
@@ -36,6 +37,8 @@ const ConfidentialSendDialog = () => {
     value: "12,000 USDC",
   });
   const isMobile = useMediaQuery("(max-width: 640px)");
+  const { theme } = useTheme();
+  const isDarkMode = theme === "dark";
 
   const handleAmountChange = (e) => {
     const value = e.target.value.replace(/[^0-9.]/g, "");
@@ -69,26 +72,30 @@ const ConfidentialSendDialog = () => {
   return (
     <>
       <button
-        className="p-2 hover:bg-gray-100 rounded-full border"
+        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full border dark:border-gray-700"
         onClick={() => setOpen(true)}
       >
-        <img src="/icons/send.svg" alt="send" />
+        {isDarkMode ? (
+          <img src="/dark/send.svg" alt="send" />
+        ) : (
+          <img src="/icons/send.svg" alt="send" />
+        )}
       </button>
 
       <DialogComponent open={open} onOpenChange={setOpen}>
         <DialogContentComponent
           className={`grid gap-0 ${
             isMobile ? "w-full rounded-t-2xl" : "w-[400px]"
-          } p-0`}
+          } p-0 `}
           side={isMobile ? "bottom" : undefined}
         >
           <DialogHeaderComponent className="px-6 py-4 flex-row flex items-center justify-between">
-            <DialogTitleComponent className="text-lg font-semibold">
+            <DialogTitleComponent className="text-lg font-semibold dark:text-white">
               Send Confidential Amount
             </DialogTitleComponent>
             <Button
               variant="ghost"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
               onClick={() => setOpen(false)}
             >
               <X className="h-4 w-4" />
@@ -97,19 +104,21 @@ const ConfidentialSendDialog = () => {
 
           <div className="px-6 pb-6 space-y-6">
             <div className="space-y-2">
-              <label className="text-sm text-gray-500">To:</label>
+              <label className="text-sm text-gray-500 dark:text-gray-400">
+                To:
+              </label>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full p-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600/20  dark:text-white"
                 placeholder="0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
               />
             </div>
 
             <Popover>
               <PopoverTrigger asChild>
-                <div className="p-3 border rounded-xl cursor-pointer hover:bg-gray-50">
+                <div className="p-3 border rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <img
@@ -118,8 +127,10 @@ const ConfidentialSendDialog = () => {
                         className="w-8 h-8"
                       />
                       <div>
-                        <p className="font-medium">{selectedAsset.name}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="font-medium dark:text-white">
+                          {selectedAsset.name}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           {selectedAsset.amount} {selectedAsset.name}
                         </p>
                       </div>
@@ -127,17 +138,17 @@ const ConfidentialSendDialog = () => {
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="secondary"
-                        className="h-7 px-3 text-sm text-blue-500 cursor-pointer hover:bg-blue-50 bg-[#E7EEFE] rounded-full"
+                        className="h-7 px-3 text-sm text-blue-500 dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 bg-[#E7EEFE] dark:bg-[#1E293B] rounded-full"
                         onClick={() => setAmount(selectedAsset.amount)}
                       >
                         Max
                       </Badge>
-                      <ChevronDown className="h-5 w-5" />
+                      {/* <ChevronDown className="h-5 w-5 dark:text-gray-400" /> */}
                     </div>
                   </div>
                 </div>
               </PopoverTrigger>
-              <PopoverContent
+              {/* <PopoverContent
                 align="center"
                 sideOffset={4}
                 className="w-[var(--radix-popper-anchor-width)] p-2"
@@ -146,7 +157,7 @@ const ConfidentialSendDialog = () => {
                   {assets.map((asset, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                      className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
                       onClick={() => {
                         setSelectedAsset(asset);
                         setAmount("");
@@ -159,20 +170,26 @@ const ConfidentialSendDialog = () => {
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium">{asset.name}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="font-medium dark:text-white">
+                            {asset.name}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             {asset.amount}
                           </p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-500">{asset.chain}</p>
-                          <p className="text-sm text-gray-500">{asset.value}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {asset.chain}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {asset.value}
+                          </p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </PopoverContent>
+              </PopoverContent> */}
             </Popover>
 
             <div className="border rounded-xl p-6 text-center">
@@ -182,19 +199,19 @@ const ConfidentialSendDialog = () => {
                     type="text"
                     value={amount}
                     onChange={handleAmountChange}
-                    className="text-3xl font-medium bg-transparent text-center w-full focus:outline-none"
+                    className="text-3xl font-medium bg-transparent dark:text-white text-center w-full focus:outline-none"
                     placeholder="0"
                     disabled={isLoading}
                   />
                 </div>
-                <p className="text-gray-500">
+                <p className="text-gray-500 dark:text-gray-400">
                   {amount || "0"} {selectedAsset.name}
                 </p>
               </div>
             </div>
 
             <Button
-              className="w-full rounded-full h-12"
+              className="w-full rounded-full h-12 dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
               disabled={!isValid || isLoading}
               onClick={handleSend}
             >
@@ -208,7 +225,7 @@ const ConfidentialSendDialog = () => {
               )}
             </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
               Your send amount will be hidden onchain.
             </p>
           </div>

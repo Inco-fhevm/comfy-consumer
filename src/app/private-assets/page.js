@@ -1,17 +1,25 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useTheme } from "next-themes"; // Import useTheme
 import TotalBalance from "@/components/total-balance";
 import CryptoWalletTables from "@/components/my-assets/crypto-wallet-tables";
 
 const Page = () => {
   const [selectedChain, setSelectedChain] = useState("All Chains");
   const [open, setOpen] = useState(false);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before accessing theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const chains = [
     { name: "All Chains", icon: "/chains/all-chains.svg" },
@@ -29,6 +37,12 @@ const Page = () => {
   const selectedChainIcon =
     chains.find((chain) => chain.name === selectedChain)?.icon ||
     "/chains/all-chains.svg";
+
+  // Get the appropriate chevron icon based on theme
+  const chevronIcon =
+    mounted && theme === "dark"
+      ? "/dark/chevron-down.svg"
+      : "/icons/chevron-down.svg";
 
   // Calculate the combined total from both wallet and encrypted assets
   const totalBalance = 310000; // $282,000 + $28,000 based on the image
@@ -50,9 +64,9 @@ const Page = () => {
                   className="w-5 h-5 mr-2"
                 />
                 <p className="hidden md:block">{selectedChain}</p>
-                
+
                 <img
-                  src="/icons/chevron-down.svg"
+                  src={chevronIcon}
                   className={`md:ml-2 transition-transform ${
                     open ? "rotate-180" : ""
                   }`}
@@ -66,7 +80,7 @@ const Page = () => {
                 {chains.map((chain) => (
                   <button
                     key={chain.name}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-between"
                     onClick={() => handleChainSelect(chain.name)}
                   >
                     <div className="flex items-center gap-2">
@@ -79,7 +93,11 @@ const Page = () => {
                     </div>
                     {selectedChain === chain.name && (
                       <img
-                        src="/icons/tick.svg"
+                        src={
+                          mounted && theme === "dark"
+                            ? "/dark/tick.svg"
+                            : "/icons/tick.svg"
+                        }
                         alt="selected"
                         className="w-4 h-4"
                       />

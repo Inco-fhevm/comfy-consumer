@@ -3,7 +3,7 @@ export const AssetList = ({ filteredAssets, onAssetSelect }) => (
     {filteredAssets.map((asset, index) => (
       <div
         key={index}
-        className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer rounded-lg mb-2"
+        className="flex items-center justify-between p-4 pointer rounded-lg mb-2"
         onClick={() => onAssetSelect(asset)}
       >
         <div className="flex items-center gap-3">
