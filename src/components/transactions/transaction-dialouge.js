@@ -19,24 +19,29 @@ import { AssetList } from "./asset-list";
 import { TransactionForm } from "./transaction-form";
 import { toast } from "sonner";
 import { assets } from "@/utils/constants";
+import { baseSepolia } from "viem/chains";
 
-const TransactionDialog = ({ open, onOpenChange, mode = "deposit" }) => {
+const TransactionDialog = ({
+  open,
+  onOpenChange,
+  mode = "deposit",
+  balance,
+}) => {
   const [selectedChain, setSelectedChain] = useState("All Chains");
   const [selectedAsset, setSelectedAsset] = useState({
     id: "usdc-ethereum",
     name: "USDC",
     symbol: "USDC",
-    amount: "12000",
+    amount: balance,
     value: "$12,000",
     icon: "/icons/usdc.svg",
     chain: "Ethereum",
-    chainId: 1,
+    chainId: baseSepolia?.id || 1,
     decimals: 6,
     address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
   });
-  const [amount, setAmount] = useState("0");
+  const [amount, setAmount] = useState(balance);
   const isMobile = useMediaQuery("(max-width: 640px)");
-  console.log(selectedAsset);
   const chains = ["All Chains", "Ethereum", "Polygon", "Arbitrum", "Optimism"];
 
   const handleClose = (type) => {
@@ -92,11 +97,12 @@ const TransactionDialog = ({ open, onOpenChange, mode = "deposit" }) => {
             mode={mode}
             handleClose={handleClose}
             selectedAsset={selectedAsset}
-            amount={amount}
+            currentBalance={balance}
           />
         </div>
       ) : (
         <AssetList
+          amount={balance}
           filteredAssets={filteredAssets}
           onAssetSelect={setSelectedAsset}
         />

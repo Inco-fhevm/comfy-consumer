@@ -42,6 +42,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
 
   // Toggle showing confidential values
   const toggleConfidentialValues = () => {
+    console.log("toggle");
     setShowConfidentialValues(!showConfidentialValues);
   };
 

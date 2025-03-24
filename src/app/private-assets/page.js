@@ -11,7 +11,7 @@ import TotalBalance from "@/components/total-balance";
 import CryptoWalletTables from "@/components/my-assets/crypto-wallet-tables";
 
 const Page = () => {
-  const [selectedChain, setSelectedChain] = useState("All Chains");
+  const [selectedChain, setSelectedChain] = useState("Base Sepolia");
   const [open, setOpen] = useState(false);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -22,11 +22,12 @@ const Page = () => {
   }, []);
 
   const chains = [
-    { name: "All Chains", icon: "/chains/all-chains.svg" },
-    { name: "Ethereum", icon: "/chains/ethereum.svg" },
-    { name: "Polygon", icon: "/chains/polygon.svg" },
-    { name: "Arbitrum", icon: "/chains/arbitrum.svg" },
-    { name: "Optimism", icon: "/chains/optimism.svg" },
+    { name: "All Chains", icon: "/chains/all-chains.svg", enabled: true },
+    { name: "Base Sepolia", icon: "/chains/base-sepolia.svg", enabled: true },
+    { name: "Ethereum", icon: "/chains/ethereum.svg", enabled: false },
+    { name: "Polygon", icon: "/chains/polygon.svg", enabled: false },
+    { name: "Arbitrum", icon: "/chains/arbitrum.svg", enabled: false },
+    { name: "Optimism", icon: "/chains/optimism.svg", enabled: false },
   ];
 
   const handleChainSelect = (chainName) => {
@@ -80,8 +81,13 @@ const Page = () => {
                 {chains.map((chain) => (
                   <button
                     key={chain.name}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-between"
-                    onClick={() => handleChainSelect(chain.name)}
+                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-between ${
+                      !chain.enabled && "opacity-60 cursor-not-allowed"
+                    }`}
+                    onClick={() =>
+                      chain.enabled && handleChainSelect(chain.name)
+                    }
+                    disabled={!chain.enabled}
                   >
                     <div className="flex items-center gap-2">
                       <img
@@ -91,17 +97,24 @@ const Page = () => {
                       />
                       {chain.name}
                     </div>
-                    {selectedChain === chain.name && (
-                      <img
-                        src={
-                          mounted && theme === "dark"
-                            ? "/dark/tick.svg"
-                            : "/icons/tick.svg"
-                        }
-                        alt="selected"
-                        className="w-4 h-4"
-                      />
-                    )}
+                    <div>
+                      {selectedChain === chain.name && chain.enabled && (
+                        <img
+                          src={
+                            mounted && theme === "dark"
+                              ? "/dark/tick.svg"
+                              : "/icons/tick.svg"
+                          }
+                          alt="selected"
+                          className="w-4 h-4"
+                        />
+                      )}
+                      {!chain.enabled && (
+                        <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">
+                          Soon
+                        </span>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>

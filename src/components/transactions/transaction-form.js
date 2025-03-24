@@ -8,19 +8,27 @@ import {
   useReadContract,
   useWriteContract,
   useWaitForTransactionReceipt,
+  usePublicClient,
 } from "wagmi";
-import { parseUnits } from "viem";
+import { parseEther, parseUnits } from "viem";
 import {
   CONFIDENTIAL_ERC20_ADDRESS,
   ERC20_CONTRACT_ABI,
   ERC20_CONTRACT_ADDRESS,
   CONFIDENTIAL_ERC20_ABI,
+  ConfidentialERC20Wrapper,
+  ConfidentialERC20WrapperABI,
+  ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+  ERC20ABI,
+  ENCRYPTEDERC20ABI,
 } from "@/utils/contracts";
+import { useChainBalance } from "@/hooks/use-chain-balance";
 
 export const TransactionForm = ({
   mode,
   selectedAsset: defaultSelectedAsset,
   handleClose,
+  currentBalance,
 }) => {
   const [amount, setAmount] = useState("0");
   const [isApproving, setIsApproving] = useState(false);
@@ -32,8 +40,8 @@ export const TransactionForm = ({
   const triggerRef = useRef(null);
 
   const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
 
-  // Handle clicks outside of dropdown to close it
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -56,25 +64,20 @@ export const TransactionForm = ({
   // Contract interactions
   const { writeContractAsync: approve } = useWriteContract();
   const { writeContractAsync: wrap } = useWriteContract();
+  const publicClient = usePublicClient();
   const { data: txData, waitForTransactionReceipt } =
     useWaitForTransactionReceipt();
 
-  // Contract reads
-  const { data: allowance } = useReadContract({
-    address: ERC20_CONTRACT_ADDRESS,
-    abi: ERC20_CONTRACT_ABI,
-    functionName: "allowance",
-    args: [address, CONFIDENTIAL_ERC20_ADDRESS],
-    watch: true,
-  });
-
-  const { data: balance } = useReadContract({
-    address: ERC20_CONTRACT_ADDRESS,
-    abi: ERC20_CONTRACT_ABI,
-    functionName: "balanceOf",
-    args: [address],
-    watch: true,
-  });
+  const {
+    nativeBalance,
+    tokenBalance,
+    encryptedBalance,
+    isEncryptedLoading,
+    encryptedError,
+    refreshBalances,
+    fetchEncryptedBalance,
+    isConnected,
+  } = useChainBalance();
 
   const handleTransaction = async () => {
     if (!amount || !address) return;
@@ -84,55 +87,61 @@ export const TransactionForm = ({
 
     try {
       const parsedAmount = parseUnits(amount, 6);
+      const amountWithDecimals = parseEther(amount.toString());
 
       if (mode === "shield") {
         // Check if approval is needed
-        if (allowance < parsedAmount) {
+        // if (allowance < parsedAmount) {
+        if (true) {
           setIsApproving(true);
+
           try {
-            const approveTxHash = await approve({
+            // const usdcContract = new ethers.Contract(
+            //   ERC20_CONTRACT_ADDRESS,
+            //   ERC20ABI,
+            //   signer
+            // );
+
+            const approveHash = await writeContractAsync({
               address: ERC20_CONTRACT_ADDRESS,
-              abi: ERC20_CONTRACT_ABI,
+              abi: ERC20ABI,
               functionName: "approve",
-              args: [CONFIDENTIAL_ERC20_ADDRESS, parsedAmount],
+              args: [ENCRYPTED_ERC20_CONTRACT_ADDRESS, amountWithDecimals],
             });
 
-            // Wait for approval transaction
-            await waitForTransactionReceipt({ hash: approveTxHash });
+            console.log("approveHash", approveHash);
 
-            // Proceed with wrapping after approval
-            const wrapTxHash = await wrap({
-              address: CONFIDENTIAL_ERC20_ADDRESS,
-              abi: CONFIDENTIAL_ERC20_ABI,
+            const transaction = await publicClient.waitForTransactionReceipt({
+              hash: approveHash,
+            });
+
+            // const allowance = await usdcContract.approve(
+            //   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+            //   amountWithDecimals
+            // );
+            // const allowanceReceipt = await allowance.getTransaction();
+            // console.log(allowanceReceipt);
+            // await allowanceReceipt.wait();
+
+            const wrapTxHash = await writeContractAsync({
+              address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+              abi: ENCRYPTEDERC20ABI,
               functionName: "wrap",
-              args: [parsedAmount],
+              args: [amountWithDecimals],
             });
 
-            // Wait for wrap transaction
-            await waitForTransactionReceipt({ hash: wrapTxHash });
+            console.log("wrapTxHash", wrapTxHash);
+
+            const txn = await publicClient.waitForTransactionReceipt({
+              hash: wrapTxHash,
+            });
+
             handleClose(mode);
           } catch (error) {
             console.error("Transaction failed:", error);
             setError("Transaction failed. Please try again.");
           } finally {
             setIsApproving(false);
-          }
-        } else {
-          // Direct wrap if already approved
-          try {
-            const wrapTxHash = await wrap({
-              address: CONFIDENTIAL_ERC20_ADDRESS,
-              abi: CONFIDENTIAL_ERC20_ABI,
-              functionName: "wrap",
-              args: [parsedAmount],
-            });
-
-            // Wait for wrap transaction
-            await waitForTransactionReceipt({ hash: wrapTxHash });
-            handleClose(mode);
-          } catch (error) {
-            console.error("Wrap failed:", error);
-            setError("Wrap failed. Please try again.");
           }
         }
       }
@@ -150,7 +159,7 @@ export const TransactionForm = ({
     if (value.split(".").length > 2) return;
     setAmount(value);
 
-    if (Number(value) > Number(selectedAsset?.amount)) {
+    if (Number(value) > Number(currentBalance)) {
       setError(
         `Insufficient balance. Maximum available: ${selectedAsset?.amount} ${selectedAsset?.name}`
       );
@@ -162,7 +171,7 @@ export const TransactionForm = ({
   const handleMaxClick = (e) => {
     // Prevent event from bubbling up to parent elements
     e.stopPropagation();
-    setAmount(selectedAsset?.amount);
+    setAmount(currentBalance);
     setError("");
   };
 
@@ -171,54 +180,7 @@ export const TransactionForm = ({
   };
 
   const isAmountValid =
-    Number(amount) > 0 && Number(amount) <= Number(selectedAsset?.amount);
-
-  const renderDestination = () => {
-    if (mode === "shield") {
-      return (
-        <>
-          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
-            <img
-              src="/profile/pf.svg"
-              alt="Avatar"
-              className="w-6 h-6 rounded-full"
-            />
-            <span className="text-sm dark:text-white">
-              {address
-                ? `${address.slice(0, 4)}...${address.slice(-4)}`
-                : "0x...0000"}
-            </span>
-          </div>
-          <ArrowRight className="h-10 w-10 dark:text-gray-400" />
-          <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
-            <div className="w-6 h-6 bg-blue-500 rounded-full" />
-            <span className="text-sm dark:text-white">Confidential</span>
-          </div>
-        </>
-      );
-    }
-    return (
-      <>
-        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
-          <div className="w-6 h-6 bg-blue-500 rounded-full" />
-          <span className="text-sm dark:text-white">Confidential</span>
-        </div>
-        <ArrowRight className="h-10 w-10 dark:text-gray-400" />
-        <div className="flex items-center gap-2 pl-0.5 py-0.5 pr-4 border  w-full rounded-full">
-          <img
-            src="/profile/pf.svg"
-            alt="Destination"
-            className="w-6 h-6 rounded-full"
-          />
-          <span className="text-sm dark:text-white">
-            {address
-              ? `${address.slice(0, 4)}...${address.slice(-4)}`
-              : "0x...0000"}
-          </span>
-        </div>
-      </>
-    );
-  };
+    Number(amount) > 0 && Number(amount) <= Number(currentBalance);
 
   return (
     <div className="relative pb-8">
@@ -282,7 +244,8 @@ export const TransactionForm = ({
                   <div>
                     <p className="dark:text-white">{selectedAsset?.name}</p>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Balance: {selectedAsset?.amount} {selectedAsset?.name}
+                      Balance: {tokenBalance?.data?.formatted}{" "}
+                      {selectedAsset?.name}
                     </div>
                   </div>
                 </div>

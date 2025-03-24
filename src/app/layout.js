@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import AuthWrapper from "@/auth/auth-wrapper";
 import { AuthProvider } from "@/context/auth-context";
+import { ChainBalanceProvider } from "@/hooks/use-chain-balance";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +28,9 @@ export default function RootLayout({ children }) {
           <RainbowKitWrapper>
             <AuthProvider>
               <AuthWrapper>
-                <Layout>{children}</Layout>
+                <ChainBalanceProvider>
+                  <Layout>{children}</Layout>
+                </ChainBalanceProvider>
               </AuthWrapper>
             </AuthProvider>
           </RainbowKitWrapper>

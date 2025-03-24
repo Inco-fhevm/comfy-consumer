@@ -3,15 +3,19 @@ import { Button } from "./ui/button";
 import { Menu } from "lucide-react";
 import CustomConnectButton from "./custom-connect-button";
 import TransactionDialog from "./transactions/transaction-dialouge";
+import MintDialog from "./mint-token";
 
 const Navbar = ({ currentPage }) => {
-  const [depositOpen, setDepositOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // const [depositOpen, setDepositOpen] = useState(false);
+  // const [withdrawOpen, setWithdrawOpen] = useState(false);
+  // const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
     <header className="border-b p-4 flex justify-between items-center relative">
-      <h1 className="md:text-xl text-2xl font-semibold lg:ml-0">{currentPage}</h1>
+      <h1 className="md:text-xl text-2xl font-semibold lg:ml-0">
+        {currentPage}
+      </h1>
 
       <div className="flex items-center gap-3">
         {/* Desktop buttons */}
@@ -43,9 +47,23 @@ const Navbar = ({ currentPage }) => {
           </Button>
         </div> */}
 
+        <Button
+          variant="link"
+          className="text-black hover:text-black/70 font-semibold"
+          onClick={() => setOpen(true)}
+        >
+          Mint now
+        </Button>
         <CustomConnectButton />
       </div>
-
+      <MintDialog
+        open={open}
+        onOpenChange={setOpen}
+        onSubmit={({ amount, token }) => {
+          console.log("Minting", amount, "of", token);
+          setOpen(false);
+        }}
+      />
       {/* Mobile menu dropdown */}
       {/* {mobileMenuOpen && (
         <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-900 shadow-lg rounded-lg p-2 z-50 lg:hidden">

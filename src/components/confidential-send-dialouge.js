@@ -24,18 +24,20 @@ import { assets } from "@/utils/constants";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 
-const ConfidentialSendDialog = () => {
+const ConfidentialSendDialog = ({ balance }) => {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
   const [selectedAsset, setSelectedAsset] = useState({
     name: "USDC",
     icon: "/icons/usdc.svg",
-    amount: "12,000",
+    amount: balance,
     chain: "USDC",
     value: "12,000 USDC",
   });
+
   const isMobile = useMediaQuery("(max-width: 640px)");
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
