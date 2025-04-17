@@ -2,11 +2,9 @@ import {
   generateSecp256k1Keypair,
   decodeSecp256k1PublicKey,
   getEciesEncryptor,
+  incoLiteReencryptor,
 } from "@inco-fhevm/js/lite";
 import { hexToBytes } from "viem";
-import { getReencryptor } from "@inco-fhevm/js/reencryption";
-import { incoLiteEnvQuerier, incoLiteReencrypt } from "@inco-fhevm/js/lite";
-import { Schema, Binary } from "@inco-fhevm/js";
 import { getAddress, formatUnits } from "viem";
 
 export const SELECTED_NETWORK = "baseSepolia";
@@ -21,6 +19,8 @@ export const encryptValue = async ({
 }) => {
   const valueBigInt = BigInt(value);
 
+  const checksummedAddress = getAddress(contractAddress);
+
   const plaintextWithContext = {
     plaintext: {
       scheme: 1, // encryptionSchemes.ecies
@@ -31,7 +31,7 @@ export const encryptValue = async ({
       hostChainId: BigInt(config.chainId),
       aclAddress: config.deployedAtAddress,
       userAddress: address,
-      contractAddress: contractAddress,
+      contractAddress: checksummedAddress,
     },
   };
 
@@ -59,8 +59,6 @@ export const reEncryptValue = async ({
   handle,
   publicClient,
   incoLiteAddress,
-  cfg,
-  kmsConnectEndpoint,
 }) => {
   if (
     !chainId ||
@@ -73,27 +71,55 @@ export const reEncryptValue = async ({
   }
 
   try {
+    console.log("incoLiteAddress", incoLiteAddress);
+    // console.log('checksummedAddress', checksummedAddress)
+    console.log("chainId", chainId);
+    console.log("walletClient", walletClient);
+    console.log("publicClient", publicClient);
+    console.log("handle", handle);
+    // console.log("KMS_CONNECT_ENDPOINT", KMS_CONNECT_ENDPOINT);
     const checksummedAddress = getAddress(contractAddress);
+    console.log("incoLiteAddress", incoLiteAddress);
+    console.log("checksummedAddress", checksummedAddress);
+    console.log("chainId", chainId);
+    console.log("walletClient", walletClient);
+    console.log("publicClient", publicClient);
+    console.log("handle", handle);
+    // console.log("KMS_CONNECT_ENDPOINT", KMS_CONNECT_ENDPOINT);
 
-    const reencryptor = await getReencryptor({
+    const reencryptor = await incoLiteReencryptor({
       chainId: chainId,
-      contractAddress: checksummedAddress,
       walletClient: walletClient.data,
-      reencryptEndpoint: incoLiteReencrypt({
-        kmsConnectRpcEndpointOrClient: KMS_CONNECT_ENDPOINT,
-      }),
-      fheEnvQuerier: incoLiteEnvQuerier({
-        incoLiteAddress,
-        publicClient,
-      }),
+      kmsConnectRpcEndpointOrClient: KMS_CONNECT_ENDPOINT,
     });
+
+    console.log("here");
 
     const rawDecrypted = await reencryptor({
-      handle: {
-        value: Schema.parse(Binary.Bytes32, handle),
-        type: 8, // Default to uint256 type
-      },
+      handle,
     });
+
+    // const reencryptor = await getReencryptor({
+    //   chainId: chainId,
+    //   contractAddress: checksummedAddress,
+    //   walletClient: walletClient.data,
+    //   reencryptEndpoint: incoLiteReencrypt({
+    //     kmsConnectRpcEndpointOrClient: KMS_CONNECT_ENDPOINT,
+    //   }),
+    //   fheEnvQuerier: incoLiteEnvQuerier({
+    //     incoLiteAddress,
+    //     publicClient,
+    //   }),
+    // });
+
+    // console.log(reencryptor);
+
+    // const rawDecrypted = await reencryptor({
+    //   handle: {
+    //     value: Schema.parse(Binary.Bytes32, handle),
+    //     type: 8, // Default to uint256 type
+    //   },
+    // });
 
     console.log("rawDecrypted", rawDecrypted);
 

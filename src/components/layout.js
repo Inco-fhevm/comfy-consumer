@@ -26,15 +26,15 @@ const Layout = ({ children }) => {
       basePath: "private-assets",
       path: "/private-assets",
     },
-    { name: "Private Swap", basePath: "private-swap", path: "/private-swap" },
-    {
-      name: "Private Bridge",
-      basePath: "private-bridge",
-      path: "/private-bridge",
-    },
-    { name: "Games", basePath: "games", path: "/games" },
-    { name: "Private Lend", basePath: "private-lend", path: "/private-lend" },
-    { name: "Other Apps", basePath: "other-apps", path: "/other-apps" },
+    // { name: "Private Swap", basePath: "private-swap", path: "/private-swap" },
+    // {
+    //   name: "Private Bridge",
+    //   basePath: "private-bridge",
+    //   path: "/private-bridge",
+    // },
+    // { name: "Games", basePath: "games", path: "/games" },
+    // { name: "Private Lend", basePath: "private-lend", path: "/private-lend" },
+    // { name: "Other Apps", basePath: "other-apps", path: "/other-apps" },
   ];
 
   const Sidebar = () => {
@@ -43,7 +43,7 @@ const Layout = ({ children }) => {
     return (
       <aside className="w-64 h-screen bg-gray-50 dark:bg-card p-4 border-r flex flex-col">
         <div className="text-blue-500 text-xl font-bold mb-8">
-          <img src="/icons/comfy-logo.svg" className="w-full h-full" />
+          <img src="/icons/comfy-logo.svg" className="" />
         </div>
 
         <div className="flex-1">

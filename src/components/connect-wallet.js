@@ -10,8 +10,48 @@ export default function ComfyLanding() {
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden">
+      {/* Cloud Animations - Multiple Rows */}
+      <style jsx>{`
+        @keyframes cloudMoveLeft {
+          0% {
+            transform: translateX(0%);
+          }
+          50% {
+            transform: translateX(-100%);
+          }
+          50.01% {
+            transform: translateX(100%);
+          }
+          100% {
+            transform: translateX(0%);
+          }
+        }
+        @keyframes cloudMoveRight {
+          0% {
+            transform: translateX(0%);
+          }
+          50% {
+            transform: translateX(-100%);
+          }
+          50.01% {
+            transform: translateX(100%);
+          }
+          100% {
+            transform: translateX(0%);
+          }
+        }
+        .cloud-animation-left {
+          animation: cloudMoveLeft 10s linear infinite;
+          min-width: 100%;
+        }
+        .cloud-animation-right {
+          animation: cloudMoveRight 12s linear infinite;
+          min-width: 100%;
+        }
+      `}</style>
+
       {/* Main Content */}
-      <div className="flex flex-col lg:flex-row lg:flex-1 relative z-10 h-screen">
+      <div className="flex flex-col lg:flex-row lg:flex-1 relative h-screen">
         {/* Left Content Section - Full width on mobile, unchanged on desktop */}
         <div className="w-full lg:w-1/2 p-6 lg:p-12 flex flex-col justify-center items-center pb-16 lg:pb-32 lg:min-h-screen h-[75vh]">
           {/* Logo and Header - Centered with text-center */}
@@ -101,27 +141,93 @@ export default function ComfyLanding() {
           </div>
         </div>
 
-        {/* Right Image Section - 25% height on mobile, unchanged on desktop */}
-        <div className="w-full h-[25vh] lg:h-auto lg:min-h-screen lg:w-1/2 relative mt-auto bg-[#3673F5]">
-          {/* Background image - desktop only */}
-          <div className="lg:block absolute inset-0">
-            <img
-              src="/not-connected/coin.svg"
-              alt="Comfy DeFi Privacy Background"
-              className="h-screen w-full object-cover"
-              draggable={false}
-            />
+        {/* Layered Right Side Section */}
+        <div className="relative w-full h-[7.5rem] lg:h-auto lg:min-h-screen lg:w-1/2 mt-auto">
+          {/* Background color layer */}
+          <div className="absolute inset-0 bg-[#B0DBFF]"></div>
+          
+          {/* Clouds layer */}
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Cloud Row 1 */}
+            <div className="absolute top-[10%] right-0 w-full overflow-hidden">
+              <div className="relative right-24">
+                <img
+                  src="/images/cloud-1.svg"
+                  alt="Cloud Decoration"
+                  className="w-full cloud-animation-right h-11"
+                  draggable={false}
+                />
+              </div>
+            </div>
+
+            {/* Cloud Row 2 */}
+            <div className="absolute top-[30%] right-0 w-full overflow-hidden">
+              <div className="relative left-40">
+                <img
+                  src="/images/cloud-2.svg"
+                  alt="Cloud Decoration"
+                  className="w-full cloud-animation-right h-16"
+                  draggable={false}
+                />
+              </div>
+            </div>
+
+            {/* Cloud Row 3 */}
+            <div className="absolute top-[60%] right-0 w-full overflow-hidden">
+              <div className="relative right-64">
+                <img
+                  src="/images/cloud-3.svg"
+                  alt="Cloud Decoration"
+                  className="w-full cloud-animation-right h-8"
+                  draggable={false}
+                />
+              </div>
+            </div>
+
+            {/* Cloud Row 4 */}
+            <div className="absolute top-[80%] right-0 w-full overflow-hidden">
+              <div className="relative left-12">
+                <img
+                  src="/images/cloud-4.svg"
+                  alt="Cloud Decoration"
+                  className="w-full h-8 cloud-animation-right"
+                  draggable={false}
+                />
+              </div>
+            </div>
           </div>
-          {/* Centered foreground image - hidden on mobile */}
+          
+          {/* Main image layer (highest) */}
           <div className="absolute inset-0 hidden lg:flex items-center justify-center">
-            <img
-              src="/not-connected/main.svg"
-              alt="Comfy DeFi Privacy"
-              className="max-h-screen max-w-full object-contain z-10"
-              draggable={false}
-            />
+            <div className="relative" style={{ zIndex: 9999 }}>
+              <img
+                src="/not-connected/main.svg"
+                alt="Comfy DeFi Privacy"
+                className="max-h-screen max-w-full object-contain"
+                draggable={false}
+              />
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Bottom clouds layer */}
+      <div className="absolute -bottom-24 left-0 pointer-events-none lg:w-1/2 overflow-hidden">
+        <img
+          src="/images/clouds.svg"
+          alt="Cloud Decoration"
+          className="w-full h-32 lg:h-48 cloud-animation-left"
+          draggable={false}
+        />
+      </div>
+
+      <div className="absolute -bottom-24 right-0 pointer-events-none lg:w-1/2 overflow-hidden">
+        <img
+          src="/images/right-cloud.svg"
+          alt="Bubbles Decoration"
+          className="w-full h-32 lg:h-48 cloud-animation-right"
+          draggable={false}
+        />
       </div>
     </div>
   );
