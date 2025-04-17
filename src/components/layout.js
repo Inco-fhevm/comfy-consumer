@@ -124,7 +124,7 @@ const Layout = ({ children }) => {
         </main>
 
         {/* Mobile Footer */}
-        <MobileFooter />
+        {/* <MobileFooter /> */}
       </div>
     </div>
   );

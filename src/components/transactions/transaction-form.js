@@ -9,8 +9,9 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   usePublicClient,
+  useWalletClient,
 } from "wagmi";
-import { parseEther, parseUnits } from "viem";
+import { getContract, parseEther, parseUnits } from "viem";
 import {
   CONFIDENTIAL_ERC20_ADDRESS,
   ERC20_CONTRACT_ABI,
@@ -23,6 +24,7 @@ import {
   ENCRYPTEDERC20ABI,
 } from "@/utils/contracts";
 import { useChainBalance } from "@/hooks/use-chain-balance";
+import { toast } from "sonner";
 
 export const TransactionForm = ({
   mode,
@@ -30,7 +32,7 @@ export const TransactionForm = ({
   handleClose,
   currentBalance,
 }) => {
-  const [amount, setAmount] = useState("0");
+  const [amount, setAmount] = useState(null);
   const [isApproving, setIsApproving] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState(defaultSelectedAsset);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -39,8 +41,26 @@ export const TransactionForm = ({
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
 
+  const [decryptAmount, setDecryptAmount] = useState(null);
+
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
+
+  const publicClient = usePublicClient();
+  const walletClient = useWalletClient();
+
+  const {
+    nativeBalance,
+    tokenBalance,
+    encryptedBalance,
+    isEncryptedLoading,
+    encryptedError,
+    refreshBalances,
+    fetchEncryptedBalance,
+    isConnected,
+  } = useChainBalance();
+
+  const handleRefreshEncrypted = (w0) => fetchEncryptedBalance(w0);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -61,47 +81,20 @@ export const TransactionForm = ({
     };
   }, [isDropdownOpen]);
 
-  // Contract interactions
-  const { writeContractAsync: approve } = useWriteContract();
-  const { writeContractAsync: wrap } = useWriteContract();
-  const publicClient = usePublicClient();
-  const { data: txData, waitForTransactionReceipt } =
-    useWaitForTransactionReceipt();
-
-  const {
-    nativeBalance,
-    tokenBalance,
-    encryptedBalance,
-    isEncryptedLoading,
-    encryptedError,
-    refreshBalances,
-    fetchEncryptedBalance,
-    isConnected,
-  } = useChainBalance();
-
-  const handleTransaction = async () => {
+  const handleShield = async () => {
     if (!amount || !address) return;
     setError("");
     setIsProcessing(true);
     setIsApproving(true);
 
     try {
-      const parsedAmount = parseUnits(amount, 6);
       const amountWithDecimals = parseEther(amount.toString());
 
       if (mode === "shield") {
-        // Check if approval is needed
-        // if (allowance < parsedAmount) {
         if (true) {
           setIsApproving(true);
 
           try {
-            // const usdcContract = new ethers.Contract(
-            //   ERC20_CONTRACT_ADDRESS,
-            //   ERC20ABI,
-            //   signer
-            // );
-
             const approveHash = await writeContractAsync({
               address: ERC20_CONTRACT_ADDRESS,
               abi: ERC20ABI,
@@ -115,13 +108,9 @@ export const TransactionForm = ({
               hash: approveHash,
             });
 
-            // const allowance = await usdcContract.approve(
-            //   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-            //   amountWithDecimals
-            // );
-            // const allowanceReceipt = await allowance.getTransaction();
-            // console.log(allowanceReceipt);
-            // await allowanceReceipt.wait();
+            if (transaction.status !== "success") {
+              throw new Error("Transaction failed");
+            }
 
             const wrapTxHash = await writeContractAsync({
               address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
@@ -136,12 +125,25 @@ export const TransactionForm = ({
               hash: wrapTxHash,
             });
 
+            if (txn.status !== "success") {
+              throw new Error("Transaction failed");
+            }
+
+            toast.success("Wrap Complete");
             handleClose(mode);
           } catch (error) {
             console.error("Transaction failed:", error);
-            setError("Transaction failed. Please try again.");
+            if (
+              error.message.includes(
+                "try switching contract to Existing Shield from dropdown"
+              )
+            ) {
+              setError(error.message);
+            } else setError("Transaction failed. Please try again.");
           } finally {
             setIsApproving(false);
+            await refreshBalances(["token"]);
+            await handleRefreshEncrypted(walletClient);
           }
         }
       }
@@ -149,6 +151,76 @@ export const TransactionForm = ({
       console.error("Transaction failed:", error);
       setError("Transaction failed. Please try again.");
     } finally {
+      setIsApproving(false);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUnshield = async () => {
+    setIsApproving(true);
+    setIsProcessing(true);
+    setError("");
+
+    try {
+      if (!decryptAmount) {
+        setError("No encrypted balance available.");
+        return;
+      }
+
+      const amountWithDecimals = parseEther(decryptAmount.toString());
+
+      const hash = await writeContractAsync({
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        abi: ENCRYPTEDERC20ABI,
+        functionName: "unwrap",
+        args: [amountWithDecimals],
+      });
+
+      const transaction = await publicClient.waitForTransactionReceipt({
+        hash,
+      });
+
+      if (transaction.status !== "success") {
+        setError("Transaction failed");
+        return;
+      }
+
+      // Set up event listener for Unwrap event
+      const unwrapEvents = transaction.logs
+        .filter(
+          (log) =>
+            log.address.toLowerCase() ===
+            ENCRYPTED_ERC20_CONTRACT_ADDRESS.toLowerCase()
+        )
+        .map((log) => {
+          try {
+            return decodeEventLog({
+              abi: ENCRYPTEDERC20ABI,
+              data: log.data,
+              topics: log.topics,
+            });
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter((event) => event && event.eventName === "Unwrap");
+
+      if (unwrapEvents.length > 0) {
+        const unwrapEvent = unwrapEvents[0];
+        console.log("Unwrap event detected:", {
+          account: unwrapEvent.args.account,
+          amount: unwrapEvent.args.amount,
+        });
+      }
+
+      toast.success("Unwrap Complete");
+      handleClose(mode);
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      setError("Transaction failed. Please try again.");
+    } finally {
+      await refreshBalances(["token"]);
+      await handleRefreshEncrypted(walletClient);
       setIsApproving(false);
       setIsProcessing(false);
     }
@@ -171,7 +243,7 @@ export const TransactionForm = ({
   const handleMaxClick = (e) => {
     // Prevent event from bubbling up to parent elements
     e.stopPropagation();
-    setAmount(currentBalance);
+    setAmount(tokenBalance?.data?.formatted);
     setError("");
   };
 
@@ -180,7 +252,8 @@ export const TransactionForm = ({
   };
 
   const isAmountValid =
-    Number(amount) > 0 && Number(amount) <= Number(currentBalance);
+    Number(amount) > 0 &&
+    Number(amount) <= Number(tokenBalance?.data?.formatted);
 
   return (
     <div className="relative pb-8">
@@ -206,18 +279,28 @@ export const TransactionForm = ({
               <div>
                 <div className="grid place-items-center gap-6">
                   <img
-                    src={"/tokens/confidential/usdt-polygon.png"}
+                    src={"/tokens/confidential/usdc-base.png"}
                     alt={selectedAsset?.name}
                     className="w-16"
                   />
 
-                  <p className="text-3xl font-semibold mb-1 bg-transparent text-center w-full focus:outline-none text-black dark:text-white disabled:opacity-50">
-                    $12,000
-                  </p>
+                  <div className="text-3xl flex gap-2 items-center font-semibold mb-1 bg-transparent text-center w-full text-black dark:text-white disabled:opacity-50">
+                    <input
+                      type="text"
+                      placeholder="0"
+                      value={decryptAmount}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, "");
+                        if (value.split(".").length > 2) return;
+                        setDecryptAmount(value);
+                      }}
+                      className="bg-transparent focus:outline-none text-center"
+                    />
+                  </div>
                 </div>
 
                 <div className="text-[#AFAFAF] dark:text-gray-400">
-                  {amount || "0"} {selectedAsset?.name}
+                  {decryptAmount || "0"} c{selectedAsset?.name}
                 </div>
                 {error && (
                   <div className="text-red-500 dark:text-red-400 text-sm mt-2">
@@ -337,7 +420,7 @@ export const TransactionForm = ({
             <Button
               className="w-full rounded-full dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
               disabled={!isAmountValid || isProcessing}
-              onClick={handleTransaction}
+              onClick={handleShield}
             >
               {isProcessing ? (
                 <>
@@ -345,17 +428,14 @@ export const TransactionForm = ({
                   {isApproving ? "Approving..." : "Processing..."}
                 </>
               ) : (
-                <>{mode === "shield" ? "Encrypt" : "Decrypt"}</>
+                <>Shield</>
               )}
             </Button>
           ) : (
             <Button
               className="w-full rounded-full dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
-              // disabled={!isAmountValid || isProcessing}
-              onClick={() => {
-                setIsApproving(true);
-                setIsProcessing(true);
-              }}
+              disabled={!decryptAmount || decryptAmount === "0" || isProcessing}
+              onClick={handleUnshield}
             >
               {isProcessing ? (
                 <>
@@ -363,7 +443,7 @@ export const TransactionForm = ({
                   {isApproving ? "Approving..." : "Processing..."}
                 </>
               ) : (
-                <>{mode === "shield" ? "Encrypt" : "Decrypt"}</>
+                <>{mode === "shield" ? "Shield" : "Unshield"}</>
               )}
             </Button>
           )}

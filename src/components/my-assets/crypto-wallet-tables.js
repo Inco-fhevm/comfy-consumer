@@ -4,7 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import ConfidentialSendDialog from "@/components/confidential-send-dialouge";
 import { Button } from "@/components/ui/button";
 import TransactionDialog from "../transactions/transaction-dialouge";
-import { useAccount, useBalance, useChainId } from "wagmi";
+import { useAccount, useBalance, useChainId, useWalletClient } from "wagmi";
 import {
   baseSepolia,
   base,
@@ -16,11 +16,6 @@ import {
   ERC20_CONTRACT_ADDRESS,
 } from "@/utils/contracts";
 import { useChainBalance } from "@/hooks/use-chain-balance";
-
-const ethereum = { id: 1, name: "Ethereum" };
-const polygon = { id: 137, name: "Polygon" };
-const arbitrum = { id: 42161, name: "Arbitrum" };
-const optimism = { id: 10, name: "Optimism" };
 
 // Define chain IDs more safely to avoid undefined issues
 const CHAIN_IDS = {
@@ -59,54 +54,19 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
 
   const chainId = useChainId();
 
-  const {
-    nativeBalance,
-    tokenBalance,
-    encryptedBalance,
-    isEncryptedLoading,
-    encryptedError,
-    refreshBalances,
-    fetchEncryptedBalance,
-    isConnected,
-  } = useChainBalance();
-
+  const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
+  const walletClient = useWalletClient();
   const { tokenBalance: usdcBalance } = useChainBalance();
 
-  const decryptedValues = {
-    cETH: { amount: encryptedBalance, dollarValue: encryptedBalance },
-    cUSDT: { amount: encryptedBalance, dollarValue: encryptedBalance },
-  };
-
-  const handleRefreshEncrypted = () => fetchEncryptedBalance();
+  const handleRefreshEncrypted = (w0) =>
+    fetchEncryptedBalance(w0);
 
   const toggleConfidentialValues = async () => {
-    await handleRefreshEncrypted();
+    if (!showConfidentialValues) {
+      await handleRefreshEncrypted(walletClient);
+    }
     setShowConfidentialValues(!showConfidentialValues);
   };
-
-  const getDisplayValue = (asset) => {
-    if (title !== "Encrypted" || !showConfidentialValues) {
-      return {
-        amount: asset.amount,
-        dollarValue: asset.dollarValue,
-      };
-    }
-
-    // Return decrypted values if available
-    const decrypted = decryptedValues[asset.name];
-    if (decrypted) {
-      return {
-        amount: decrypted.amount,
-        dollarValue: decrypted.dollarValue,
-      };
-    }
-
-    return {
-      amount: asset.amount,
-      dollarValue: asset.dollarValue,
-    };
-  };
-
 
   return (
     <div className="border rounded-3xl shadow-sm mb-4">
@@ -115,9 +75,9 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
         <div className="text-xl font-semibold">
           {title === "Encrypted"
             ? showConfidentialValues
-              ? "$" + encryptedBalance
+              ? "$" + Number(encryptedBalance).toLocaleString()
               : "$******"
-            : "$" + Number(usdcBalance?.data?.formatted).toFixed(0)}
+            : "$" + Number(usdcBalance?.data?.formatted).toLocaleString()}
         </div>
         {title === "Encrypted" && (
           <button className="p-2" onClick={toggleConfidentialValues}>
@@ -160,13 +120,19 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
             let displayValue;
             if (asset.name === "cUSDC") {
               displayValue = {
-                amount: encryptedBalance ? encryptedBalance : "*****",
-                dollarValue: encryptedBalance ? encryptedBalance : "$******",
+                amount: encryptedBalance
+                  ? Number(encryptedBalance).toLocaleString()
+                  : "*****",
+                dollarValue: encryptedBalance
+                  ? "$" + Number(encryptedBalance).toLocaleString()
+                  : "$******",
               };
             } else {
               displayValue = {
-                amount: Number(usdcBalance?.data?.formatted).toFixed(0),
-                dollarValue: Number(usdcBalance?.data?.formatted).toFixed(0),
+                amount: Number(usdcBalance?.data?.formatted).toLocaleString(),
+                dollarValue: Number(
+                  usdcBalance?.data?.formatted
+                ).toLocaleString(),
               };
             }
 
@@ -202,13 +168,15 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                 <td className="py-4 pr-6 text-right">
                   <div className="flex items-center justify-end space-x-2">
                     {title === "Encrypted" ? (
-                      <Button
-                        onClick={() => setWithdrawOpen(true)}
-                        className="rounded-full"
-                        variant="outline"
-                      >
-                        Decrypt
-                      </Button>
+                      <>
+                        <Button
+                          onClick={() => setWithdrawOpen(true)}
+                          className="rounded-full"
+                          variant="outline"
+                        >
+                          Unshield
+                        </Button>
+                      </>
                     ) : (
                       <Button
                         onClick={() => {
@@ -218,7 +186,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                         disabled={asset.chain !== "Base Sepolia"}
                         className="bg-blue-500 hover:bg-blue-600 rounded-full dark:text-white"
                       >
-                        {asset.chain !== "Base Sepolia" ? "Soon" : "Encrypt"}
+                        {asset.chain !== "Base Sepolia" ? "Soon" : "Shield"}
                       </Button>
                     )}
 
@@ -403,9 +371,7 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                     {displayValue.amount}
                   </div>
                   <div className="text-gray-500 text-sm font-medium">
-                    {typeof displayValue.dollarValue === "number"
-                      ? "$" + displayValue.dollarValue.toLocaleString()
-                      : displayValue.dollarValue}
+                    {displayValue.dollarValue}
                   </div>
                 </div>
               </div>
@@ -660,7 +626,7 @@ const CryptoWalletTables = ({ selectedChain }) => {
       name: "cUSDC",
       amount: "*****",
       dollarValue: "$******",
-      icon: "/icons/usdc-base.svg",
+      icon: "/tokens/confidential/usdc-base.png",
       chain: "Base Sepolia",
     },
   ];
@@ -721,13 +687,14 @@ const CryptoWalletTables = ({ selectedChain }) => {
           </div>
 
           {/* Desktop view with original AssetTable components */}
-          <div className="hidden md:grid md:grid-cols-2 md:gap-4">
+          <div className={`hidden md:grid md:grid-cols-2 md:gap-4`}>
             <AssetTable
               title="Wallet"
               totalBalance={filteredTotalBalance}
               assets={filteredWalletAssets}
               onActionClick={handleEncrypt}
             />
+
             <AssetTable
               title="Encrypted"
               totalBalance={28000}

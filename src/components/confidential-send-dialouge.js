@@ -23,13 +23,47 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { assets } from "@/utils/constants";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
+import {
+  useAccount,
+  usePublicClient,
+  useWalletClient,
+  useWriteContract,
+} from "wagmi";
+import { encryptValue, SELECTED_NETWORK } from "@/utils/inco-lite";
+import { getContract, parseEther } from "viem";
+import {
+  ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+  ENCRYPTEDERC20ABI,
+} from "@/utils/contracts";
+import { getActiveIncoLiteDeployment } from "@inco-fhevm/js/lite";
+import { useChainBalance } from "@/hooks/use-chain-balance";
 
-const ConfidentialSendDialog = ({ balance }) => {
+const ConfidentialSendDialog = () => {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [txResult, setTxResult] = useState(null);
+  const [addressError, setAddressError] = useState("");
+  const [amountError, setAmountError] = useState("");
+  const [confidentialSendFailed, setConfidentialSendFailed] = useState(false);
+  const [sendErrorMessage, setSendErrorMessage] = useState("");
+
+  const {
+    nativeBalance,
+    tokenBalance,
+    encryptedBalance,
+    isEncryptedLoading,
+    encryptedError,
+    refreshBalances,
+    fetchEncryptedBalance,
+    isConnected,
+  } = useChainBalance();
+
+  const balance = encryptedBalance || 0;
+
+  const { address: userAddress } = useAccount();
+
   const [selectedAsset, setSelectedAsset] = useState({
     name: "USDC",
     icon: "/icons/usdc.svg",
@@ -48,13 +82,101 @@ const ConfidentialSendDialog = ({ balance }) => {
     setAmount(value);
   };
 
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+  const walletClient = useWalletClient();
+
+  const confidentialSend = async () => {
+    try {
+
+      setTxResult(null); // reset
+      setSendErrorMessage(""); // reset
+      setConfidentialSendFailed(false); // reset
+
+      // if (selectedContract?.type !== "Existing Shield") {
+      //   setSendErrorMessage(
+      //     "Invalid contract type. Please switch to 'Existing Shield'."
+      //   );
+      //   throw new Error("Invalid contract type.");
+      // }
+
+      const config = getActiveIncoLiteDeployment(SELECTED_NETWORK);
+      const { inputCt } = await encryptValue({
+        value: parseEther(amount.toString()),
+        address: userAddress,
+        config: config,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
+
+      if (!walletClient.data.account) {
+        setSendErrorMessage(
+          "Wallet not connected. Please reconnect your wallet."
+        );
+        throw new Error("Wallet not connected.");
+      }
+
+      const hash = await writeContractAsync({
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        abi: [
+          {
+            inputs: [
+              { internalType: "address", name: "to", type: "address" },
+              { internalType: "bytes", name: "encryptedAmount", type: "bytes" },
+            ],
+            name: "transfer",
+            outputs: [{ internalType: "bool", name: "", type: "bool" }],
+            stateMutability: "nonpayable",
+            type: "function",
+          },
+        ],
+        functionName: "transfer",
+        args: [address, inputCt.ciphertext.value],
+      });
+
+      const transaction = await publicClient.waitForTransactionReceipt({
+        hash,
+      });
+
+      const success = transaction.status === "success";
+      setTxResult({ success, hash });
+      setConfidentialSendFailed(!success);
+
+      await fetchEncryptedBalance(walletClient);
+
+      if (!success) {
+        setSendErrorMessage("Transaction failed. Please try again later.");
+        throw new Error("Transaction failed");
+      }
+
+      toast.success("Send successful");
+    } catch (error) {
+      console.error("Transaction failed:", error);
+      setTxResult({ success: false, hash: null });
+      if (!sendErrorMessage) {
+        setSendErrorMessage("An unexpected error occurred during send.");
+      }
+      setConfidentialSendFailed(true); // mark tx as failed
+      toast.error("Send failed");
+    }
+  };
+
   const handleSend = async () => {
+    setAddressError("");
+    setAmountError("");
+
+    if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      setAddressError("Enter a valid wallet address.");
+      return;
+    }
+
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      setAmountError("Enter a valid amount.");
+      return;
+    }
+
     try {
       setIsLoading(true);
-      // Implement send logic here
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulated delay
-      setOpen(false);
-      toast.success("Send successful");
+      await confidentialSend();
       setAmount("");
       setAddress("");
     } catch (error) {
@@ -105,7 +227,7 @@ const ConfidentialSendDialog = ({ balance }) => {
           </DialogHeaderComponent>
 
           <div className="px-6 pb-6 space-y-6">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm text-gray-500 dark:text-gray-400">
                 To:
               </label>
@@ -113,9 +235,16 @@ const ConfidentialSendDialog = ({ balance }) => {
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full p-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600/20  dark:text-white"
+                className={`w-full p-2 text-sm border rounded-lg focus:outline-none dark:text-white ${
+                  addressError
+                    ? "border-red-500 focus:ring-red-500"
+                    : "focus:ring-blue-500 dark:focus:ring-blue-600/20"
+                }`}
                 placeholder="0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
               />
+              {addressError && (
+                <p className="text-red-500 text-sm">{addressError}</p>
+              )}
             </div>
 
             <Popover>
@@ -124,108 +253,104 @@ const ConfidentialSendDialog = ({ balance }) => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <img
-                        src={selectedAsset.icon}
+                        src={"/tokens/confidential/usdc-base.png"}
+                        // src={selectedAsset.icon}
                         alt={selectedAsset.name}
                         className="w-8 h-8"
                       />
                       <div>
                         <p className="font-medium dark:text-white">
-                          {selectedAsset.name}
+                          cUSDC
+                          {/* {selectedAsset.name} */}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {selectedAsset.amount} {selectedAsset.name}
+                          {encryptedBalance} c{selectedAsset.name}
                         </p>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className="h-7 px-3 text-sm text-blue-500 dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 bg-[#E7EEFE] dark:bg-[#1E293B] rounded-full"
-                        onClick={() => setAmount(selectedAsset.amount)}
-                      >
-                        Max
-                      </Badge>
+                      {encryptedBalance && (
+                        <Badge
+                          variant="secondary"
+                          className="h-7 px-3 text-sm text-blue-500 dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 bg-[#E7EEFE] dark:bg-[#1E293B] rounded-full"
+                          onClick={() => setAmount(encryptedBalance)}
+                        >
+                          Max
+                        </Badge>
+                      )}
                       {/* <ChevronDown className="h-5 w-5 dark:text-gray-400" /> */}
                     </div>
                   </div>
                 </div>
               </PopoverTrigger>
-              {/* <PopoverContent
-                align="center"
-                sideOffset={4}
-                className="w-[var(--radix-popper-anchor-width)] p-2"
-              >
-                <div className="grid gap-2">
-                  {assets.map((asset, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
-                      onClick={() => {
-                        setSelectedAsset(asset);
-                        setAmount("");
-                      }}
-                    >
-                      <img
-                        src={asset.icon}
-                        alt={asset.name}
-                        className="w-8 h-8"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium dark:text-white">
-                            {asset.name}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {asset.amount}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {asset.chain}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {asset.value}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </PopoverContent> */}
             </Popover>
 
-            <div className="border rounded-xl p-6 text-center">
-              <div className="space-y-2">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={amount}
-                    onChange={handleAmountChange}
-                    className="text-3xl font-medium bg-transparent dark:text-white text-center w-full focus:outline-none"
-                    placeholder="0"
-                    disabled={isLoading}
-                  />
-                </div>
-                <p className="text-gray-500 dark:text-gray-400">
-                  {amount || "0"} {selectedAsset.name}
-                </p>
+            <div className="border rounded-xl p-6 text-center space-y-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={amount}
+                  onChange={handleAmountChange}
+                  className={`text-3xl font-medium bg-transparent dark:text-white text-center w-full focus:outline-none ${
+                    amountError ? "text-red-500" : ""
+                  }`}
+                  placeholder="0"
+                  disabled={isLoading}
+                />
               </div>
+              <p className="text-gray-500 dark:text-gray-400">
+                {amount || "0"} c{selectedAsset.name}
+              </p>
+              {amountError && (
+                <p className="text-red-500 text-sm">{amountError}</p>
+              )}
             </div>
 
-            <Button
-              className="w-full rounded-full h-12 dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
-              disabled={!isValid || isLoading}
-              onClick={handleSend}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Send"
+            <div>
+              <Button
+                className="w-full rounded-full h-12 dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
+                disabled={!isValid || isLoading}
+                onClick={handleSend}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send"
+                )}
+              </Button>
+
+              {sendErrorMessage && (
+                <div className=" text-red-700 dark:text-red-300 p-3 rounded-lg text-sm text-center">
+                  {sendErrorMessage}
+                </div>
               )}
-            </Button>
+
+              {txResult?.success && (
+                <div className="text-sm text-center mt-6">
+                  <p
+                    className={`font-medium ${
+                      txResult.success ? "text-green-500" : "text-red-500"
+                    }`}
+                  >
+                    Transaction Successful
+                  </p>
+                  {txResult.hash && (
+                    <a
+                      href={`https://sepolia.basescan.org/tx/${txResult.hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-blue-500 mt-1 inline-block"
+                    >
+                      View on Base Sepolia
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
 
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">
               Your send amount will be hidden onchain.

@@ -45,14 +45,14 @@ const TransactionDialog = ({
   const chains = ["All Chains", "Ethereum", "Polygon", "Arbitrum", "Optimism"];
 
   const handleClose = (type) => {
-    setSelectedAsset(null);
+    // setSelectedAsset(null);
     // setSelectedChain("All Chains");
     setAmount("0");
     onOpenChange(false);
 
-    if (type === mode) {
-      toast.success(`${mode.charAt(0).toUpperCase() + mode.slice(1)} Complete`);
-    }
+    // if (type === mode) {
+    //   toast.success(`${mode.charAt(0).toUpperCase() + mode.slice(1)} Complete`);
+    // }
   };
 
   const filteredAssets = useMemo(() => {
@@ -69,7 +69,7 @@ const TransactionDialog = ({
     <DialogHeaderComponent className="px-8 py-6 pb-2 flex flex-row items-center justify-between">
       <div className="flex items-center gap-4">
         <DialogTitleComponent className="text-xl font-semibold">
-          {mode === "shield" ? "Encrypt" : "Decrypt"}
+          {mode === "shield" ? "Shield" : "Unshield"}
         </DialogTitleComponent>
         {!selectedAsset && (
           <ChainSelector

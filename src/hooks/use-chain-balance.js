@@ -102,20 +102,20 @@ export const ChainBalanceProvider = ({
         }
 
         const cfg = getActiveIncoLiteDeployment(chainId);
+
+        console.log('walletClient', walletClient);
+        console.log('wc', wc);
+
+
+
         let decrypted;
-
-        console.log(publicClient);
-        console.log(walletClient);
-
         decrypted = await reEncryptValue({
-          cfg,
           chainId: cfg.chainId,
-          contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-          incoLiteAddress: cfg.deployedAtAddress,
           walletClient: wc || walletClient,
-          publicClient,
           handle: balanceHandle,
         });
+
+        console.log("Decrypted balance:", decrypted);
 
         setEncryptedBalance(decrypted);
       } catch (err) {

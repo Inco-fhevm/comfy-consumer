@@ -175,6 +175,7 @@ export default function ComfyLanding() {
             {/* Cloud Row 3 */}
             <div className="absolute top-[60%] right-0 w-full overflow-hidden">
               <div className="relative right-64">
+                
                 <img
                   src="/images/cloud-3.svg"
                   alt="Cloud Decoration"
