@@ -52,7 +52,7 @@ const Page = () => {
     <div className="px-4">
       <div className="flex items-center justify-between md:justify-normal gap-4 md:mb-8 mt-8 md:mt-0 mb-6 ">
         <TotalBalance totalBalance={totalBalance} />
-        <div className="">
+        {/* <div className="">
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -120,7 +120,7 @@ const Page = () => {
               </div>
             </PopoverContent>
           </Popover>
-        </div>
+        </div> */}
       </div>
 
       {/* New CryptoWalletTables component */}

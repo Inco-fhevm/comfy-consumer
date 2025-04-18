@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import {
   useAccount,
+  useChainId,
   usePublicClient,
   useWalletClient,
   useWriteContract,
@@ -85,10 +86,10 @@ const ConfidentialSendDialog = () => {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
   const walletClient = useWalletClient();
+  const chainId = useChainId();
 
   const confidentialSend = async () => {
     try {
-
       setTxResult(null); // reset
       setSendErrorMessage(""); // reset
       setConfidentialSendFailed(false); // reset
@@ -100,7 +101,7 @@ const ConfidentialSendDialog = () => {
       //   throw new Error("Invalid contract type.");
       // }
 
-      const config = getActiveIncoLiteDeployment(SELECTED_NETWORK);
+      const config = getActiveIncoLiteDeployment(chainId);
       const { inputCt } = await encryptValue({
         value: parseEther(amount.toString()),
         address: userAddress,

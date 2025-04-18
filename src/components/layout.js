@@ -43,7 +43,7 @@ const Layout = ({ children }) => {
     return (
       <aside className="w-64 h-screen bg-gray-50 dark:bg-card p-4 border-r flex flex-col">
         <div className="text-blue-500 text-xl font-bold mb-8">
-          <img src="/icons/comfy-logo.svg" className="" />
+          <img src="/icons/comfy-logo.svg" className="w-96" />
         </div>
 
         <div className="flex-1">

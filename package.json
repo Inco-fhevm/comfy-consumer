@@ -49,6 +49,7 @@
     "ethers": "^6.13.5",
     "fhevmjs": "^0.5.7",
     "input-otp": "^1.4.2",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.474.0",
     "next": "14.2.16",
     "next-themes": "^0.4.4",

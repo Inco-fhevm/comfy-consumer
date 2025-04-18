@@ -1,28 +1,21 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { assets } from "@/utils/constants";
+import Lottie from "lottie-react";
 import {
   useAccount,
-  useReadContract,
   useWriteContract,
-  useWaitForTransactionReceipt,
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { getContract, parseEther, parseUnits } from "viem";
+import { parseEther } from "viem";
 import {
-  CONFIDENTIAL_ERC20_ADDRESS,
-  ERC20_CONTRACT_ABI,
   ERC20_CONTRACT_ADDRESS,
-  CONFIDENTIAL_ERC20_ABI,
-  ConfidentialERC20Wrapper,
-  ConfidentialERC20WrapperABI,
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
   ERC20ABI,
   ENCRYPTEDERC20ABI,
 } from "@/utils/contracts";
+import loadingAnimation from "@/utils/transaction-animation.json";
 import { useChainBalance } from "@/hooks/use-chain-balance";
 import { toast } from "sonner";
 
@@ -261,14 +254,20 @@ export const TransactionForm = ({
 
       {isApproving && isProcessing && (
         <div>
-          {" "}
-          <div className="border  bg-[#E8E8E8] dark:bg-gray-800 rounded-xl md:h-48 p-6 mb-6 text-center grid place-items-center">
-            <div>
-              <p className="font-medium text-[#AFAFAF] dark:text-gray-400">
-                Animated loading state (placeholder)
+          <div className=" rounded-xl md:h-48 p-6 mb-6 text-center grid place-items-center">
+            <div className="flex flex-col items-center">
+              <div className="w-56 h-56 mb-2 pb-12">
+                <Lottie
+                  animationData={loadingAnimation}
+                  loop={true}
+                  autoplay={true}
+                /><p className="font-medium text-[#AFAFAF] dark:text-gray-400">
+                {isApproving ? "Approving transaction..." : "Processing..."}
               </p>
+              </div>
+              
             </div>
-          </div>{" "}
+          </div>
         </div>
       )}
 
