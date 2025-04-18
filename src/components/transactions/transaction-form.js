@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import Lottie from "lottie-react";
+import dynamic from "next/dynamic";
 import {
   useAccount,
   useWriteContract,
@@ -18,6 +18,8 @@ import {
 import loadingAnimation from "@/utils/transaction-animation.json";
 import { useChainBalance } from "@/hooks/use-chain-balance";
 import { toast } from "sonner";
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 export const TransactionForm = ({
   mode,
@@ -261,11 +263,11 @@ export const TransactionForm = ({
                   animationData={loadingAnimation}
                   loop={true}
                   autoplay={true}
-                /><p className="font-medium text-[#AFAFAF] dark:text-gray-400">
-                {isApproving ? "Approving transaction..." : "Processing..."}
-              </p>
+                />
+                <p className="font-medium text-[#AFAFAF] dark:text-gray-400">
+                  {isApproving ? "Approving transaction..." : "Processing..."}
+                </p>
               </div>
-              
             </div>
           </div>
         </div>
