@@ -14,6 +14,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
+      contents: write  # for creating tags
       id-token: write  # for GCP OIDC auth
       packages: read   # for reading GitHub packages
     
@@ -23,6 +24,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
       # Generate version string for Docker image (without creating Git tags)
       - name: Generate version string
         id: version
@@ -38,6 +40,11 @@ jobs:
           
           echo "Version string: $version_string"
           echo "version_string=$version_string" >> $GITHUB_OUTPUT
+
+      - name: Create local .npmrc
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "@inco-fhevm:registry=https://npm.pkg.github.com/" >> .npmrc
 
       # Authenticate to GCP
       - uses: 'google-github-actions/auth@v2'
