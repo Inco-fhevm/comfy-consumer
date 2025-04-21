@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # for GCP OIDC auth
-      packages: read   # for reading GitHub packages
     
     steps:
       - name: Checkout
@@ -38,6 +37,12 @@ jobs:
           
           echo "Version string: $version_string"
           echo "version_string=$version_string" >> $GITHUB_OUTPUT
+
+      # Create local .npmrc file with authentication
+      - name: Create local .npmrc
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "@inco-fhevm:registry=https://npm.pkg.github.com/" >> .npmrc
 
       # Authenticate to GCP
       - uses: 'google-github-actions/auth@v2'
@@ -64,8 +69,6 @@ jobs:
         with:
           context: .
           push: true
-          build-args: |
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
