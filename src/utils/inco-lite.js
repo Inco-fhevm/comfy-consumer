@@ -25,7 +25,7 @@ export const NETWORK_ID = "baseSepolia";
  * Currently only operating on Base Sepolia
  */
 export const KMS_SERVICE_ENDPOINT =
-  "https://grpc.basesepolia.covalidator.denver.inco.org";
+  process.env.NEXT_PUBLIC_BASE_COVALIDATOR_ENDPOINT;
 
 /**
  * @dev Encryption scheme constants
