@@ -80,7 +80,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
             : "$" + Number(usdcBalance?.data?.formatted).toLocaleString()}
         </div>
         {title === "Encrypted" && (
-          <button className="p-2" onClick={toggleConfidentialValues}>
+          <button className="" onClick={toggleConfidentialValues}>
             {showConfidentialValues ? (
               <EyeOff
                 className="w-6 h-6"
