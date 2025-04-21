@@ -16,6 +16,7 @@ jobs:
     permissions:
       contents: write  # for creating tags
       id-token: write  # for GCP OIDC auth
+      packages: read   # for reading GitHub packages
     
     steps:
       - name: Checkout
@@ -45,7 +46,7 @@ jobs:
           git tag -a "v$new_version" -m "Release v$new_version"
           git push origin "v$new_version"
 
-      # Authenticate to GCP - FIXED PROJECT NUMBER
+      # Authenticate to GCP
       - uses: 'google-github-actions/auth@v2'
         with:
           project_id: ${{ env.PROJECT_ID }}
@@ -70,6 +71,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:v${{ steps.version.outputs.new_version }}
