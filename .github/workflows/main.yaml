@@ -14,7 +14,6 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # for creating tags
       id-token: write  # for GCP OIDC auth
       packages: read   # for reading GitHub packages
     
@@ -23,28 +22,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Generate version
-      - name: Generate version
+      # Generate version string for Docker image (without creating Git tags)
+      - name: Generate version string
         id: version
         run: |
-          # Get latest tag
+          # Get latest tag if exists, otherwise use v0.0.0
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           
-          # Increment patch version
-          IFS='.' read -r -a version_parts <<< "${latest_tag#v}"
-          new_patch=$((${version_parts[2]} + 1))
-          new_version="${version_parts[0]}.${version_parts[1]}.$new_patch"
+          # Get current commit short hash
+          commit_sha=$(git rev-parse --short HEAD)
           
-          echo "New version: v$new_version"
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          # Create version string with commit hash
+          version_string="${latest_tag}-${commit_sha}"
           
-          # Create and push new tag
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git tag -a "v$new_version" -m "Release v$new_version"
-          git push origin "v$new_version"
+          echo "Version string: $version_string"
+          echo "version_string=$version_string" >> $GITHUB_OUTPUT
 
       # Authenticate to GCP
       - uses: 'google-github-actions/auth@v2'
@@ -75,4 +68,4 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:v${{ steps.version.outputs.new_version }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
