@@ -216,8 +216,8 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
         </div>
 
         <div className="mt-2 -mb-6 -mx-6">
-          <Separator className="bg-gray-200" />
-          <div className="bg-black/5 p-6">
+          <Separator className="" />
+          <div className="bg-muted/15 p-6">
             <AlertDialogFooter className="flex gap-2 sm:gap-2">
               <Button
                 variant="outline"
@@ -228,7 +228,7 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-black hover:bg-black/90"
+                className="flex-1 "
                 onClick={handleSubmit}
                 disabled={!amount || Number(amount) <= 0 || isLoading}
               >
