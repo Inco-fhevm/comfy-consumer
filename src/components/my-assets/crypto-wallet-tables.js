@@ -58,8 +58,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
   const walletClient = useWalletClient();
   const { tokenBalance: usdcBalance } = useChainBalance();
 
-  const handleRefreshEncrypted = (w0) =>
-    fetchEncryptedBalance(w0);
+  const handleRefreshEncrypted = (w0) => fetchEncryptedBalance(w0);
 
   const toggleConfidentialValues = async () => {
     if (!showConfidentialValues) {
@@ -249,10 +248,11 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
   const [showConfidentialValues, setShowConfidentialValues] = useState(false);
   const [transmittedBalance, setTransmittedBalance] = useState(null);
   const chainId = useChainId();
+  const walletClient = useWalletClient();
 
   const {
     nativeBalance,
-    tokenBalance,
+    tokenBalance: usdcBalance,
     encryptedBalance,
     isEncryptedLoading,
     encryptedError,
@@ -261,6 +261,8 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
     isConnected,
   } = useChainBalance();
 
+  const handleRefreshEncrypted = (w0) => fetchEncryptedBalance(w0);
+
   // Sample decrypted values for demonstration
   const decryptedValues = {
     cETH: { amount: encryptedBalance, dollarValue: encryptedBalance },
@@ -268,7 +270,10 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
   };
 
   // Toggle showing confidential values
-  const toggleConfidentialValues = () => {
+  const toggleConfidentialValues = async () => {
+    if (!showConfidentialValues) {
+      await handleRefreshEncrypted(walletClient);
+    }
     setShowConfidentialValues(!showConfidentialValues);
   };
 
@@ -300,16 +305,12 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
     <div className="border rounded-xl shadow-sm mb-4">
       <div className="flex justify-between items-center border-b p-4">
         <h2 className="md:text-lg text-xl font-semibold">{title}</h2>
-        <div className="md:text-lg text-xl font-semibold">
+        <div className="text-xl font-semibold">
           {title === "Encrypted"
             ? showConfidentialValues
-              ? "$" +
-                (
-                  decryptedValues["cETH"].dollarValue +
-                  decryptedValues["cUSDT"].dollarValue * 2
-                ).toLocaleString()
+              ? "$" + Number(encryptedBalance).toLocaleString()
               : "$******"
-            : "$" + totalBalance.toLocaleString()}
+            : "$" + Number(usdcBalance?.data?.formatted).toLocaleString()}
         </div>
         {title === "Encrypted" && (
           <button className="p-1" onClick={toggleConfidentialValues}>

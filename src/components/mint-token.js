@@ -75,6 +75,10 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
         hash: cUSDCMintTxHash,
       });
 
+      if (transaction.status === "reverted") {
+        throw new Error("Contract Execution Reverted!");
+      }
+
       await refreshBalances(["encrypted"], walletClient);
 
       // const mintTx = await cUSDCContract.mint(address, amountWithDecimals);
@@ -115,6 +119,10 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: uSDCMintTxHash,
       });
+
+      if (transaction.status === "reverted") {
+        throw new Error("Contract Execution Reverted!");
+      }
 
       await handleUSDCRefresh(["token"]);
     } catch (err) {

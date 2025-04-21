@@ -13,9 +13,13 @@ const Navbar = ({ currentPage }) => {
 
   return (
     <header className="border-b p-4 flex justify-between items-center relative">
-      <h1 className="md:text-xl text-2xl font-semibold lg:ml-0">
+      <h1 className="md:text-xl hidden md:flex text-2xl font-semibold lg:ml-0">
         {currentPage}
       </h1>
+
+      <div className=" cursor-pointer">
+        <img src="/icons/comfy-logo.svg" className="w-36" />
+      </div>
 
       <div className="flex items-center gap-3">
         {/* Desktop buttons */}

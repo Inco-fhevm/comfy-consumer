@@ -86,9 +86,16 @@ const TotalBalance = memo(({ totalBalance }) => {
 
       {isEncrypted && (
         <div className="text-xs text-gray-500">
-          {encryptedBalance === null
-            ? "Showing USDC balance only (cUSDC not included)"
-            : "Tap to reveal full balance including cUSDC"}
+          {
+            encryptedBalance === null && "Showing only shielded balance"
+            // : "Tap to reveal full balance including cUSDC"
+          }
+        </div>
+      )}
+
+      {encryptedBalance !== null && (
+        <div className="text-xs text-gray-500">
+          Showing both shielded and unshielded balances
         </div>
       )}
     </div>

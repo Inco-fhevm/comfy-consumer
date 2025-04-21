@@ -66,11 +66,11 @@ export default function ComfyLanding() {
 
                 <p className="text-[#7A7A7A] font-semibold">
                   Use Comfy to encrypt your balance onchain do DeFi in a private
-                  way.
+                  way. Enabled on <span className="text-blue-500">Base Sepolia.</span>
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+              {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 grid place-items-center bg-[#E7EEFE] rounded-full">
                     <Image
@@ -126,7 +126,7 @@ export default function ComfyLanding() {
                     Private Lend
                   </span>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Connect Button */}
@@ -145,7 +145,7 @@ export default function ComfyLanding() {
         <div className="relative w-full h-[7.5rem] lg:h-auto lg:min-h-screen lg:w-1/2 mt-auto">
           {/* Background color layer */}
           <div className="absolute inset-0 bg-[#B0DBFF]"></div>
-          
+
           {/* Clouds layer */}
           <div className="absolute inset-0 overflow-hidden">
             {/* Cloud Row 1 */}
@@ -175,7 +175,6 @@ export default function ComfyLanding() {
             {/* Cloud Row 3 */}
             <div className="absolute top-[60%] right-0 w-full overflow-hidden">
               <div className="relative right-64">
-                
                 <img
                   src="/images/cloud-3.svg"
                   alt="Cloud Decoration"
@@ -197,7 +196,7 @@ export default function ComfyLanding() {
               </div>
             </div>
           </div>
-          
+
           {/* Main image layer (highest) */}
           <div className="absolute inset-0 hidden lg:flex items-center justify-center">
             <div className="relative" style={{ zIndex: 9999 }}>
