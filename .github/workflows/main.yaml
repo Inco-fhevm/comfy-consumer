@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # for GCP OIDC auth
+      packages: read   # for reading GitHub packages
     
     steps:
       - name: Checkout
@@ -69,6 +70,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
