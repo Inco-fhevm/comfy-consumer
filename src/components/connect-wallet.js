@@ -66,79 +66,34 @@ export default function ComfyLanding() {
 
                 <p className="text-[#7A7A7A] font-semibold">
                   Use Comfy to encrypt your balance onchain do DeFi in a private
-                  way. Enabled on{" "}
-                  <span className="text-blue-500">Base Sepolia.</span>
+                  way.
                 </p>
               </div>
-
-              {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 grid place-items-center bg-[#E7EEFE] rounded-full">
-                    <Image
-                      width={24}
-                      height={24}
-                      src={"/not-connected/features/private-assets.svg"}
-                      alt="Private Assets"
-                    />
-                  </div>
-                  <span className="text-gray-900 font-semibold">
-                    Private Assets
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 grid place-items-center bg-[#E7EEFE] rounded-full">
-                    <Image
-                      width={24}
-                      height={24}
-                      src={"/not-connected/features/private-swap.svg"}
-                      alt="Private Swap"
-                    />
-                  </div>
-                  <span className="text-gray-900 font-semibold">
-                    Private Swap
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 grid place-items-center bg-[#E7EEFE] rounded-full">
-                    <Image
-                      width={24}
-                      height={24}
-                      src={"/not-connected/features/private-bridge.svg"}
-                      alt="Private Bridge"
-                    />
-                  </div>
-                  <span className="text-gray-900 font-semibold">
-                    Private Bridge
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 grid place-items-center bg-[#E7EEFE] rounded-full">
-                    <Image
-                      width={24}
-                      height={24}
-                      src={"/not-connected/features/private-lend.svg"}
-                      alt="Private Lend"
-                    />
-                  </div>
-                  <span className="text-gray-900 font-semibold">
-                    Private Lend
-                  </span>
-                </div>
-              </div> */}
             </div>
 
-            {/* Connect Button */}
-            {openConnectModal && (
-              <Button
-                onClick={openConnectModal}
-                className="mt-6 lg:mt-8 rounded-full bg-[#3673F5] text-white w-full px-6 py-3"
-              >
-                Connect Wallet
-              </Button>
-            )}
+            <div>
+              {openConnectModal && (
+                <Button
+                  onClick={openConnectModal}
+                  className="mt-6 lg:mt-8 rounded-full bg-[#3673F5] text-white w-full px-6 py-3"
+                >
+                  Connect Wallet
+                </Button>
+              )}
+              <div className="flex mt-4 items-center justify-center text-[#7A7A7A] font-semibold">
+                <span>Enabled on</span>
+                <span className="text-blue-500 inline-flex items-center ml-1">
+                  <Image
+                    src="/chains/base-sepolia.svg"
+                    width={20}
+                    height={20}
+                    alt="Base Sepolia"
+                    className="mx-1"
+                  />
+                  Base Sepolia
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
