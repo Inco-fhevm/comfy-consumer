@@ -61,11 +61,33 @@ jobs:
       - name: Run tests
         run: bun test || echo "No tests found"
 
-      # Build application
+      # Cache dependencies
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb', '**/package-lock.json', '**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      # Cache Next.js build output
+      - name: Cache Next.js build output
+        uses: actions/cache@v3
+        with:
+          path: |
+            .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx', '**/*.svg') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
+
+      # Build application with standalone output
       - name: Build application
         run: bun run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          # No need for NEXT_OUTPUT_STANDALONE as it's configured in next.config.js
 
       # Authenticate to GCP
       - uses: 'google-github-actions/auth@v2'
