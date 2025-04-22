@@ -3,7 +3,7 @@ import {
   decodeSecp256k1PublicKey,
   getEciesEncryptor,
   incoLiteReencryptor,
-} from "@inco-fhevm/js/lite";
+} from "@inco/js/lite";
 import { hexToBytes } from "viem";
 import { getAddress, formatUnits } from "viem";
 
@@ -55,6 +55,10 @@ export const KMS_SERVICE_ENDPOINT =
 const ENCRYPTION_SCHEME_ECIES = 1;
 const DATA_TYPE_UINT256 = 8;
 
+export const getConfig = (chainId) => {
+  return getActiveIncoLiteDeployment(chainId);
+};
+
 /**
  *
  * @example
@@ -89,7 +93,7 @@ export const encryptValue = async ({
     },
     context: {
       hostChainId: BigInt(config.chainId),
-      aclAddress: config.deployedAtAddress,
+      aclAddress: config.executorAddress,
       userAddress: address,
       contractAddress: checksummedAddress,
     },
@@ -113,7 +117,6 @@ export const encryptValue = async ({
 
   // Encrypt the data with the context information
   const encryptedData = await encryptor(plaintextWithContext);
-  console.log("encryptedData", encryptedData);
 
   // Return the encrypted data as inputCt (ciphertext)
   return { inputCt: encryptedData };

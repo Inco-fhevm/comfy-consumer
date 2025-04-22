@@ -84,18 +84,16 @@ const TotalBalance = memo(({ totalBalance }) => {
         )}
       </div>
 
-      {isEncrypted && (
+      {/* Fixed conditional message display */}
+      {encryptedBalance === null ? (
         <div className="text-xs text-gray-500">
-          {
-            encryptedBalance === null && "Showing only shielded balance"
-            // : "Tap to reveal full balance including cUSDC"
-          }
+          Showing only shielded balance
         </div>
-      )}
-
-      {encryptedBalance !== null && (
+      ) : (
         <div className="text-xs text-gray-500">
-          Showing both shielded and unshielded balances
+          {isEncrypted
+            ? "Showing only shielded balance"
+            : "Showing both shielded and unshielded balances"}
         </div>
       )}
     </div>

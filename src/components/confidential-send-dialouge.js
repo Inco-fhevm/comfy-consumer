@@ -36,7 +36,7 @@ import {
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
   ENCRYPTEDERC20ABI,
 } from "@/utils/contracts";
-import { getActiveIncoLiteDeployment } from "@inco-fhevm/js/lite";
+import { getActiveIncoLiteDeployment } from "@inco/js/lite";
 import { useChainBalance } from "@/hooks/use-chain-balance";
 import Image from "next/image";
 
