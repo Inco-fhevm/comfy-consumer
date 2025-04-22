@@ -107,12 +107,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Configure Docker for GCR
       - name: Configure Docker
         run: |
-          gcloud auth configure-docker gcr.io
+          gcloud auth configure-docker gcr.io --quiet
+          gcloud auth print-identity-token
 
-      # Build and push using Docker
+      # Build and push using Docker with credential helper
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -120,6 +120,7 @@ jobs:
           push: true
           build-args: |
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            ID_TOKEN=$(gcloud auth print-identity-token)
           tags: |
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
