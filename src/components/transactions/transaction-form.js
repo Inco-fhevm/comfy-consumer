@@ -331,7 +331,10 @@ export const TransactionForm = ({
                   <div>
                     <p className="dark:text-white">{selectedAsset?.name}</p>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Balance: {tokenBalance?.data?.formatted}{" "}
+                      Balance:{" "}
+                      {tokenBalance?.data?.formatted
+                        ? parseFloat(tokenBalance.data.formatted).toFixed(4)
+                        : "0.0000"}{" "}
                       {selectedAsset?.name}
                     </div>
                   </div>
@@ -345,7 +348,6 @@ export const TransactionForm = ({
                   >
                     Max
                   </div>
-                  {/* <ChevronDown className="h-5 w-5 dark:text-gray-400" /> */}
                 </div>
               </div>
             </div>
@@ -416,12 +418,6 @@ export const TransactionForm = ({
               )}
             </Button>
           )}
-
-          {/* {mode === "shield" && (
-          <div className="text-center text-muted-foreground dark:text-gray-400">
-            <p>Your tokens will be confidential after shielding.</p>
-          </div>
-        )} */}
         </div>
       )}
     </div>
