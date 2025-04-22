@@ -110,7 +110,6 @@ jobs:
       - name: Configure Docker
         run: |
           gcloud auth configure-docker gcr.io --quiet
-          gcloud auth print-identity-token
 
       # Build and push using Docker with credential helper
       - name: Build and push
