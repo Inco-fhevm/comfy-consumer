@@ -18,6 +18,7 @@ import {
 import loadingAnimation from "@/utils/transaction-animation.json";
 import { useChainBalance } from "@/hooks/use-chain-balance";
 import { toast } from "sonner";
+import Image from "next/image";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -279,10 +280,11 @@ export const TransactionForm = ({
             <div className="border rounded-xl md:h-64 p-6 mb-6 text-center grid place-items-center">
               <div>
                 <div className="grid place-items-center gap-6">
-                  <img
+                  <Image
                     src={"/tokens/confidential/usdc-base.png"}
                     alt={selectedAsset?.name}
-                    className="w-16"
+                    width={64}
+                    height={64}
                   />
 
                   <div className="text-3xl flex gap-2 items-center font-semibold mb-1 bg-transparent text-center w-full text-black dark:text-white disabled:opacity-50">
@@ -320,10 +322,11 @@ export const TransactionForm = ({
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <img
+                  <Image
                     src={selectedAsset?.icon}
                     alt={selectedAsset?.name}
-                    className="w-10 h-10"
+                    width={40}
+                    height={40}
                   />
                   <div>
                     <p className="dark:text-white">{selectedAsset?.name}</p>
@@ -347,41 +350,6 @@ export const TransactionForm = ({
               </div>
             </div>
           )}
-
-          {/* Custom dropdown menu */}
-          {/* {isDropdownOpen && (
-          <div 
-            ref={dropdownRef}
-            className="absolute z-50 w-full bg-white dark:bg-gray-900 rounded-md border dark:border-gray-700 shadow-md p-1 mt-1"
-          >
-            <div className="max-h-60 overflow-y-auto">
-              {assets.map((asset, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
-                  onClick={() => {
-                    setSelectedAsset(asset);
-                    setIsDropdownOpen(false);
-                    setAmount("");
-                    setError("");
-                  }}
-                >
-                  <img src={asset.icon} alt={asset.name} className="w-8 h-8" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium dark:text-white">{asset.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{asset.amount}</p>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{asset.chain}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{asset.value}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )} */}
         </div>
       )}
 

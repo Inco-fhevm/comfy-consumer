@@ -43,7 +43,12 @@ const Layout = ({ children }) => {
     return (
       <aside className="w-64 h-screen bg-gray-50 dark:bg-card p-4 border-r flex flex-col">
         <div className="text-blue-500 text-xl font-bold mb-8">
-          <img src="/icons/comfy-logo.svg" className="w-96" />
+          <Image
+            src="/icons/comfy-logo.svg"
+            width={300}
+            height={127}
+            alt="Comfy_logo"
+          />
         </div>
 
         <div className="flex-1">
@@ -53,8 +58,8 @@ const Layout = ({ children }) => {
             const iconPath = isSelected
               ? `/icons/${link.basePath}-selected.svg`
               : isDarkTheme
-              ? `/icons/${link.basePath}-dark.svg` // New dark mode not-selected icons
-              : `/icons/${link.basePath}-notselected.svg`;
+                ? `/icons/${link.basePath}-dark.svg` // New dark mode not-selected icons
+                : `/icons/${link.basePath}-notselected.svg`;
 
             return (
               <Link key={link.name} href={link.path}>

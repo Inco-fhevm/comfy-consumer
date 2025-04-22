@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import ConfidentialSendDialog from "@/components/confidential-send-dialouge";
 import { Button } from "@/components/ui/button";
 import TransactionDialog from "../transactions/transaction-dialouge";
+import Image from "next/image";
 
 // Create a tabs component for mobile view
 export const WalletTabs = ({ activeTab, setActiveTab }) => {
@@ -126,7 +127,12 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
             <div key={index} className="mb-4">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <img src={asset.icon} alt={asset.name} className="w-8 h-8" />
+                  <Image
+                    src={asset.icon}
+                    alt={asset.name}
+                    width={32}
+                    height={32}
+                  />
                   <div>
                     <div className="font-medium">{asset.name}</div>
                     {asset.chain !== "Ethereum" && (

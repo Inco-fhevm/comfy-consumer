@@ -7,6 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { assets } from "@/utils/constants";
+import Image from "next/image";
 
 const AssetSelector = ({ selectedAsset, onAssetSelect, setAmount }) => {
   return (
@@ -14,10 +15,11 @@ const AssetSelector = ({ selectedAsset, onAssetSelect, setAmount }) => {
       <PopoverTrigger asChild>
         <div className="flex items-center justify-between mb-1 cursor-pointer p-4 border rounded-xl hover:bg-gray-50">
           <div className="flex items-center gap-2">
-            <img
+            <Image
               src={selectedAsset?.icon}
               alt={selectedAsset?.name}
-              className="w-10 h-10"
+              width={40}
+              height={40}
             />
             <div>
               <p>{selectedAsset?.name}</p>
@@ -52,7 +54,7 @@ const AssetSelector = ({ selectedAsset, onAssetSelect, setAmount }) => {
                 onAssetSelect(asset);
               }}
             >
-              <img src={asset.icon} alt={asset.name} className="w-8 h-8" />
+              <Image src={asset.icon} alt={asset.name} width={32} height={32} />
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <p className="font-medium">{asset.name}</p>

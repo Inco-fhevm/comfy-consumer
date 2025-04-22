@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import CustomConnectButton from "./custom-connect-button";
 import TransactionDialog from "./transactions/transaction-dialouge";
 import MintDialog from "./mint-token";
+import Image from "next/image";
 
 const Navbar = ({ currentPage }) => {
   // const [depositOpen, setDepositOpen] = useState(false);
@@ -18,7 +19,13 @@ const Navbar = ({ currentPage }) => {
       </h1>
 
       <div className="flex md:hidden cursor-pointer">
-        <img src="/icons/comfy-logo.svg" className="w-36" />
+        <Image
+          src="/icons/comfy-logo.svg"
+          className="w-36"
+          width={112}
+          height={70}
+          alt="Comfy_Logo"
+        />
       </div>
 
       <div className="flex items-center gap-3">

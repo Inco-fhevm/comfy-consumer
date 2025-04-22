@@ -16,6 +16,7 @@ import {
   ERC20_CONTRACT_ADDRESS,
 } from "@/utils/contracts";
 import { useChainBalance } from "@/hooks/use-chain-balance";
+import Image from "next/image";
 
 // Define chain IDs more safely to avoid undefined issues
 const CHAIN_IDS = {
@@ -139,10 +140,11 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
               <tr key={index}>
                 <td className="py-4 pl-6">
                   <div className="flex items-center gap-3">
-                    <img
+                    <Image
                       src={asset.icon}
                       alt={asset.name}
-                      className="w-11 h-11"
+                      width={44}
+                      height={44}
                     />
                     <div>
                       <div className="font-medium">{asset.name}</div>
@@ -353,10 +355,11 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
             <div key={index} className="mb-4">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <img
+                  <Image
                     src={asset.icon}
                     alt={asset.name}
-                    className="w-11 h-11"
+                    width={44}
+                    height={44}
                   />
                   <div>
                     <div className="font-medium text-base">{asset.name}</div>

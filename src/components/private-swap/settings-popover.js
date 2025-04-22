@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Image from "next/image";
 
 const SettingsPopover = () => {
   const [slippageMode, setSlippageMode] = useState("auto");
@@ -16,7 +17,12 @@ const SettingsPopover = () => {
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost">
-          <img src="/icons/settings.svg" alt="settings" />
+          <Image
+            width={40}
+            height={40}
+            src="/icons/settings.svg"
+            alt="settings"
+          />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[19.5rem] rounded-xl p-6" align="end">

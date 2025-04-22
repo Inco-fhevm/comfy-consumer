@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export const AssetList = ({ filteredAssets, onAssetSelect }) => (
   <div className="px-4 overflow-y-auto h-[400px] pb-8">
     {filteredAssets.map((asset, index) => (
@@ -7,7 +9,7 @@ export const AssetList = ({ filteredAssets, onAssetSelect }) => (
         onClick={() => onAssetSelect(asset)}
       >
         <div className="flex items-center gap-3">
-          <img src={asset.icon} alt={asset.name} className="w-8 h-8" />
+          <Image src={asset.icon} alt={asset.name} width={32} height={32} />
           <div>
             <div className="font-medium">{asset.name}</div>
             {asset.chain && asset.chain !== "Ethereum" && (

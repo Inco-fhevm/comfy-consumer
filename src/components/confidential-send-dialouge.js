@@ -38,6 +38,7 @@ import {
 } from "@/utils/contracts";
 import { getActiveIncoLiteDeployment } from "@inco-fhevm/js/lite";
 import { useChainBalance } from "@/hooks/use-chain-balance";
+import Image from "next/image";
 
 const ConfidentialSendDialog = () => {
   const [open, setOpen] = useState(false);
@@ -201,9 +202,19 @@ const ConfidentialSendDialog = () => {
         onClick={() => setOpen(true)}
       >
         {isDarkMode ? (
-          <img src="/dark/send.svg" alt="send" />
+          <Image
+            alt="Send Button"
+            src="/dark/send.svg"
+            height={20}
+            width={20}
+          />
         ) : (
-          <img src="/icons/send.svg" alt="send" />
+          <Image
+            alt="Send Button"
+            src="/icons/send.svg"
+            height={20}
+            width={20}
+          />
         )}
       </button>
 
@@ -253,11 +264,12 @@ const ConfidentialSendDialog = () => {
                 <div className="p-3 border rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <img
+                      <Image
                         src={"/tokens/confidential/usdc-base.png"}
-                        // src={selectedAsset.icon}
+                        width={40}
+                        height={40}
                         alt={selectedAsset.name}
-                        className="w-8 h-8"
+                        // className="w-8 h-8"
                       />
                       <div>
                         <p className="font-medium dark:text-white">

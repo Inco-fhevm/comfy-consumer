@@ -8,13 +8,19 @@ import {
 import { assets } from "@/utils/constants";
 import { Button } from "../ui/button";
 import SettingsPopover from "./settings-popover";
+import Image from "next/image";
 
 const TokenSelector = ({ selected, onSelect }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button className="flex items-center border gap-2 bg-[#F4F4F4] dark:bg-muted pl-0.5 pr-3 rounded-full py-1 mb-1 hover:bg-gray-100 dark:hover:bg-muted/80 transition-colors">
-          <img src={selected.icon} alt={selected.name} className="w-6 h-6" />
+          <Image
+            src={selected.icon}
+            alt={selected.name}
+            width={24}
+            height={24}
+          />
           <span className="font-medium dark:text-foreground">
             {selected.name}
           </span>
@@ -30,7 +36,12 @@ const TokenSelector = ({ selected, onSelect }) => {
               onClick={() => onSelect(token)}
             >
               <div className="flex items-center gap-2">
-                <img src={token.icon} alt={token.name} className="w-6 h-6" />
+                <Image
+                  src={token.icon}
+                  alt={token.name}
+                  width={24}
+                  height={24}
+                />
                 <div className="text-left">
                   <div className="font-medium dark:text-foreground">
                     {token.name}
@@ -62,20 +73,20 @@ const Swap = () => {
   // Check if dark mode is enabled
   useEffect(() => {
     const checkDarkMode = () => {
-      const isDark = document.documentElement.classList.contains('dark');
+      const isDark = document.documentElement.classList.contains("dark");
       setIsDarkMode(isDark);
     };
-    
+
     // Check initial state
     checkDarkMode();
-    
+
     // Create observer to watch for class changes on html element
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class']
+      attributeFilter: ["class"],
     });
-    
+
     return () => observer.disconnect();
   }, []);
 
@@ -124,10 +135,11 @@ const Swap = () => {
           <span className="text-gray-600 dark:text-muted-foreground text-sm">
             Powered by Uniswap
           </span>
-          <img
+          <Image
             src="/icons/uniswap.svg"
             alt="Uniswap logo"
-            className="w-8 h-8"
+            width={32}
+            height={32}
           />
         </div>
         <div>
@@ -180,7 +192,12 @@ const Swap = () => {
               onClick={handleTokenSwap}
               className="bg-white dark:bg-card p-2 rounded-full shadow-sm border dark:border-border z-10 hover:bg-gray-50 dark:hover:bg-muted transition-colors"
             >
-              <img src="/icons/arrow-down.svg" alt="swap" className="w-6 h-6" />
+              <Image
+                src="/icons/arrow-down.svg"
+                alt="swap"
+                width={24}
+                height={24}
+              />
             </button>
           </div>
         </div>

@@ -6,28 +6,37 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { assets } from "@/utils/constants";
+import Image from "next/image";
 
 const TokenSelector = ({ selected, onSelect }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button className="flex items-center gap-2 bg-white dark:bg-card rounded-full border dark:border-border pl-2 pr-3 py-1.5 hover:bg-gray-50 dark:hover:bg-muted">
-          <img src={selected.icon} alt={selected.name} className="w-6 h-6" />
+          <Image
+            src={selected.icon}
+            alt={selected.name}
+            width={24}
+            height={24}
+          />
           <span className="font-medium dark:text-foreground">
             {selected.name}
           </span>
           <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-2 dark:bg-card dark:border-border" align="start">
+      <PopoverContent
+        className="w-64 p-2 dark:bg-card dark:border-border"
+        align="start"
+      >
         <div className="space-y-1">
-          {assets.slice(0,4).map((asset) => (
+          {assets.slice(0, 4).map((asset) => (
             <button
               key={asset.id}
               className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-muted rounded-lg"
               onClick={() => onSelect(asset)}
             >
-              <img src={asset.icon} alt={asset.name} className="w-8 h-8" />
+              <Image src={asset.icon} alt={asset.name} width={32} height={32} />
               <div className="flex-1 text-left">
                 <p className="font-medium dark:text-foreground">{asset.name}</p>
                 <p className="text-sm text-gray-500 dark:text-muted-foreground">
@@ -91,7 +100,7 @@ const Bridge = () => {
       <div className="bg-white dark:bg-card rounded-2xl border dark:border-border p-4 mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/icons/usdc.svg" alt="USDC" className="w-8 h-8" />
+            <Image src="/icons/usdc.svg" alt="USDC" width={32} height={32} />
             <div>
               <p className="font-medium dark:text-foreground">USDC</p>
               <p className="text-gray-500 dark:text-muted-foreground">
@@ -139,7 +148,12 @@ const Bridge = () => {
               onClick={handleSwap}
               className="bg-white dark:bg-card rounded-full p-2 border dark:border-border shadow-sm hover:bg-gray-50 dark:hover:bg-muted"
             >
-              <img src="/icons/arrow-down.svg" alt="swap" className="w-6 h-6" />
+              <Image
+                src="/icons/arrow-down.svg"
+                alt="swap"
+                width={24}
+                height={24}
+              />
             </button>
           </div>
         </div>

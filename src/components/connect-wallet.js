@@ -66,7 +66,8 @@ export default function ComfyLanding() {
 
                 <p className="text-[#7A7A7A] font-semibold">
                   Use Comfy to encrypt your balance onchain do DeFi in a private
-                  way. Enabled on <span className="text-blue-500">Base Sepolia.</span>
+                  way. Enabled on{" "}
+                  <span className="text-blue-500">Base Sepolia.</span>
                 </p>
               </div>
 
@@ -151,48 +152,64 @@ export default function ComfyLanding() {
             {/* Cloud Row 1 */}
             <div className="absolute top-[10%] right-0 w-full overflow-hidden">
               <div className="relative right-24">
-                <img
-                  src="/images/cloud-1.svg"
-                  alt="Cloud Decoration"
-                  className="w-full cloud-animation-right h-11"
-                  draggable={false}
-                />
+                <div className="cloud-animation-right">
+                  <Image
+                    src="/images/cloud-1.svg"
+                    height={44}
+                    width={71}
+                    alt="Cloud Decoration"
+                    className="w-full h-16 cloud-animation-right"
+                    draggable={false}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Cloud Row 2 */}
             <div className="absolute top-[30%] right-0 w-full overflow-hidden">
               <div className="relative left-40">
-                <img
-                  src="/images/cloud-2.svg"
-                  alt="Cloud Decoration"
-                  className="w-full cloud-animation-right h-16"
-                  draggable={false}
-                />
+                <div className="cloud-animation-right">
+                  <Image
+                    src="/images/cloud-2.svg"
+                    height={69}
+                    width={110}
+                    alt="Cloud Decoration"
+                    className="w-full h-16 cloud-animation-right"
+                    draggable={false}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Cloud Row 3 */}
             <div className="absolute top-[60%] right-0 w-full overflow-hidden">
               <div className="relative right-64">
-                <img
-                  src="/images/cloud-3.svg"
-                  alt="Cloud Decoration"
-                  className="w-full cloud-animation-right h-8"
-                  draggable={false}
-                />
+                <div className="cloud-animation-right">
+                  <Image
+                    src="/images/cloud-3.svg"
+                    height={30}
+                    width={84}
+                    alt="Cloud Decoration"
+                    className="w-full h-8 cloud-animation-right"
+                    draggable={false}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Cloud Row 4 */}
             <div className="absolute top-[80%] right-0 w-full overflow-hidden">
               <div className="relative left-12">
-                <img
-                  src="/images/cloud-4.svg"
-                  alt="Cloud Decoration"
-                  className="w-full h-8 cloud-animation-right"
-                  draggable={false}
-                />
+                <div className="cloud-animation-right">
+                  <Image
+                    height={49}
+                    width={71}
+                    src="/images/cloud-4.svg"
+                    alt="Cloud Decoration"
+                    className="w-full h-8 "
+                    draggable={false}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -200,8 +217,10 @@ export default function ComfyLanding() {
           {/* Main image layer (highest) */}
           <div className="absolute inset-0 hidden lg:flex items-center justify-center">
             <div className="relative" style={{ zIndex: 9999 }}>
-              <img
+              <Image
                 src="/not-connected/main.svg"
+                width={417}
+                height={271}
                 alt="Comfy DeFi Privacy"
                 className="max-h-screen max-w-full object-contain"
                 draggable={false}
@@ -213,21 +232,29 @@ export default function ComfyLanding() {
 
       {/* Bottom clouds layer */}
       <div className="absolute -bottom-24 left-0 pointer-events-none lg:w-1/2 overflow-hidden">
-        <img
-          src="/images/clouds.svg"
-          alt="Cloud Decoration"
-          className="w-full h-32 lg:h-48 cloud-animation-left"
-          draggable={false}
-        />
+        <div className="cloud-animation-left">
+          <Image
+            src="/images/clouds.svg"
+            width={1200}
+            height={200}
+            alt="Cloud Decoration"
+            className="w-full h-32 lg:h-48 "
+            draggable={false}
+          />
+        </div>
       </div>
 
       <div className="absolute -bottom-24 right-0 pointer-events-none lg:w-1/2 overflow-hidden">
-        <img
-          src="/images/right-cloud.svg"
-          alt="Bubbles Decoration"
-          className="w-full h-32 lg:h-48 cloud-animation-right"
-          draggable={false}
-        />
+        <div className="cloud-animation-right">
+          <Image
+            src="/images/right-cloud.svg"
+            width={1200}
+            height={200}
+            alt="Bubbles Decoration"
+            className="w-full h-32 lg:h-48"
+            draggable={false}
+          />
+        </div>
       </div>
     </div>
   );
