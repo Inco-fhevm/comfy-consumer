@@ -8,7 +8,7 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { parseEther } from "viem";
+import { getAddress, parseAbiItem, parseEther } from "viem";
 import {
   ERC20_CONTRACT_ADDRESS,
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
@@ -181,34 +181,26 @@ export const TransactionForm = ({
         return;
       }
 
-      // Set up event listener for Unwrap event
-      const unwrapEvents = transaction.logs
-        .filter(
-          (log) =>
-            log.address.toLowerCase() ===
-            ENCRYPTED_ERC20_CONTRACT_ADDRESS.toLowerCase()
-        )
-        .map((log) => {
-          try {
-            return decodeEventLog({
-              abi: ENCRYPTEDERC20ABI,
-              data: log.data,
-              topics: log.topics,
-            });
-          } catch (e) {
-            return null;
-          }
-        })
-        .filter((event) => event && event.eventName === "Unwrap");
-
-      if (unwrapEvents.length > 0) {
-        const unwrapEvent = unwrapEvents[0];
-        console.log("Unwrap event detected:", {
-          account: unwrapEvent.args.account,
-          amount: unwrapEvent.args.amount,
+      const eventPromise = new Promise((resolve, reject) => {
+        const unwatch = publicClient.watchEvent({
+          address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+          event: parseAbiItem(
+            "event Unwrap(address indexed account, uint256 amount)"
+          ),
+          onLogs: (logs) => {
+            console.log("🎉 Unwrap Event:", logs);
+            unwatch(); // cleanup
+            resolve(logs); // return the event data
+          },
         });
-      }
 
+        setTimeout(() => {
+          unwatch();
+          reject(new Error("⏳ Event not detected within timeout"));
+        }, 20000);
+      });
+
+      await eventPromise;
       toast.success("Unwrap Complete");
       handleClose(mode);
     } catch (error) {
