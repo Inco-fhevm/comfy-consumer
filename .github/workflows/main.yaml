@@ -55,7 +55,11 @@ jobs:
 
       # Install dependencies
       - name: Install dependencies
-        run: bun install
+        run: |
+          # Install critters for CSS optimization
+          bun add critters
+          # Install all dependencies
+          bun install
 
       # Run tests (optional)
       - name: Run tests
