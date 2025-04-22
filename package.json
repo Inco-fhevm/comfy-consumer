@@ -11,7 +11,6 @@
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@hookform/resolvers": "^3.10.0",
-    "@inco-fhevm/js": "^0.1.8-experimental",
     "@inco/js": "^0.1.11",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.5",

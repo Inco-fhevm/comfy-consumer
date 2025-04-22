@@ -6,6 +6,7 @@ import {
 } from "@inco/js/lite";
 import { hexToBytes } from "viem";
 import { getAddress, formatUnits } from "viem";
+import { getActiveIncoLiteDeployment } from "@inco/js/lite";
 
 /**
  * @dev Network configuration constants for Inco FHE operations

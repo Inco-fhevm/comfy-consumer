@@ -22,7 +22,7 @@ import {
 } from "@/utils/contracts";
 
 import { reEncryptValue } from "@/utils/inco-lite";
-import { getActiveIncoLiteDeployment } from "@inco-fhevm/js/lite";
+import { getActiveIncoLiteDeployment } from "@inco/js/lite";
 
 // Create the context
 const ChainBalanceContext = createContext();
@@ -103,10 +103,8 @@ export const ChainBalanceProvider = ({
 
         const cfg = getActiveIncoLiteDeployment(chainId);
 
-        console.log('walletClient', walletClient);
-        console.log('wc', wc);
-
-
+        console.log("walletClient", walletClient);
+        console.log("wc", wc);
 
         let decrypted;
         decrypted = await reEncryptValue({
