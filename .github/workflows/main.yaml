@@ -25,8 +25,8 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Generate version string for Docker image (without creating Git tags)
-      - name: Generate version string
+      # Generate version string and increment tag
+      - name: Generate version string and increment tag
         id: version
         run: |
           # Get latest tag if exists, otherwise use v0.0.0
@@ -38,14 +38,29 @@ jobs:
           # Create version string with commit hash
           version_string="${latest_tag}-${commit_sha}"
           
+          # Increment patch version
+          IFS='.' read -r -a version_parts <<< "${latest_tag#v}"
+          new_patch=$((${version_parts[2]} + 1))
+          new_version="${version_parts[0]}.${version_parts[1]}.$new_patch"
+          
+          # Create and push new tag
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a "v$new_version" -m "Release v$new_version"
+          git push origin "v$new_version"
+          
           echo "Version string: $version_string"
+          echo "New version: v$new_version"
           echo "version_string=$version_string" >> $GITHUB_OUTPUT
+          echo "new_version=v$new_version" >> $GITHUB_OUTPUT
 
-      # Setup Bun for CI  
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@inco-fhevm'
 
       # Create local .npmrc with GitHub token
       - name: Create local .npmrc
@@ -57,13 +72,13 @@ jobs:
       - name: Install dependencies
         run: |
           # Install critters for CSS optimization
-          bun add critters
+          npm install critters
           # Install all dependencies
-          bun install
+          npm ci
 
       # Run tests (optional)
       - name: Run tests
-        run: bun test || echo "No tests found"
+        run: npm test || echo "No tests found"
 
       # Cache dependencies
       - name: Cache dependencies
@@ -71,10 +86,10 @@ jobs:
         with:
           path: |
             **/node_modules
-            ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb', '**/package-lock.json', '**/package.json') }}
+            ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json', '**/package.json') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-npm-
 
       # Cache Next.js build output
       - name: Cache Next.js build output
@@ -88,7 +103,7 @@ jobs:
 
       # Build application with standalone output
       - name: Build application
-        run: bun run build
+        run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
           # No need for NEXT_OUTPUT_STANDALONE as it's configured in next.config.js
@@ -113,7 +128,9 @@ jobs:
             --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             -t gcr.io/inco-core/comfy-consumer:latest \
             -t gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.version_string }} \
+            -t gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.new_version }} \
             .
           
           docker push gcr.io/inco-core/comfy-consumer:latest
           docker push gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.version_string }}
+          docker push gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.new_version }}
