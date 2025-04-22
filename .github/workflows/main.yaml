@@ -99,7 +99,6 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: 'projects/79476508147/locations/global/workloadIdentityPools/github-pool-core/providers/github-provider'
-          token_format: 'access_token'
 
       # Set up gcloud CLI
       - name: Set up Cloud SDK
