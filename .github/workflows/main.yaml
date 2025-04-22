@@ -91,35 +91,67 @@ jobs:
         run: bun run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
-          # No need for NEXT_OUTPUT_STANDALONE as it's configured in next.config.js
 
       # Authenticate to GCP
-      - uses: 'google-github-actions/auth@v2'
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
         with:
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: 'projects/79476508147/locations/global/workloadIdentityPools/github-pool-core/providers/github-provider'
+          token_format: 'access_token'
 
       # Set up gcloud CLI
-      - name: 'Set up Cloud SDK'
+      - name: Set up Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v2'
+
+      # Debug IAM permissions
+      - name: Debug IAM permissions
+        run: |
+          echo "Current identity:"
+          gcloud config list account --format "value(core.account)"
+          
+          echo "Available repositories:"
+          gcloud artifacts repositories list --project=${{ env.PROJECT_ID }} || echo "Cannot list repositories"
+          
+          echo "Testing GCS permissions:"
+          gsutil ls gs://artifacts.${{ env.PROJECT_ID }}.appspot.com/ || echo "Cannot list GCS bucket"
+
+      # Create GCR storage bucket if it doesn't exist
+      - name: Create GCR storage bucket if needed
+        run: |
+          if ! gsutil ls gs://artifacts.${{ env.PROJECT_ID }}.appspot.com/ &> /dev/null; then
+            echo "Creating GCR storage bucket..."
+            gsutil mb -p ${{ env.PROJECT_ID }} -l us gs://artifacts.${{ env.PROJECT_ID }}.appspot.com/
+          else
+            echo "GCR storage bucket already exists"
+          fi
 
       # Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      # Configure Docker for GCR
+      - name: Configure Docker
         run: |
-          # Configure auth (this is what you already have)
           gcloud auth configure-docker gcr.io --quiet
+          cat ~/.docker/config.json || echo "Docker config not found"
+
+      # Use Docker directly for build and push
+      - name: Build and push Docker image
+        run: |
+          # Create docker directory structure
+          mkdir -p /tmp/docker/${{ env.IMAGE_NAME }}
           
-          # Build the image
+          # Build image
           docker build \
             --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             --build-arg ID_TOKEN="$(gcloud auth print-identity-token)" \
-            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest \
-            -t gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }} \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }} \
             .
           
-          # Push the image
-          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
-          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
+          # Push image
+          echo "Pushing Docker image..."
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
