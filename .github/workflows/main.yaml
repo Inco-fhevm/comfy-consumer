@@ -121,5 +121,5 @@ jobs:
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
             ID_TOKEN=$(gcloud auth print-identity-token)
           tags: |
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
+            gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:latest
+            gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version_string }}
