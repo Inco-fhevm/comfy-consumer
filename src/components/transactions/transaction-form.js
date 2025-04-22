@@ -8,7 +8,13 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { getAddress, parseAbiItem, parseEther } from "viem";
+import {
+  createPublicClient,
+  getAddress,
+  http,
+  parseAbiItem,
+  parseEther,
+} from "viem";
 import {
   ERC20_CONTRACT_ADDRESS,
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
@@ -19,6 +25,7 @@ import loadingAnimation from "@/utils/transaction-animation.json";
 import { useChainBalance } from "@/hooks/use-chain-balance";
 import { toast } from "sonner";
 import Image from "next/image";
+import { baseSepolia } from "viem/chains";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -181,8 +188,15 @@ export const TransactionForm = ({
         return;
       }
 
+      const privateRPC = process.env.BASE_SEPOLIA_RPC;
+
+      const pubClient = createPublicClient({
+        transport: http(privateRPC),
+        chain: baseSepolia,
+      });
+
       const eventPromise = new Promise((resolve, reject) => {
-        const unwatch = publicClient.watchEvent({
+        const unwatch = pubClient.watchEvent({
           address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
           event: parseAbiItem(
             "event Unwrap(address indexed account, uint256 amount)"
@@ -196,7 +210,8 @@ export const TransactionForm = ({
 
         setTimeout(() => {
           unwatch();
-          reject(new Error("⏳ Event not detected within timeout"));
+          resolve(null);
+          // reject(new Error("⏳ Event not detected within timeout"));
         }, 20000);
       });
 

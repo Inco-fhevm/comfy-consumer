@@ -25,7 +25,7 @@ export const NETWORK_ID = "baseSepolia";
  * Currently only operating on Base Sepolia
  */
 export const KMS_SERVICE_ENDPOINT =
-  process.env.NEXT_PUBLIC_BASE_COVALIDATOR_ENDPOINT;
+  process.env.BASE_SEPOLIA_COVALIDATOR_ENDPOINT;
 
 /**
  * @dev Encryption scheme constants
