@@ -13,24 +13,39 @@ const __dirname = path.dirname(__filename);
 
 const nextConfig = {
   output: 'standalone', // Ensures the standalone output format is used
+  
+  // Add trace configuration to exclude problematic directories
+  experimental: {
+    // Keep optimizeCss since we have critters installed in the pipeline
+    optimizeCss: true,
+    turbotrace: {
+      logLevel: "error",
+      // Add these trace exclusions to prevent copying the entire project directory
+      contextDirectory: process.cwd(),
+      traceFn: (file, opts) => {
+        // Exclude node_modules and some root folders from tracing
+        if (
+          file.includes('node_modules') || 
+          file === process.cwd() ||  // Exclude the root directory itself
+          file.includes('.git') ||
+          file.includes('.next')
+        ) {
+          return [];
+        }
+        return undefined; // Use default tracing for other files
+      }
+    },
+  },
+  
+  // Keep the other configurations
   images: {
-    domains: [
-      // Add your image domains here if needed
-    ],
-    // Special handling for SVGs since they appear to be your main image type
+    domains: [],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   eslint: {
-    // Warning during build but don't fail
     ignoreDuringBuilds: true,
-  },
-  experimental: {
-    turbotrace: {
-      logLevel: "error",
-    },
-    optimizeCss: true,
   },
   webpack: (config) => {
     config.resolve.fallback = {
