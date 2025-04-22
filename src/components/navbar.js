@@ -17,7 +17,7 @@ const Navbar = ({ currentPage }) => {
         {currentPage}
       </h1>
 
-      <div className=" cursor-pointer">
+      <div className="flex md:hidden cursor-pointer">
         <img src="/icons/comfy-logo.svg" className="w-36" />
       </div>
 
