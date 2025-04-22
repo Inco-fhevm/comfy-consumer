@@ -10,45 +10,6 @@ export default function ComfyLanding() {
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden">
-      {/* Cloud Animations - Multiple Rows */}
-      <style jsx>{`
-        @keyframes cloudMoveLeft {
-          0% {
-            transform: translateX(0%);
-          }
-          50% {
-            transform: translateX(-100%);
-          }
-          50.01% {
-            transform: translateX(100%);
-          }
-          100% {
-            transform: translateX(0%);
-          }
-        }
-        @keyframes cloudMoveRight {
-          0% {
-            transform: translateX(0%);
-          }
-          50% {
-            transform: translateX(-100%);
-          }
-          50.01% {
-            transform: translateX(100%);
-          }
-          100% {
-            transform: translateX(0%);
-          }
-        }
-        .cloud-animation-left {
-          animation: cloudMoveLeft 10s linear infinite;
-          min-width: 100%;
-        }
-        .cloud-animation-right {
-          animation: cloudMoveRight 12s linear infinite;
-          min-width: 100%;
-        }
-      `}</style>
 
       {/* Main Content */}
       <div className="flex flex-col lg:flex-row lg:flex-1 relative h-screen">
@@ -107,13 +68,13 @@ export default function ComfyLanding() {
             {/* Cloud Row 1 */}
             <div className="absolute top-[10%] right-0 w-full overflow-hidden">
               <div className="relative right-24">
-                <div className="cloud-animation-right">
+                <div className="animate-cloud-right min-w-full">
                   <Image
                     src="/images/cloud-1.svg"
                     height={44}
                     width={71}
                     alt="Cloud Decoration"
-                    className="w-full h-16 cloud-animation-right"
+                    className="w-full h-16"
                     draggable={false}
                   />
                 </div>
@@ -123,13 +84,13 @@ export default function ComfyLanding() {
             {/* Cloud Row 2 */}
             <div className="absolute top-[30%] right-0 w-full overflow-hidden">
               <div className="relative left-40">
-                <div className="cloud-animation-right">
+                <div className="animate-cloud-right min-w-full">
                   <Image
                     src="/images/cloud-2.svg"
                     height={69}
                     width={110}
                     alt="Cloud Decoration"
-                    className="w-full h-16 cloud-animation-right"
+                    className="w-full h-16"
                     draggable={false}
                   />
                 </div>
@@ -139,13 +100,13 @@ export default function ComfyLanding() {
             {/* Cloud Row 3 */}
             <div className="absolute top-[60%] right-0 w-full overflow-hidden">
               <div className="relative right-64">
-                <div className="cloud-animation-right">
+                <div className="animate-cloud-right min-w-full">
                   <Image
                     src="/images/cloud-3.svg"
                     height={30}
                     width={84}
                     alt="Cloud Decoration"
-                    className="w-full h-8 cloud-animation-right"
+                    className="w-full h-8"
                     draggable={false}
                   />
                 </div>
@@ -155,13 +116,13 @@ export default function ComfyLanding() {
             {/* Cloud Row 4 */}
             <div className="absolute top-[80%] right-0 w-full overflow-hidden">
               <div className="relative left-12">
-                <div className="cloud-animation-right">
+                <div className="animate-cloud-right min-w-full">
                   <Image
                     height={49}
                     width={71}
                     src="/images/cloud-4.svg"
                     alt="Cloud Decoration"
-                    className="w-full h-8 "
+                    className="w-full h-8"
                     draggable={false}
                   />
                 </div>
@@ -187,20 +148,20 @@ export default function ComfyLanding() {
 
       {/* Bottom clouds layer */}
       <div className="absolute -bottom-24 left-0 pointer-events-none lg:w-1/2 overflow-hidden">
-        <div className="cloud-animation-left">
+        <div className="animate-cloud-left min-w-full">
           <Image
             src="/images/clouds.svg"
             width={1200}
             height={200}
             alt="Cloud Decoration"
-            className="w-full h-32 lg:h-48 "
+            className="w-full h-32 lg:h-48"
             draggable={false}
           />
         </div>
       </div>
 
       <div className="absolute -bottom-24 right-0 pointer-events-none lg:w-1/2 overflow-hidden">
-        <div className="cloud-animation-right">
+        <div className="animate-cloud-right min-w-full">
           <Image
             src="/images/right-cloud.svg"
             width={1200}
