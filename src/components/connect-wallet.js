@@ -10,7 +10,6 @@ export default function ComfyLanding() {
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden">
-
       {/* Main Content */}
       <div className="flex flex-col lg:flex-row lg:flex-1 relative h-screen">
         {/* Left Content Section - Full width on mobile, unchanged on desktop */}
@@ -22,12 +21,12 @@ export default function ComfyLanding() {
             <div className="space-y-6 lg:space-y-8">
               <div className="space-y-3 lg:space-y-4">
                 <h2 className="text-3xl lg:text-4xl font-extrabold">
-                  Your net worth doesn&apos;t have to be public
+                  Your onchain balance doesn&apos;t have to be public
                 </h2>
 
                 <p className="text-[#7A7A7A] font-semibold">
-                  Use Comfy to encrypt your balance onchain do DeFi in a private
-                  way.
+                  Use Comfy to conduct private payments and hide your balance
+                  onchain
                 </p>
               </div>
             </div>
@@ -42,7 +41,7 @@ export default function ComfyLanding() {
                 </Button>
               )}
               <div className="flex mt-4 items-center justify-center text-[#7A7A7A] font-semibold">
-                <span>Enabled on</span>
+                <span>Try it on</span>
                 <span className="text-blue-500 inline-flex items-center ml-1">
                   <Image
                     src="/chains/base-sepolia.svg"

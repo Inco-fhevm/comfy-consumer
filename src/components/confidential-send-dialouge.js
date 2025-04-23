@@ -252,7 +252,7 @@ const ConfidentialSendDialog = () => {
                     ? "border-red-500 focus:ring-red-500"
                     : "focus:ring-blue-500 dark:focus:ring-blue-600/20"
                 }`}
-                placeholder="0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                placeholder="0xYourWalletAddressHere"
               />
               {addressError && (
                 <p className="text-red-500 text-sm">{addressError}</p>
@@ -300,25 +300,30 @@ const ConfidentialSendDialog = () => {
             </Popover>
 
             <div className="border rounded-xl p-6 text-center space-y-2">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  className={`text-3xl font-medium bg-transparent dark:text-white text-center w-full focus:outline-none ${
-                    amountError ? "text-red-500" : ""
-                  }`}
-                  placeholder="0"
-                  disabled={isLoading}
-                />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400">
-                {amount || "0"} c{selectedAsset.name}
-              </p>
-              {amountError && (
-                <p className="text-red-500 text-sm">{amountError}</p>
-              )}
-            </div>
+  <div className="relative">
+    <input
+      type="text"
+      value={amount}
+      onChange={handleAmountChange}
+      className={`text-3xl font-medium bg-transparent dark:text-white text-center w-full focus:outline-none ${
+        amountError ? "text-red-500" : ""
+      }`}
+      placeholder="0"
+      disabled={isLoading}
+    />
+  </div>
+  <p className="text-gray-500 dark:text-gray-400">
+    {amount || "0"} c{selectedAsset.name}
+  </p>
+  <div className="flex items-center justify-center mt-1">
+    <span className="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-mono px-3 py-1 rounded-md text-xs uppercase tracking-wider">
+      encrypted amount
+    </span>
+  </div>
+  {amountError && (
+    <p className="text-red-500 text-sm">{amountError}</p>
+  )}
+</div>
 
             <div>
               <Button
