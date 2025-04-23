@@ -8,8 +8,8 @@ import { baseSepolia } from "viem/chains";
 const queryClient = new QueryClient();
 
 const config = getDefaultConfig({
-  appName: "My RainbowKit App",
-  projectId: "be36d80bd82aef7bdb958bb467c3e570",
+  appName: "Comfy",
+  projectId: "78b08c35c811c75100892ca621342158",
   chains: [baseSepolia],
   ssr: true,
 });

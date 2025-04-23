@@ -1,6 +1,6 @@
 {
-  "name": "My awesome PWA app",
-  "short_name": "PWA App",
+  "name": "Comfy",
+  "short_name": "Comfy",
   "icons": [
     {
       "src": "/pwa/icons/android-chrome-192x192.png",
