@@ -1,39 +1,61 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-# Install Python and other build dependencies
+
+# :hammer_and_spanner: Install build tools and Python for native modules
 RUN apk add --no-cache python3 make g++ jq
-# Create a symlink for python
+
+# :jigsaw: Symlink python3 → python (required by node-gyp)
 RUN ln -sf /usr/bin/python3 /usr/bin/python
-# Set environment variables for node-gyp
+
+# :brain: Let node-gyp know where Python is
 ENV PYTHON=/usr/bin/python
-# Copy package files
+
+# :package: Copy package files
 COPY package.json package-lock.json* ./
-# Remove problematic dependencies
+
+# :broom: Remove @inco-fhevm/js from dependencies (temporary build hack)
 RUN cp package.json package.json.backup && \
     cat package.json | jq 'del(.dependencies."@inco-fhevm/js")' > package.json.tmp && \
     mv package.json.tmp package.json
-# Install dependencies with minimal options
-RUN npm install --omit=optional --no-audit
-# Copy rest of the app
+
+# :rocket: Install dependencies (including dev dependencies for flexibility)
+RUN npm install --no-audit
+
+# :file_folder: Copy the full project source
 COPY . .
-# Fix styled-jsx issue specifically
+
+# :plaster: Fix styled-jsx issue (explicitly add compatible version)
 RUN npm install styled-jsx@5.1.6
-# Build the app
+
+# :package: Build the Next.js app (for all environments)
+# NODE_ENV will be set at runtime for the runner stage
 RUN npm run build
-# --- Runner Stage ---
+
 FROM node:20-alpine AS runner
 WORKDIR /app
+
+# :seedling: Default to production, but can be overridden at runtime
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
+# :silhouette: Create a non-root user for security
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
-# Copy from builder
+
+# :open_file_folder: Copy only necessary files from builder stage
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
+
+# Add environment configuration files for all environments
+COPY --from=builder /app/.env* ./
+
+# :silhouette: Switch to non-root user
 USER nextjs
+
+# :satellite_antenna: Expose port 3000
 EXPOSE 3000
+
+# :checkered_flag: Start the app with environment-specific settings
 CMD ["node", "server.js"]
