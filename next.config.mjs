@@ -22,6 +22,7 @@ const nextConfig = {
       process.env.MONAD_TESTNET_COVALIDATOR_ENDPOINT,
     BASE_SEPOLIA_RPC: process.env.BASE_SEPOLIA_RPC,
     MONAD_TESTNET_RPC: process.env.BASE_SEPOLIA_RPC,
+    REOWN_APP_ID: process.env.REOWN_APP_ID,
   },
 
   // Add trace configuration to exclude problematic directories
