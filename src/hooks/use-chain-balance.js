@@ -21,8 +21,7 @@ import {
   ERC20_CONTRACT_ADDRESS,
 } from "@/utils/contracts";
 
-import { reEncryptValue } from "@/utils/inco-lite";
-import { getActiveIncoLiteDeployment } from "@inco/js/lite";
+import { getConfig, reEncryptValue } from "@/utils/inco-lite";
 
 // Create the context
 const ChainBalanceContext = createContext();
@@ -101,7 +100,7 @@ export const ChainBalanceProvider = ({
           return;
         }
 
-        const cfg = getActiveIncoLiteDeployment(chainId);
+        const cfg = getConfig(chainId);
 
         console.log("walletClient", walletClient);
         console.log("wc", wc);

@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
     {
       name: "My Assets",
       basePath: "private-assets",
-      path: "/private-assets",
+      path: "/",
     },
     // { name: "Private Swap", basePath: "private-swap", path: "/private-swap" },
     // {
@@ -43,12 +43,15 @@ const Layout = ({ children }) => {
     return (
       <aside className="w-64 h-screen bg-gray-50 dark:bg-card p-4 border-r flex flex-col">
         <div className="text-blue-500 text-xl font-bold mb-8">
-          <Image
-            src="/icons/comfy-logo.svg"
-            width={300}
-            height={127}
-            alt="Comfy_logo"
-          />
+          <Link href="/">
+            <Image
+              src="/icons/comfy-logo.svg"
+              width={300}
+              height={127}
+              alt="Comfy_logo"
+              className="cursor-pointer"
+            />
+          </Link>
         </div>
 
         <div className="flex-1">

@@ -36,7 +36,7 @@ import {
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
   ENCRYPTEDERC20ABI,
 } from "@/utils/contracts";
-import { getActiveIncoLiteDeployment } from "@inco/js/lite";
+import { getConfig } from "@/utils/inco-lite";
 import { useChainBalance } from "@/hooks/use-chain-balance";
 import Image from "next/image";
 
@@ -102,7 +102,7 @@ const ConfidentialSendDialog = () => {
       //   throw new Error("Invalid contract type.");
       // }
 
-      const config = getActiveIncoLiteDeployment(chainId);
+      const config = getConfig(chainId);
       const { inputCt } = await encryptValue({
         value: parseEther(amount.toString()),
         address: userAddress,

@@ -6,7 +6,7 @@ import {
 } from "@inco/js/lite";
 import { hexToBytes } from "viem";
 import { getAddress, formatUnits } from "viem";
-import { getActiveIncoLiteDeployment } from "@inco/js/lite";
+import { getActiveLightningDeployment } from "@inco/js/lite";
 
 /**
  * @dev Network configuration constants for Inco FHE operations
@@ -57,7 +57,7 @@ const ENCRYPTION_SCHEME_ECIES = 1;
 const DATA_TYPE_UINT256 = 8;
 
 export const getConfig = (chainId) => {
-  return getActiveIncoLiteDeployment(chainId);
+  return getActiveLightningDeployment(chainId);
 };
 
 /**
