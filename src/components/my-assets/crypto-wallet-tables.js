@@ -120,19 +120,22 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
             let displayValue;
             if (asset.name === "cUSDC") {
               displayValue = {
-                amount: encryptedBalance
-                  ? Number(encryptedBalance).toLocaleString()
-                  : "*****",
-                dollarValue: encryptedBalance
-                  ? "$" + Number(encryptedBalance).toLocaleString()
-                  : "$******",
+                // FIX: Now checking showConfidentialValues state to determine what to display
+                amount: (title === "Encrypted" && !showConfidentialValues) 
+                  ? "*****" 
+                  : encryptedBalance 
+                    ? Number(encryptedBalance).toLocaleString() 
+                    : "*****",
+                dollarValue: (title === "Encrypted" && !showConfidentialValues)
+                  ? "$******"
+                  : encryptedBalance
+                    ? "$" + Number(encryptedBalance).toLocaleString()
+                    : "$******",
               };
             } else {
               displayValue = {
                 amount: Number(usdcBalance?.data?.formatted).toLocaleString(),
-                dollarValue: Number(
-                  usdcBalance?.data?.formatted
-                ).toLocaleString(),
+                dollarValue: "$" + Number(usdcBalance?.data?.formatted).toLocaleString(),
               };
             }
 
@@ -160,9 +163,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                   <div>
                     <div>{displayValue.amount}</div>
                     <div className="text-gray-500">
-                      {typeof displayValue.dollarValue === "number"
-                        ? "$" + displayValue.dollarValue.toLocaleString()
-                        : displayValue.dollarValue}
+                      {displayValue.dollarValue}
                     </div>
                   </div>
                 </td>
@@ -192,7 +193,10 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                     )}
 
                     {title === "Encrypted" && (
-                      <ConfidentialSendDialog balance={displayValue?.amount} />
+                      <ConfidentialSendDialog balance={
+                        // Pass hidden balance if values are hidden
+                        !showConfidentialValues ? "*****" : displayValue.amount
+                      } />
                     )}
                   </div>
                 </td>
@@ -265,12 +269,6 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
 
   const handleRefreshEncrypted = (w0) => fetchEncryptedBalance(w0);
 
-  // Sample decrypted values for demonstration
-  const decryptedValues = {
-    cETH: { amount: encryptedBalance, dollarValue: encryptedBalance },
-    cUSDT: { amount: encryptedBalance, dollarValue: encryptedBalance },
-  };
-
   // Toggle showing confidential values
   const toggleConfidentialValues = async () => {
     if (!showConfidentialValues) {
@@ -281,26 +279,28 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
 
   // Get displayed value based on confidentiality settings
   const getDisplayValue = (asset) => {
-    if (title !== "Encrypted" || !showConfidentialValues) {
+    // FIX: Modified to properly respect the showConfidentialValues state
+    if (title === "Encrypted" && asset.name === "cUSDC") {
+      if (!showConfidentialValues) {
+        return {
+          amount: "*****",
+          dollarValue: "$******",
+        };
+      } else {
+        return {
+          amount: encryptedBalance ? Number(encryptedBalance).toLocaleString() : "*****",
+          dollarValue: encryptedBalance ? "$" + Number(encryptedBalance).toLocaleString() : "$******",
+        };
+      }
+    } else {
+      // Non-encrypted assets or when showing values
       return {
         amount: asset.amount,
-        dollarValue: asset.dollarValue,
+        dollarValue: typeof asset.dollarValue === "number" 
+          ? "$" + asset.dollarValue.toLocaleString() 
+          : asset.dollarValue,
       };
     }
-
-    // Return decrypted values if available
-    const decrypted = decryptedValues[asset.name];
-    if (decrypted) {
-      return {
-        amount: decrypted.amount,
-        dollarValue: decrypted.dollarValue,
-      };
-    }
-
-    return {
-      amount: asset.amount,
-      dollarValue: asset.dollarValue,
-    };
   };
 
   return (
@@ -403,7 +403,10 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
 
                 {title === "Encrypted" && (
                   <div className="">
-                    <ConfidentialSendDialog />
+                    <ConfidentialSendDialog balance={
+                      // Pass hidden balance if values are hidden
+                      !showConfidentialValues ? "*****" : displayValue.amount
+                    } />
                   </div>
                 )}
 
@@ -416,7 +419,7 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                 <TransactionDialog
                   mode="withdraw"
                   open={withdrawOpen}
-                  balance={displayValue.amount}
+                  balance={showConfidentialValues ? displayValue.amount : "*****"}
                   onOpenChange={setWithdrawOpen}
                 />
               </div>

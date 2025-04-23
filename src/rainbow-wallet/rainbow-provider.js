@@ -9,7 +9,7 @@ const queryClient = new QueryClient();
 
 const config = getDefaultConfig({
   appName: "Comfy",
-  projectId: "78b08c35c811c75100892ca621342158",
+  projectId: process.env.REOWN_APP_ID,
   chains: [baseSepolia],
   ssr: true,
 });
