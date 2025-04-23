@@ -51,6 +51,9 @@ COPY --from=builder /app/node_modules ./node_modules
 # Add environment configuration files for all environments
 COPY --from=builder /app/.env* ./
 
+# Install Sharp for image optimization
+RUN npm install --no-optional sharp
+
 # :silhouette: Switch to non-root user
 USER nextjs
 
