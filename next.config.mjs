@@ -17,7 +17,7 @@ const nextConfig = {
   // Using process.env values directly without fallbacks
   env: {
     BASE_SEPOLIA_COVALIDATOR_ENDPOINT:
-      process.env.BASE_SEPOLIA_COVALIDATOR_ENDPOINT,
+      "https://grpc.base-sepolia.lightning.testnet.inco.org",
     MONAD_TESTNET_COVALIDATOR_ENDPOINT:
       process.env.MONAD_TESTNET_COVALIDATOR_ENDPOINT,
     BASE_SEPOLIA_RPC: process.env.BASE_SEPOLIA_RPC,
