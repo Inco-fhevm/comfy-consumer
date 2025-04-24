@@ -69,7 +69,7 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
         args: [address, amountWithDecimals],
       });
 
-      console.log("Minting cUSDC tx hash:", cUSDCMintTxHash);
+      // console.log("Minting cUSDC tx hash:", cUSDCMintTxHash);
 
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: cUSDCMintTxHash,

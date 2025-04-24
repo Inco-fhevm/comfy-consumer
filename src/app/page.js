@@ -19,7 +19,6 @@ const Page = () => {
   // Ensure component is mounted before accessing theme
   useEffect(() => {
     setMounted(true);
-    console.log(process.env.BASE_SEPOLIA_COVALIDATOR_ENDPOINT)
   }, []);
 
   const chains = [

@@ -284,39 +284,41 @@ export const TransactionForm = ({
       {!isApproving && !isProcessing && (
         <div className="relative">
           {mode === "withdraw" && (
-            <div className="border rounded-xl md:h-64 p-6 mb-6 text-center grid place-items-center">
-              <div>
-                <div className="grid place-items-center gap-6">
-                  <Image
-                    src={"/tokens/confidential/usdc-base.png"}
-                    alt={selectedAsset?.name}
-                    width={64}
-                    height={64}
-                  />
-
-                  <div className="text-3xl flex gap-2 items-center font-semibold mb-1 bg-transparent text-center w-full text-black dark:text-white disabled:opacity-50">
-                    <input
-                      type="text"
-                      placeholder="0"
-                      value={decryptAmount}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9.]/g, "");
-                        if (value.split(".").length > 2) return;
-                        setDecryptAmount(value);
-                      }}
-                      className="bg-transparent focus:outline-none text-center"
+            <div>
+              <div className="w-full border rounded-xl md:h-64 p-6 mb-6 text-center grid place-items-center">
+                <div>
+                  <div className="grid place-items-center gap-6">
+                    <Image
+                      src={"/tokens/confidential/usdc-base.png"}
+                      alt={selectedAsset?.name}
+                      width={64}
+                      height={64}
                     />
-                  </div>
-                </div>
 
-                <div className="text-[#AFAFAF] dark:text-gray-400">
-                  {decryptAmount || "0"} c{selectedAsset?.name}
-                </div>
-                {error && (
-                  <div className="text-red-500 dark:text-red-400 text-sm mt-2">
-                    {error}
+                    <div className="text-3xl flex gap-2 items-center font-semibold mb-1 bg-transparent text-center w-full text-black dark:text-white disabled:opacity-50">
+                      <input
+                        type="text"
+                        placeholder="0"
+                        value={decryptAmount}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9.]/g, "");
+                          if (value.split(".").length > 2) return;
+                          setDecryptAmount(value);
+                        }}
+                        className="w-full max-w-[120px] bg-transparent focus:outline-none text-center"
+                      />
+                    </div>
                   </div>
-                )}
+
+                  <div className="text-[#AFAFAF] dark:text-gray-400">
+                    {decryptAmount || "0"} c{selectedAsset?.name}
+                  </div>
+                  {error && (
+                    <div className="text-red-500 dark:text-red-400 text-sm mt-2">
+                      {error}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
