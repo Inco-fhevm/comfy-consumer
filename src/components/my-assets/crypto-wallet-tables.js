@@ -11,14 +11,11 @@ import {
   arbitrumSepolia,
   optimismSepolia,
 } from "viem/chains";
-import {
-  ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-  ERC20_CONTRACT_ADDRESS,
-} from "@/utils/contracts";
+import { ERC20_CONTRACT_ADDRESS } from "@/utils/contracts";
 import { useChainBalance } from "@/hooks/use-chain-balance";
+import { AssetTable } from "./asset-table";
 import Image from "next/image";
 
-// Define chain IDs more safely to avoid undefined issues
 const CHAIN_IDS = {
   BASE_SEPOLIA: baseSepolia?.id || 84532,
   BASE: base?.id || 8453,
@@ -45,180 +42,6 @@ const USDT_ADDRESSES = {
   [CHAIN_IDS.POLYGON]: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // Polygon USDT
   [CHAIN_IDS.ARBITRUM]: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", // Arbitrum USDT
   [CHAIN_IDS.OPTIMISM]: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58", // Optimism USDT
-};
-
-export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
-  const [depositOpen, setDepositOpen] = useState(false);
-  const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [showConfidentialValues, setShowConfidentialValues] = useState(false);
-  const [transmittedBalance, setTransmittedBalance] = useState(null);
-
-  const chainId = useChainId();
-
-  const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
-  const walletClient = useWalletClient();
-  const { tokenBalance: usdcBalance } = useChainBalance();
-
-  const handleRefreshEncrypted = (w0) => fetchEncryptedBalance(w0);
-
-  const toggleConfidentialValues = async () => {
-    if (!showConfidentialValues) {
-      await handleRefreshEncrypted(walletClient);
-    }
-    setShowConfidentialValues(!showConfidentialValues);
-  };
-
-  return (
-    <div className="border rounded-3xl shadow-sm mb-4">
-      <div className="flex justify-between items-center mb-4 border-b p-6">
-        <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="text-xl font-semibold">
-          {title === "Encrypted"
-            ? showConfidentialValues
-              ? "$" + Number(encryptedBalance).toLocaleString()
-              : "$******"
-            : "$" + Number(usdcBalance?.data?.formatted).toLocaleString()}
-        </div>
-        {title === "Encrypted" && (
-          <button className="" onClick={toggleConfidentialValues}>
-            {showConfidentialValues ? (
-              <EyeOff
-                className="w-6 h-6"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            )}
-          </button>
-        )}
-      </div>
-      <table className="w-full">
-        <thead className="">
-          <tr className="text-sm text-gray-500">
-            <th className="text-left font-normal pb-4 pl-6">Name</th>
-            <th className="text-left font-normal pb-4 pl-6">Amount</th>
-            <th className="text-right font-normal pb-4 pl-6"></th>
-          </tr>
-        </thead>
-        <tbody className="">
-          {assets.map((asset, index) => {
-            let displayValue;
-            if (asset.name === "cUSDC") {
-              displayValue = {
-                // FIX: Now checking showConfidentialValues state to determine what to display
-                amount: (title === "Encrypted" && !showConfidentialValues) 
-                  ? "*****" 
-                  : encryptedBalance 
-                    ? Number(encryptedBalance).toLocaleString() 
-                    : "*****",
-                dollarValue: (title === "Encrypted" && !showConfidentialValues)
-                  ? "$******"
-                  : encryptedBalance
-                    ? "$" + Number(encryptedBalance).toLocaleString()
-                    : "$******",
-              };
-            } else {
-              displayValue = {
-                amount: Number(usdcBalance?.data?.formatted).toLocaleString(),
-                dollarValue: "$" + Number(usdcBalance?.data?.formatted).toLocaleString(),
-              };
-            }
-
-            return (
-              <tr key={index}>
-                <td className="py-4 pl-6">
-                  <div className="flex items-center gap-3">
-                    <Image
-                      src={asset.icon}
-                      alt={asset.name}
-                      width={44}
-                      height={44}
-                    />
-                    <div>
-                      <div className="font-medium">{asset.name}</div>
-                      {asset.chain !== "Ethereum" && (
-                        <div className="text-sm text-gray-500">
-                          on {asset.chain}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 pl-6">
-                  <div>
-                    <div>{displayValue.amount}</div>
-                    <div className="text-gray-500">
-                      {displayValue.dollarValue}
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 pr-6 text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    {title === "Encrypted" ? (
-                      <>
-                        <Button
-                          onClick={() => setWithdrawOpen(true)}
-                          className="rounded-full"
-                          variant="outline"
-                        >
-                          Unshield
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        onClick={() => {
-                          setTransmittedBalance(displayValue.amount);
-                          setDepositOpen(true);
-                        }}
-                        disabled={asset.chain !== "Base Sepolia"}
-                        className="bg-blue-500 hover:bg-blue-600 rounded-full dark:text-white"
-                      >
-                        {asset.chain !== "Base Sepolia" ? "Soon" : "Shield"}
-                      </Button>
-                    )}
-
-                    {title === "Encrypted" && (
-                      <ConfidentialSendDialog balance={
-                        // Pass hidden balance if values are hidden
-                        !showConfidentialValues ? "*****" : displayValue.amount
-                      } />
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      <TransactionDialog
-        mode="shield"
-        open={depositOpen}
-        balance={transmittedBalance}
-        onOpenChange={setDepositOpen}
-      />
-      <TransactionDialog
-        mode="withdraw"
-        open={withdrawOpen}
-        onOpenChange={setWithdrawOpen}
-      />
-    </div>
-  );
 };
 
 // Create a tabs component for mobile view
@@ -288,17 +111,22 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
         };
       } else {
         return {
-          amount: encryptedBalance ? Number(encryptedBalance).toLocaleString() : "*****",
-          dollarValue: encryptedBalance ? "$" + Number(encryptedBalance).toLocaleString() : "$******",
+          amount: encryptedBalance
+            ? Number(encryptedBalance).toLocaleString()
+            : "*****",
+          dollarValue: encryptedBalance
+            ? "$" + Number(encryptedBalance).toLocaleString()
+            : "$******",
         };
       }
     } else {
       // Non-encrypted assets or when showing values
       return {
         amount: asset.amount,
-        dollarValue: typeof asset.dollarValue === "number" 
-          ? "$" + asset.dollarValue.toLocaleString() 
-          : asset.dollarValue,
+        dollarValue:
+          typeof asset.dollarValue === "number"
+            ? "$" + asset.dollarValue.toLocaleString()
+            : asset.dollarValue,
       };
     }
   };
@@ -403,10 +231,12 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
 
                 {title === "Encrypted" && (
                   <div className="">
-                    <ConfidentialSendDialog balance={
-                      // Pass hidden balance if values are hidden
-                      !showConfidentialValues ? "*****" : displayValue.amount
-                    } />
+                    <ConfidentialSendDialog
+                      balance={
+                        // Pass hidden balance if values are hidden
+                        !showConfidentialValues ? "*****" : displayValue.amount
+                      }
+                    />
                   </div>
                 )}
 
@@ -419,7 +249,9 @@ const MobileAssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                 <TransactionDialog
                   mode="withdraw"
                   open={withdrawOpen}
-                  balance={showConfidentialValues ? displayValue.amount : "*****"}
+                  balance={
+                    showConfidentialValues ? displayValue.amount : "*****"
+                  }
                   onOpenChange={setWithdrawOpen}
                 />
               </div>
