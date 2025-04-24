@@ -81,7 +81,6 @@ export const encryptValue = async ({
 
   // Format the contract address to checksum format for standardization
   const checksummedAddress = getAddress(contractAddress);
-  console.log("config", config);
 
   // Create a plaintext object with context information for encryption
   // This context includes chain ID, ACL address, user address, and contract address

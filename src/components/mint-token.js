@@ -55,11 +55,6 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
 
   const mintcUSDC = async () => {
     try {
-      // const cUSDCContract = new ethers.Contract(
-      //   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      //   ENCRYPTEDERC20ABI,
-      //   signer
-      // );
       const amountWithDecimals = parseEther(amount.toString());
 
       const cUSDCMintTxHash = await writeContractAsync({
@@ -68,8 +63,6 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
         functionName: "mint",
         args: [address, amountWithDecimals],
       });
-
-      // console.log("Minting cUSDC tx hash:", cUSDCMintTxHash);
 
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: cUSDCMintTxHash,
@@ -80,11 +73,6 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
       }
 
       await refreshBalances(["encrypted"], walletClient);
-
-      // const mintTx = await cUSDCContract.mint(address, amountWithDecimals);
-      // const receipt = await mintTx.getTransaction();
-      // console.log(receipt);
-      // await receipt.wait();
     } catch (err) {
       console.error("Error minting cUSDC:", err);
       throw new Error("Failed to mint cUSDC");
@@ -93,18 +81,6 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
 
   const mintUSDC = async () => {
     try {
-      // const usdcContract = new ethers.Contract(
-      //   ERC20_CONTRACT_ADDRESS,
-      //   ERC20ABI,
-      //   signer
-      // );
-
-      // const amountWithDecimals = ethers.parseUnits(amount.toString(), 6);
-      // const mintTx = await usdcContract.mint(address, amountWithDecimals);
-      // const receipt = await mintTx.getTransaction();
-      // console.log(receipt);
-      // await receipt.wait();
-
       const amountWithDecimals = parseEther(amount.toString());
 
       const uSDCMintTxHash = await writeContractAsync({
@@ -113,8 +89,6 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
         functionName: "mint",
         args: [address, amountWithDecimals],
       });
-
-      console.log("Minting USDC tx hash:", uSDCMintTxHash);
 
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: uSDCMintTxHash,

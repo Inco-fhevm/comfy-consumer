@@ -1,12 +1,11 @@
 "use client";
 import React, { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { EyeOff } from "lucide-react";
 import ConfidentialSendDialog from "@/components/confidential-send-dialouge";
 import { Button } from "@/components/ui/button";
 import TransactionDialog from "../transactions/transaction-dialouge";
 import Image from "next/image";
 
-// Create a tabs component for mobile view
 export const WalletTabs = ({ activeTab, setActiveTab }) => {
   return (
     <div className="flex rounded-full bg-gray-100 p-1 mb-4">
@@ -35,15 +34,12 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [showConfidentialValues, setShowConfidentialValues] = useState(false);
 
-  // Sample decrypted values for demonstration
   const decryptedValues = {
     cETH: { amount: "1.5", dollarValue: 3000 },
     cUSDT: { amount: "25000", dollarValue: 25000 },
   };
 
-  // Toggle showing confidential values
   const toggleConfidentialValues = () => {
-    console.log("toggle");
     setShowConfidentialValues(!showConfidentialValues);
   };
 

@@ -64,7 +64,6 @@ export const ChainBalanceProvider = ({
         tokenBalance.refetch();
       }
       if (balancesToRefresh.includes("encrypted")) {
-        console.log("Refreshing encrypted balance");
         fetchEncryptedBalance(wc);
       }
     },
@@ -86,8 +85,6 @@ export const ChainBalanceProvider = ({
           client: { public: publicClient, wallet: walletClient },
         });
 
-        console.log("Fetching encrypted balance for address:", address);
-
         const balanceHandle = await encryptedERC20Contract.read.balanceOf([
           address,
         ]);
@@ -102,17 +99,12 @@ export const ChainBalanceProvider = ({
 
         const cfg = getConfig(chainId);
 
-        console.log("walletClient", walletClient);
-        console.log("wc", wc);
-
         let decrypted;
         decrypted = await reEncryptValue({
           chainId: cfg.chainId,
           walletClient: wc || walletClient,
           handle: balanceHandle,
         });
-
-        console.log("Decrypted balance:", decrypted);
 
         setEncryptedBalance(decrypted);
       } catch (err) {

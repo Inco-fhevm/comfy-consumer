@@ -105,8 +105,6 @@ export const TransactionForm = ({
               args: [ENCRYPTED_ERC20_CONTRACT_ADDRESS, amountWithDecimals],
             });
 
-            console.log("approveHash", approveHash);
-
             const transaction = await publicClient.waitForTransactionReceipt({
               hash: approveHash,
             });
@@ -121,8 +119,6 @@ export const TransactionForm = ({
               functionName: "wrap",
               args: [amountWithDecimals],
             });
-
-            console.log("wrapTxHash", wrapTxHash);
 
             const txn = await publicClient.waitForTransactionReceipt({
               hash: wrapTxHash,
