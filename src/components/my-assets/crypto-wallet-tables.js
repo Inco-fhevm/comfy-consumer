@@ -50,7 +50,7 @@ const WalletTabs = ({ activeTab, setActiveTab }) => {
     <div className="flex rounded-full border mb-4">
       <button
         className={`flex-1 text-center py-2 px-4 rounded-full text-sm font-semibold ${
-          activeTab === "Wallet" ? "bg-[#E7EEFE] text-primary" : "text-gray-700"
+          activeTab === "Wallet" ? "bg-[#E7EEFE] dark:bg-primary dark:text-black text-primary" : "text-gray-700"
         }`}
         onClick={() => setActiveTab("Wallet")}
       >
@@ -59,7 +59,7 @@ const WalletTabs = ({ activeTab, setActiveTab }) => {
       <button
         className={`flex-1 text-center py-2 px-4 rounded-full text-sm font-semibold ${
           activeTab === "Encrypted"
-            ? "bg-[#E7EEFE] text-primary"
+            ? "bg-[#E7EEFE] dark:bg-primary dark:text-black text-primary"
             : "text-gray-700"
         }`}
         onClick={() => setActiveTab("Encrypted")}

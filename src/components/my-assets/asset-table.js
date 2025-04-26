@@ -16,7 +16,9 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
   const chainId = useChainId();
   const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
   const walletClient = useWalletClient();
-  const { tokenBalance: usdcBalance } = useChainBalance();
+  const { tokenBalance } = useChainBalance();
+
+  const usdcBalance = tokenBalance?.data?.formatted ? tokenBalance?.data?.formatted : "0"
 
   const handleRefreshEncrypted = (w0) => fetchEncryptedBalance(w0);
 
@@ -36,7 +38,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
             ? showConfidentialValues
               ? "$" + Number(encryptedBalance).toLocaleString()
               : "$******"
-            : "$" + Number(usdcBalance?.data?.formatted).toLocaleString()}
+            : "$" + Number(usdcBalance).toLocaleString()}
         </div>
         {title === "Encrypted" && (
           <button className="" onClick={toggleConfidentialValues}>
@@ -95,9 +97,9 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
               };
             } else {
               displayValue = {
-                amount: Number(usdcBalance?.data?.formatted).toLocaleString(),
+                amount: Number(usdcBalance).toLocaleString(),
                 dollarValue:
-                  "$" + Number(usdcBalance?.data?.formatted).toLocaleString(),
+                  "$" + Number(usdcBalance).toLocaleString(),
               };
             }
 
