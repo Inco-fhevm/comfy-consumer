@@ -103,7 +103,7 @@ const ConfidentialSendDialog = () => {
       // }
 
       const config = getConfig(chainId);
-      const { inputCt } = await encryptValue({
+      const  inputCt = await encryptValue({
         value: parseEther(amount.toString()),
         address: userAddress,
         config: config,
@@ -132,7 +132,7 @@ const ConfidentialSendDialog = () => {
           },
         ],
         functionName: "transfer",
-        args: [address, inputCt.ciphertext.value],
+        args: [address, inputCt],
       });
 
       const transaction = await publicClient.waitForTransactionReceipt({

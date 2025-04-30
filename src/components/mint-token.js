@@ -72,7 +72,7 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
         throw new Error("Contract Execution Reverted!");
       }
 
-      await refreshBalances(["encrypted"], walletClient);
+      await fetchEncryptedBalance(walletClient);
     } catch (err) {
       console.error("Error minting cUSDC:", err);
       throw new Error("Failed to mint cUSDC");
