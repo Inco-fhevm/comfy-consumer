@@ -61,6 +61,7 @@
     "react-hook-form": "^7.54.2",
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.1",
+    "sharp": "^0.34.1",
     "sonner": "^1.7.4",
     "styled-jsx": "^5.1.6",
     "tailwind-merge": "^3.0.1",
