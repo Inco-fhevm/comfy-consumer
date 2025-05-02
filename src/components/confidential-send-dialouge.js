@@ -39,6 +39,7 @@ import {
 import { getConfig } from "@/utils/inco-lite";
 import { useChainBalance } from "@/hooks/use-chain-balance";
 import Image from "next/image";
+import { Input } from "./ui/input";
 
 const ConfidentialSendDialog = () => {
   const [open, setOpen] = useState(false);
@@ -243,11 +244,11 @@ const ConfidentialSendDialog = () => {
               <label className="text-sm text-gray-500 dark:text-gray-400">
                 To:
               </label>
-              <input
+              <Input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className={`w-full p-2 text-sm border rounded-lg focus:outline-none dark:text-white ${
+                className={`w-full p-2 text-sm rounded-lg ${
                   addressError
                     ? "border-red-500 focus:ring-red-500"
                     : "focus:ring-blue-500 dark:focus:ring-blue-600/20"
