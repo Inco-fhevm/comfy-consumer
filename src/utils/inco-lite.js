@@ -3,7 +3,7 @@ import { Lightning } from "@inco/js/lite";
 import { CURRENT_MODE, MODES } from "./contracts";
 
 export const getConfig = () => {
-  return Lightning.latest("devnet", 84532);
+  return Lightning.latest("testnet", 84532);
   // return CURRENT_MODE === MODES.BASE_SEPOLIA
   //   ? Lightning.latest("devnet", 84532)
   //   : Lightning.localNode();

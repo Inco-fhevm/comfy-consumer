@@ -99,6 +99,9 @@ export const ChainBalanceProvider = ({
 
         const cfg = getConfig(chainId);
 
+        console.log('config:', cfg);
+    console.log('balanceHandle:', balanceHandle);
+
         let decrypted;
         decrypted = await reEncryptValue({
           chainId: cfg.chainId,

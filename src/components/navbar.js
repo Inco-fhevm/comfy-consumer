@@ -25,8 +25,8 @@ const Navbar = ({ currentPage }) => {
 
       <div className="flex items-center gap-3">
         <Button
-          variant="link"
-          className="text-black hover:text-black/70 font-semibold"
+          variant="ghost"
+          className="font-semibold"
           onClick={() => setOpen(true)}
         >
           Mint now

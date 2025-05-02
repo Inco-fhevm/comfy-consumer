@@ -1,11 +1,12 @@
 import { useChainBalance } from "@/hooks/use-chain-balance";
-import { EyeOff } from "lucide-react";
+import { AlertCircle, EyeOff, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { useChainId, useWalletClient } from "wagmi";
+import { useWalletClient } from "wagmi";
 import { Button } from "../ui/button";
 import ConfidentialSendDialog from "../confidential-send-dialouge";
 import TransactionDialog from "../transactions/transaction-dialouge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
 export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
   const [depositOpen, setDepositOpen] = useState(false);
@@ -13,8 +14,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
   const [showConfidentialValues, setShowConfidentialValues] = useState(false);
   const [transmittedBalance, setTransmittedBalance] = useState(null);
 
-  const chainId = useChainId();
-  const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
+  const { encryptedBalance, fetchEncryptedBalance, isEncryptedLoading, encryptedError } = useChainBalance();
   const walletClient = useWalletClient();
   const { tokenBalance: usdcBalance } = useChainBalance();
 
@@ -22,9 +22,58 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
 
   const toggleConfidentialValues = async () => {
     if (!showConfidentialValues) {
-      await handleRefreshEncrypted(walletClient);
+      try {
+        await handleRefreshEncrypted(walletClient);
+      } catch (err) {
+        console.error("Failed to refresh encrypted balance:", err);
+        // Continue showing UI even if there's an error
+      }
     }
     setShowConfidentialValues(!showConfidentialValues);
+  };
+  
+  // Handle retry when there's an error
+  const handleRetry = async () => {
+    if (showConfidentialValues && encryptedError) {
+      try {
+        await handleRefreshEncrypted(walletClient);
+      } catch (err) {
+        console.error("Failed to retry loading encrypted balance:", err);
+      }
+    }
+  };
+
+  // Helper function to render the balance display
+  const renderBalanceDisplay = () => {
+    if (title === "Encrypted") {
+      if (showConfidentialValues) {
+        if (isEncryptedLoading) {
+          return (
+            <div className="flex items-center">
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              <span>Loading...</span>
+            </div>
+          );
+        } else if (encryptedError) {
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger className="flex items-center text-red-500" onClick={handleRetry}>
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  <span>Error</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Click to retry</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+        return encryptedBalance ? "$" + Number(encryptedBalance).toLocaleString() : "$0.00";
+      }
+      return "$******";
+    }
+    return "$" + Number(usdcBalance?.data?.formatted || 0).toLocaleString();
   };
 
   return (
@@ -32,11 +81,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
       <div className="flex justify-between items-center mb-4 border-b p-6">
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="text-xl font-semibold">
-          {title === "Encrypted"
-            ? showConfidentialValues
-              ? "$" + Number(encryptedBalance).toLocaleString()
-              : "$******"
-            : "$" + Number(usdcBalance?.data?.formatted).toLocaleString()}
+          {renderBalanceDisplay()}
         </div>
         {title === "Encrypted" && (
           <button className="" onClick={toggleConfidentialValues}>
@@ -78,26 +123,63 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
           {assets.map((asset, index) => {
             let displayValue;
             if (asset.name === "cUSDC") {
-              displayValue = {
-                // FIX: Now checking showConfidentialValues state to determine what to display
-                amount:
-                  title === "Encrypted" && !showConfidentialValues
-                    ? "*****"
-                    : encryptedBalance
-                      ? Number(encryptedBalance).toLocaleString()
-                      : "*****",
-                dollarValue:
-                  title === "Encrypted" && !showConfidentialValues
-                    ? "$******"
-                    : encryptedBalance
-                      ? "$" + Number(encryptedBalance).toLocaleString()
-                      : "$******",
-              };
+              if (title === "Encrypted" && !showConfidentialValues) {
+                // Hidden confidential values
+                displayValue = {
+                  amount: "*****",
+                  dollarValue: "$******",
+                };
+              } else if (showConfidentialValues) {
+                if (isEncryptedLoading) {
+                  // Loading state when values are visible
+                  const loadingDisplay = (
+                    <div className="flex items-center">
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      <span className="text-sm">Loading</span>
+                    </div>
+                  );
+                  displayValue = {
+                    amount: loadingDisplay,
+                    dollarValue: loadingDisplay,
+                  };
+                } else if (encryptedError) {
+                  // Error state
+                  const errorDisplay = (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center text-red-500" onClick={handleRetry}>
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          <span className="text-sm">Error</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Click to retry</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                  displayValue = {
+                    amount: errorDisplay,
+                    dollarValue: errorDisplay,
+                  };
+                } else {
+                  // Normal display with values
+                  displayValue = {
+                    amount: encryptedBalance ? Number(encryptedBalance).toLocaleString() : "0.00",
+                    dollarValue: encryptedBalance ? "$" + Number(encryptedBalance).toLocaleString() : "$0.00",
+                  };
+                }
+              } else {
+                // Fallback
+                displayValue = {
+                  amount: "*****",
+                  dollarValue: "$******",
+                };
+              }
             } else {
+              // Non-cUSDC assets
               displayValue = {
-                amount: Number(usdcBalance?.data?.formatted).toLocaleString(),
-                dollarValue:
-                  "$" + Number(usdcBalance?.data?.formatted).toLocaleString(),
+                amount: Number(usdcBalance?.data?.formatted || 0).toLocaleString(),
+                dollarValue: "$" + Number(usdcBalance?.data?.formatted || 0).toLocaleString(),
               };
             }
 
@@ -137,6 +219,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                           onClick={() => setWithdrawOpen(true)}
                           className="rounded-full"
                           variant="outline"
+                          // disabled={isEncryptedLoading}
                         >
                           Unshield
                         </Button>
@@ -157,11 +240,20 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                     {title === "Encrypted" && (
                       <ConfidentialSendDialog
                         balance={
-                          // Pass hidden balance if values are hidden
                           !showConfidentialValues
                             ? "*****"
-                            : displayValue.amount
+                            : isEncryptedLoading
+                              ? "loading"
+                              : encryptedError
+                                ? "error"
+                                : typeof displayValue.amount === "string"
+                                  ? displayValue.amount
+                                  : encryptedBalance 
+                                    ? Number(encryptedBalance).toLocaleString()
+                                    : "0.00"
                         }
+                        disabled={isEncryptedLoading || (encryptedError && showConfidentialValues)}
+                        error={encryptedError && showConfidentialValues}
                       />
                     )}
                   </div>

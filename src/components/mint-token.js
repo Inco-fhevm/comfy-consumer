@@ -210,7 +210,7 @@ const MintDialog = ({ open, onOpenChange, onSubmit }) => {
                 Cancel
               </Button>
               <Button
-                className="flex-1 "
+                className="flex-1 dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
                 onClick={handleSubmit}
                 disabled={!amount || Number(amount) <= 0 || isLoading}
               >
