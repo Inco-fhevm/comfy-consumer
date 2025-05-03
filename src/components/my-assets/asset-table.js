@@ -51,7 +51,7 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
           return (
             <div className="flex items-center">
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              <span>Loading...</span>
+              {/* <span>Loading...</span> */}
             </div>
           );
         } else if (encryptedError) {
@@ -133,9 +133,9 @@ export const AssetTable = ({ title, totalBalance, assets, onActionClick }) => {
                 if (isEncryptedLoading) {
                   // Loading state when values are visible
                   const loadingDisplay = (
-                    <div className="flex items-center">
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                      <span className="text-sm">Loading</span>
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin my-1" />
+                      {/* <span className="text-sm">Loading</span> */}
                     </div>
                   );
                   displayValue = {

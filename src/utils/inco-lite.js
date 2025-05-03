@@ -1,6 +1,5 @@
 import { getAddress, formatUnits } from "viem";
 import { Lightning } from "@inco/js/lite";
-import { CURRENT_MODE, MODES } from "./contracts";
 
 export const getConfig = () => {
   return Lightning.latest("testnet", 84532);

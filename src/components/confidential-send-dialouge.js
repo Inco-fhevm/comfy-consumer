@@ -86,25 +86,19 @@ const ConfidentialSendDialog = () => {
   };
 
   const { writeContractAsync } = useWriteContract();
+
   const publicClient = usePublicClient();
   const walletClient = useWalletClient();
   const chainId = useChainId();
 
   const confidentialSend = async () => {
     try {
-      setTxResult(null); // reset
-      setSendErrorMessage(""); // reset
-      setConfidentialSendFailed(false); // reset
-
-      // if (selectedContract?.type !== "Existing Shield") {
-      //   setSendErrorMessage(
-      //     "Invalid contract type. Please switch to 'Existing Shield'."
-      //   );
-      //   throw new Error("Invalid contract type.");
-      // }
+      setTxResult(null);
+      setSendErrorMessage("");
+      setConfidentialSendFailed(false);
 
       const config = getConfig(chainId);
-      const  inputCt = await encryptValue({
+      const inputCt = await encryptValue({
         value: parseEther(amount.toString()),
         address: userAddress,
         config: config,
