@@ -2,7 +2,7 @@ import { getAddress, formatUnits } from "viem";
 import { Lightning } from "@inco/js/lite";
 
 export const getConfig = () => {
-  return Lightning.latest("testnet", 84532);
+  return Lightning.latest("devnet", 84532);
   // return CURRENT_MODE === MODES.BASE_SEPOLIA
   //   ? Lightning.latest("devnet", 84532)
   //   : Lightning.localNode();
