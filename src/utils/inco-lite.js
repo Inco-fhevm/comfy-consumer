@@ -54,11 +54,25 @@ export const reEncryptValue = async ({
 
   try {
     const incoConfig = await getConfig();
-    const reencryptor = await incoConfig.getReencryptor(walletClient.data);
 
-    const decryptedResult = await reencryptor({
-      handle: handle.toString(),
-    });
+    const reencryptor = await incoConfig.getReencryptor(walletClient.data);
+    // Default backoff config shown for reference
+    const backoffConfig = {
+      maxRetries: 100,
+      baseDelayInMs: 1000,
+      backoffFactor: 1,
+    };
+
+    const decryptedResult = await reencryptor(
+      { handle: handle },
+      backoffConfig
+    );
+
+    console.log("Decrypted result:", decryptedResult);
+
+    // const resultPlaintext = await reencryptor({
+    //   handle: handle.toString(),
+    // });
 
     console.log("Decrypted result:", decryptedResult);
 
