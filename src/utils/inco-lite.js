@@ -53,53 +53,29 @@ export const reEncryptValue = async ({
 
   try {
     const incoConfig = await getConfig();
+
     const reencryptor = await incoConfig.getReencryptor(walletClient.data);
+    const backoffConfig = {
+      maxRetries: 100,
+      baseDelayInMs: 1000,
+      backoffFactor: 1.2,
+    };
 
-    const maxRetries = 100;
-    const baseDelayInMs = 1000;
-    const backoffFactor = 1.3;
-
-    let decrypted = false;
-    let decryptedResult = null;
-    let lastError = null;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        console.log(`Attempt ${attempt + 1}: Attempting to decrypt...`);
-        decryptedResult = await reencryptor({ handle });
-
-        if (decryptedResult) {
-          decrypted = true;
-          break;
-        }
-      } catch (error) {
-        lastError = error;
-        console.error(`Error on attempt ${attempt + 1}:`, error);
-
-        if (attempt === maxRetries - 1) {
-          break;
-        }
-
-        const delay = baseDelayInMs * Math.pow(backoffFactor, attempt);
-        const jitter = delay * (0.8 + Math.random() * 0.4); // jitter: 80% - 120%
-        console.log(`Retrying in ${Math.round(jitter)}ms...`);
-        await new Promise(resolve => setTimeout(resolve, jitter));
-      }
-    }
+    const decryptedResult = await reencryptor(
+      { handle: handle },
+      backoffConfig
+    );
 
     if (!decryptedResult) {
-      throw lastError || new Error("Failed to decrypt after retries");
+      throw new Error("Failed to decrypt");
     }
-
-    console.log("Decrypted result:", decryptedResult);
 
     const decryptedEther = formatUnits(BigInt(decryptedResult.value), 18);
     const formattedValue = parseFloat(decryptedEther).toFixed(0);
 
-    return isformat ?  decryptedResult.value : formattedValue
+    return isformat ? decryptedResult.value : formattedValue;
   } catch (error) {
-    throw new Error(`Failed to create reencryptor: ${error.message}`);
+    console.error("Reencryption error:", error);
+    throw new Error(`Failed to reencrypt: ${error.message}`);
   }
 };
-
-
