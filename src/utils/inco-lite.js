@@ -2,7 +2,7 @@ import { getAddress, formatUnits } from "viem";
 import { Lightning } from "@inco/js/lite";
 
 export const getConfig = () => {
-  return Lightning.latest("testnet", 84532);
+  return Lightning.latest("demonet", 84532);
   // return CURRENT_MODE === MODES.BASE_SEPOLIA
   //   ? Lightning.latest("devnet", 84532)
   //   : Lightning.localNode();
@@ -58,7 +58,7 @@ export const reEncryptValue = async ({
     const backoffConfig = {
       maxRetries: 100,
       baseDelayInMs: 1000,
-      backoffFactor: 1.2,
+      backoffFactor: 1.5,
     };
 
     const decryptedResult = await reencryptor(
