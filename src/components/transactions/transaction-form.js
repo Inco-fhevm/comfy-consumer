@@ -173,6 +173,7 @@ export const TransactionForm = ({
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
         args: [amountWithDecimals],
+        gas: 500000,
       });
 
       const transaction = await publicClient.waitForTransactionReceipt({
