@@ -6,9 +6,15 @@ import { useWalletClient } from "wagmi";
 import { Button } from "../ui/button";
 import ConfidentialSendDialog from "../confidential-send-dialouge";
 import TransactionDialog from "../transaction/transaction-dialouge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatNumber, formatCurrency } from "@/lib/format-number";
 import { AssetTableProps, Asset, DisplayValue } from "@/types/asset-table";
+import IconBuilder from "../icon-builder";
 
 // Reusable components
 const LoadingDisplay = ({ size = "w-4 h-4" }: { size?: string }) => (
@@ -17,10 +23,19 @@ const LoadingDisplay = ({ size = "w-4 h-4" }: { size?: string }) => (
   </div>
 );
 
-const ErrorDisplay = ({ onClick, size = "w-4 h-4" }: { onClick: () => void; size?: string }) => (
+const ErrorDisplay = ({
+  onClick,
+  size = "w-4 h-4",
+}: {
+  onClick: () => void;
+  size?: string;
+}) => (
   <TooltipProvider>
     <Tooltip>
-      <TooltipTrigger className="flex items-center text-red-500" onClick={onClick}>
+      <TooltipTrigger
+        className="flex items-center text-red-500"
+        onClick={onClick}
+      >
         <AlertCircle className={`${size} mr-1`} />
         <span className={size === "w-3 h-3" ? "text-sm" : ""}>Error</span>
       </TooltipTrigger>
@@ -48,18 +63,21 @@ const EyeIcon = () => (
   </svg>
 );
 
-  export const AssetTable: React.FC<AssetTableProps> = ({ title, assets }) => {
+export const AssetTable: React.FC<AssetTableProps> = ({ title, assets }) => {
   const [depositOpen, setDepositOpen] = useState<boolean>(false);
   const [withdrawOpen, setWithdrawOpen] = useState<boolean>(false);
-  const [showConfidentialValues, setShowConfidentialValues] = useState<boolean>(false);
-  const [transmittedBalance, setTransmittedBalance] = useState<string | null>(null);
+  const [showConfidentialValues, setShowConfidentialValues] =
+    useState<boolean>(false);
+  const [transmittedBalance, setTransmittedBalance] = useState<string | null>(
+    null
+  );
 
   const {
     encryptedBalance,
     fetchEncryptedBalance,
     isEncryptedLoading,
     encryptedError,
-    tokenBalance: usdcBalance
+    tokenBalance: usdcBalance,
   } = useChainBalance();
 
   const walletClient = useWalletClient();
@@ -107,10 +125,13 @@ const EyeIcon = () => (
 
   const getAssetDisplayValue = (asset: Asset): DisplayValue => {
     const isConfidentialAsset = asset.name === "cUSDC";
-    
+
     if (!isConfidentialAsset) {
       // Regular assets
-      if (typeof asset.amount === 'number' && typeof asset.dollarValue === 'number') {
+      if (
+        typeof asset.amount === "number" &&
+        typeof asset.dollarValue === "number"
+      ) {
         return {
           amount: formatNumber(asset.amount),
           dollarValue: formatCurrency(asset.dollarValue),
@@ -140,7 +161,9 @@ const EyeIcon = () => (
     }
 
     if (encryptedError) {
-      const errorDisplay = <ErrorDisplay onClick={handleRetry} size="w-3 h-3" />;
+      const errorDisplay = (
+        <ErrorDisplay onClick={handleRetry} size="w-3 h-3" />
+      );
       return {
         amount: errorDisplay,
         dollarValue: errorDisplay,
@@ -149,7 +172,9 @@ const EyeIcon = () => (
 
     return {
       amount: encryptedBalance ? formatNumber(encryptedBalance) : "0.00",
-      dollarValue: encryptedBalance ? formatCurrency(encryptedBalance) : "$0.00",
+      dollarValue: encryptedBalance
+        ? formatCurrency(encryptedBalance)
+        : "$0.00",
     };
   };
 
@@ -157,10 +182,10 @@ const EyeIcon = () => (
     if (!showConfidentialValues) return "*****";
     if (isEncryptedLoading) return "loading";
     if (encryptedError) return "error";
-    
+
     return typeof displayValue.amount === "string"
       ? displayValue.amount
-      : encryptedBalance 
+      : encryptedBalance
         ? formatNumber(encryptedBalance)
         : "0.00";
   };
@@ -176,7 +201,12 @@ const EyeIcon = () => (
         {isEncrypted && (
           <button onClick={toggleConfidentialValues}>
             {showConfidentialValues ? (
-              <EyeOff className="w-6 h-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <EyeOff
+                className="w-6 h-6"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             ) : (
               <EyeIcon />
             )}
@@ -201,10 +231,21 @@ const EyeIcon = () => (
               <tr key={index}>
                 <td className="py-4 pl-6">
                   <div className="flex items-center gap-3">
-                    <Image src={asset.icon} alt={asset.name} width={44} height={44} />
+                    {/* <Image src={asset.icon} alt={asset.name} width={44} height={44} /> */}
+                    <div className="w-11 h-11">
+                      <IconBuilder
+                        isEncrypted={asset.isEncrypted}
+                        usdcImage={"/tokens/usdc-token.svg"}
+                        incoImage={"/tokens/inco-token.svg"}
+                        networkImage={"/chains/base-sepolia.svg"}
+                      />
+                    </div>
+
                     <div>
                       <div className="font-medium">{asset.name}</div>
-                      <div className="text-sm text-gray-500">on {asset.chain}</div>
+                      <div className="text-sm text-gray-500">
+                        on {asset.chain}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -231,7 +272,9 @@ const EyeIcon = () => (
                     ) : (
                       <Button
                         onClick={() => {
-                          setTransmittedBalance(displayValue.amount.toString());
+                          setTransmittedBalance(
+                            displayValue.amount?.toString() || "0"
+                          );
                           setDepositOpen(true);
                         }}
                         className="bg-blue-500 hover:bg-blue-600 rounded-full dark:text-white"
@@ -243,7 +286,10 @@ const EyeIcon = () => (
                     {isEncrypted && (
                       <ConfidentialSendDialog
                         balance={getConfidentialSendBalance(displayValue)}
-                        disabled={isEncryptedLoading || (encryptedError && showConfidentialValues)}
+                        disabled={
+                          isEncryptedLoading ||
+                          (encryptedError && showConfidentialValues)
+                        }
                         error={encryptedError && showConfidentialValues}
                       />
                     )}

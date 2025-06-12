@@ -51,7 +51,7 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
       </div>
       <Button
         variant="ghost"
-        className="h-8 w-8 p-0"
+        className="h-8 w-8 p-0 rounded-xl"
         onClick={() => onOpenChange(false)}
       >
         <X className="h-4 w-4" />
@@ -74,7 +74,7 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
   return (
     <DialogComponent open={open} onOpenChange={onOpenChange}>
       <DialogContentComponent
-        className={`${!selectedAsset ? "h-[480px] overflow-hidden" : ""} ${
+        className={`${!selectedAsset ? "overflow-hidden" : ""} ${
           isMobile ? "w-full" : "w-[448px]"
         } p-0 ${isMobile ? "rounded-t-2xl" : ""}`}
         side={isMobile ? "bottom" : undefined}

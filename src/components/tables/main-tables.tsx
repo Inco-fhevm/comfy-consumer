@@ -29,6 +29,7 @@ const CryptoWalletTables: React.FC<CryptoWalletTablesProps> = () => {
         dollarValue: 0,
         icon: "/icons/usdc-base.svg",
         chain: "Base Sepolia",
+        isEncrypted: false,
       }];
     }
 
@@ -39,6 +40,7 @@ const CryptoWalletTables: React.FC<CryptoWalletTablesProps> = () => {
       dollarValue: amount * USDC_PRICE,
       icon: "/icons/usdc-base.svg",
       chain: "Base Sepolia",
+      isEncrypted: false,
     }];
   }, [isConnected, baseSepoliaUsdc.data?.formatted]);
 
@@ -53,6 +55,7 @@ const CryptoWalletTables: React.FC<CryptoWalletTablesProps> = () => {
     dollarValue: "$******",
     icon: "/tokens/confidential/usdc-base.png",
     chain: "Base Sepolia",
+    isEncrypted: true,
   }];
 
   const handleEncrypt = (asset: Asset): void => {

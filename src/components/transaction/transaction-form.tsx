@@ -27,6 +27,7 @@ import Image from "next/image";
 import { baseSepolia } from "viem/chains";
 import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
+import IconBuilder from "../icon-builder";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -243,12 +244,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         <div className="w-full border rounded-xl overflow-y-auto md:h-64 p-6 mb-6 text-center grid place-items-center">
           <div>
             <div className="grid place-items-center gap-6">
-              <Image
-                src="/tokens/confidential/usdc-base.png"
-                alt="usdc"
-                width={64}
-                height={64}
-              />
+              <div className="w-11 h-11">
+                <IconBuilder
+                  isEncrypted={true}
+                  usdcImage={"/tokens/usdc-token.svg"}
+                  incoImage={"/tokens/inco-token.svg"}
+                  networkImage={"/chains/base-sepolia.svg"}
+                />
+              </div>
               <div className="text-3xl flex gap-2 items-center font-semibold mb-1 bg-transparent text-center w-full text-black dark:text-white disabled:opacity-50">
                 <input
                   type="text"
@@ -278,12 +281,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="p-4 border rounded-xl mb-4">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <Image
-                  src="/tokens/confidential/usdc-base.png"
-                  alt="usdc"
-                  width={40}
-                  height={40}
+               <div className="w-11 h-11">
+                <IconBuilder
+                  isEncrypted={true}
+                  usdcImage={"/tokens/usdc-token.svg"}
+                  incoImage={"/tokens/inco-token.svg"}
+                  networkImage={"/chains/base-sepolia.svg"}
                 />
+               </div>
                 <div>
                   <p className="dark:text-white">USDC</p>
                   <div className="text-sm text-gray-500 dark:text-gray-400">

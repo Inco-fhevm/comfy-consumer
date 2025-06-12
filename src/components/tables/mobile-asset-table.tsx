@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { formatNumber, formatCurrency } from "@/lib/format-number";
 import { MobileAssetTableProps, Asset } from "@/types/wallet";
+import IconBuilder from "../icon-builder";
 
 const MobileAssetTable: React.FC<MobileAssetTableProps> = ({ 
   title, 
@@ -124,12 +125,14 @@ const MobileAssetTable: React.FC<MobileAssetTableProps> = ({
             <div key={index} className="mb-4">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <Image
-                    src={asset.icon}
-                    alt={asset.name}
-                    width={44}
-                    height={44}
-                  />
+                  <div className="w-11 h-11">
+                    <IconBuilder
+                      isEncrypted={asset.isEncrypted}
+                      usdcImage={"/tokens/usdc-token.svg"}
+                      incoImage={"/tokens/inco-token.svg"}
+                      networkImage={"/chains/base-sepolia.svg"}
+                    />
+                  </div>
                   <div>
                     <div className="font-medium text-base">{asset.name}</div>
                     <div className="text-xs text-gray-500">

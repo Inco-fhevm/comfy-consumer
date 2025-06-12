@@ -5,6 +5,7 @@ export interface Asset {
     dollarValue: number | string;
     icon: string;
     chain: string;
+    isEncrypted: boolean;
   }
   
   export interface AssetTableProps {

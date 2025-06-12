@@ -37,6 +37,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
+import IconBuilder from "./icon-builder";
 
 interface TxResult {
   success: boolean;
@@ -240,13 +241,14 @@ const ConfidentialSendDialog: React.FC = () => {
                 <div className="p-3 border rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Image
-                        src={"/tokens/confidential/usdc-base.png"}
-                        width={40}
-                        height={40}
-                        alt='usdc'
-                        // className="w-8 h-8"
-                      />
+                      <div className="w-11 h-11"> 
+                        <IconBuilder
+                          isEncrypted={true}
+                          usdcImage={"/tokens/usdc-token.svg"}
+                          incoImage={"/tokens/inco-token.svg"}
+                          networkImage={"/chains/base-sepolia.svg"}
+                        />
+                      </div>
                       <div>
                         <p className="font-medium dark:text-white">
                           cUSDC
