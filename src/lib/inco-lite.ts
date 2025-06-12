@@ -50,8 +50,7 @@ export const reEncryptValue = async ({
 
   try {
     const incoConfig = getConfig();
-    // @ts-expect-error walletClient.data is not typed
-    const reencryptor = await incoConfig.getReencryptor(walletClient);
+    const reencryptor = await incoConfig.getReencryptor(walletClient.data);
     const backoffConfig = {
       maxRetries: 100,
       baseDelayInMs: 1000,
@@ -59,8 +58,7 @@ export const reEncryptValue = async ({
     };
 
     const decryptedResult = await reencryptor(
-      // @ts-expect-error handle is not typed
-      { handle: handle },
+      { handle: handle as `0x${string}` },
       backoffConfig
     );
 

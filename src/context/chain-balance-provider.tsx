@@ -8,25 +8,25 @@ import React, {
   ReactNode,
 } from "react";
 import {
-  useBalance,
   useAccount,
   usePublicClient,
   useWalletClient,
   useChainId,
   type UseBalanceReturnType,
 } from "wagmi";
-import { type WalletClient } from "viem";
+import { type WalletClient, createPublicClient, http } from "viem";
+import { baseSepolia } from "viem/chains";
 
 import {
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
   ENCRYPTEDERC20ABI,
   ERC20_CONTRACT_ADDRESS,
+  ERC20ABI,
 } from "@/lib/constants";
 
 import { reEncryptValue } from "@/lib/inco-lite";
 
 interface ChainBalanceContextType {
-  nativeBalance: UseBalanceReturnType;
   tokenBalance: UseBalanceReturnType;
   encryptedBalance: number | null;
   isEncryptedLoading: boolean;
@@ -53,23 +53,69 @@ export const ChainBalanceProvider = ({
   const [encryptedBalance, setEncryptedBalance] = useState<number | null>(null);
   const [isEncryptedLoading, setIsEncryptedLoading] = useState(false);
   const [encryptedError, setEncryptedError] = useState<string | null>(null);
+  const [tokenBalance, setTokenBalance] = useState<UseBalanceReturnType>({
+    data: undefined,
+    isError: false,
+    isLoading: true,
+    isSuccess: false,
+    refetch: async () => {},
+    status: "loading",
+    dataUpdatedAt: 0,
+  });
 
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const chainId = useChainId();
 
-  // Fetch native balance for the specified chain
-  const nativeBalance = useBalance({
-    address,
-    chainId,
+  // Create a public client for view calls
+  const viewClient = createPublicClient({
+    chain: baseSepolia,
+    transport: http(),
   });
 
-  // Fetch token balance (USDC or other ERC20) for the specified chain
-  const tokenBalance = useBalance({
-    address,
-    token: tokenAddress,
-    chainId,
-  });
+  // Fetch token balance using public RPC
+  const fetchTokenBalance = useCallback(async () => {
+    if (!address) return;
+
+    try {
+      const balance = await viewClient.readContract({
+        address: tokenAddress,
+        abi: ERC20ABI,
+        functionName: "balanceOf",
+        args: [address],
+      });
+
+      setTokenBalance({
+        data: {
+          value: balance as bigint,
+          formatted: (Number(balance) / 1e18).toString(),
+          decimals: 18,
+          symbol: "USDC",
+        },
+        isError: false,
+        isLoading: false,
+        isSuccess: true,
+        refetch: fetchTokenBalance,
+        status: "success",
+        dataUpdatedAt: Date.now(),
+      });
+    } catch (error) {
+      setTokenBalance({
+        data: undefined,
+        isError: true,
+        isLoading: false,
+        isSuccess: false,
+        refetch: fetchTokenBalance,
+        status: "error",
+        dataUpdatedAt: Date.now(),
+      });
+    }
+  }, [address, tokenAddress, viewClient]);
+
+  // Initial fetch
+  React.useEffect(() => {
+    fetchTokenBalance();
+  }, [fetchTokenBalance]);
 
   // Encrypted balance fetch function
   const fetchEncryptedBalance = useCallback(
@@ -124,22 +170,18 @@ export const ChainBalanceProvider = ({
 
   const refreshBalances = useCallback(
     (balancesToRefresh: string[], wc?: WalletClient): void => {
-      if (balancesToRefresh.includes("native")) {
-        nativeBalance.refetch();
-      }
       if (balancesToRefresh.includes("token")) {
-        tokenBalance.refetch();
+        fetchTokenBalance();
       }
       if (balancesToRefresh.includes("encrypted")) {
         fetchEncryptedBalance(wc);
       }
     },
-    [nativeBalance.refetch, tokenBalance.refetch, fetchEncryptedBalance]
+    [fetchTokenBalance, fetchEncryptedBalance]
   );
 
   const contextValue = useMemo(
     () => ({
-      nativeBalance,
       tokenBalance,
       encryptedBalance,
       isEncryptedLoading,
@@ -149,7 +191,6 @@ export const ChainBalanceProvider = ({
       isConnected,
     }),
     [
-      nativeBalance,
       tokenBalance,
       encryptedBalance,
       isEncryptedLoading,

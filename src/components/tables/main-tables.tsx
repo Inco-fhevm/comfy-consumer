@@ -1,0 +1,119 @@
+"use client";
+import React, { useState, useMemo } from "react";
+import { useAccount, useBalance } from "wagmi";
+import { baseSepolia } from "viem/chains";
+import { ERC20_CONTRACT_ADDRESS } from "@/lib/constants";
+import { AssetTable } from "./asset-tables";
+import WalletTabs from "./wallet-tabs";
+import MobileAssetTable from "./mobile-asset-table";
+import { Asset, CryptoWalletTablesProps } from "@/types/wallet";
+
+const BASE_SEPOLIA_CHAIN_ID = baseSepolia?.id || 84532;
+const USDC_PRICE = 1;
+
+const CryptoWalletTables: React.FC<CryptoWalletTablesProps> = () => {
+  const [activeTab, setActiveTab] = useState<string>("Wallet");
+  const { address, isConnected } = useAccount();
+
+  const baseSepoliaUsdc = useBalance({
+    address,
+    token: ERC20_CONTRACT_ADDRESS,
+    chainId: BASE_SEPOLIA_CHAIN_ID,
+  });
+
+  const walletAssets = useMemo((): Asset[] => {
+    if (!isConnected || !baseSepoliaUsdc.data?.formatted) {
+      return [{
+        name: "USDC",
+        amount: 0,
+        dollarValue: 0,
+        icon: "/icons/usdc-base.svg",
+        chain: "Base Sepolia",
+      }];
+    }
+
+    const amount = parseFloat(baseSepoliaUsdc.data.formatted);
+    return [{
+      name: "USDC",
+      amount,
+      dollarValue: amount * USDC_PRICE,
+      icon: "/icons/usdc-base.svg",
+      chain: "Base Sepolia",
+    }];
+  }, [isConnected, baseSepoliaUsdc.data?.formatted]);
+
+  const totalWalletBalance = useMemo(() => 
+    walletAssets.reduce((sum, asset) => sum + (typeof asset.dollarValue === 'number' ? asset.dollarValue : 0), 0),
+    [walletAssets]
+  );
+
+  const encryptedAssets: Asset[] = [{
+    name: "cUSDC",
+    amount: "*****",
+    dollarValue: "$******",
+    icon: "/tokens/confidential/usdc-base.png",
+    chain: "Base Sepolia",
+  }];
+
+  const handleEncrypt = (asset: Asset): void => {
+    console.log(`Encrypting ${asset.name} on ${asset.chain}`);
+  };
+
+  const handleDecrypt = (asset: Asset): void => {
+    console.log(`Decrypting ${asset.name} on ${asset.chain}`);
+  };
+
+  const isLoading = baseSepoliaUsdc.isLoading;
+
+  return (
+    <div>
+      {isLoading ? (
+        <div className="text-center py-8">Loading balances...</div>
+      ) : (
+        <>
+          {/* Mobile view with tabs */}
+          <div className="md:hidden">
+            <WalletTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+
+            {activeTab === "Wallet" && (
+              <MobileAssetTable
+                title="Wallet"
+                totalBalance={totalWalletBalance}
+                assets={walletAssets}
+                onActionClick={handleEncrypt}
+              />
+            )}
+
+            {activeTab === "Encrypted" && (
+              <MobileAssetTable
+                title="Encrypted"
+                totalBalance={28000}
+                assets={encryptedAssets}
+                onActionClick={handleDecrypt}
+              />
+            )}
+          </div>
+
+          {/* Desktop view with original AssetTable components */}
+          <div className={`hidden md:grid md:grid-cols-2 md:gap-4`}>
+            <AssetTable
+              title="Wallet"
+              totalBalance={totalWalletBalance}
+              assets={walletAssets}
+              onActionClick={handleEncrypt}
+            />
+
+            <AssetTable
+              title="Encrypted"
+              totalBalance={28000}
+              assets={encryptedAssets}
+              onActionClick={handleDecrypt}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default CryptoWalletTables;

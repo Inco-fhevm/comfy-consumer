@@ -1,11 +1,11 @@
-import React from "react";
-// import { Button } from "./ui/button";
-// import CustomConnectButton from "./custom-connect-button";
-// import MintDialog from "./mint-token";
+import React, { useState }   from "react";
+import { Button } from "./ui/button";
+import MintDialog from "./mint-token";
 import Image from "next/image";
+import CustomConnectButton from "./custom-connect-button";
 
 const Navbar = ({ currentPage }: { currentPage: string }) => {
-  // const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
     <header className="border-b p-4 flex justify-between items-center relative">
@@ -23,7 +23,7 @@ const Navbar = ({ currentPage }: { currentPage: string }) => {
         />
       </div>
 
-      {/* <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           className="font-semibold"
@@ -32,14 +32,11 @@ const Navbar = ({ currentPage }: { currentPage: string }) => {
           Mint now
         </Button>
         <CustomConnectButton />
-      </div> */}
-      {/* <MintDialog
+      </div>
+      <MintDialog
         open={open}
         onOpenChange={setOpen}
-        onSubmit={({ amount, token }) => {
-          setOpen(false);
-        }}
-      /> */}
+      />
     </header>
   );
 };
