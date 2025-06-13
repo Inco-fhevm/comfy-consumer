@@ -8,12 +8,7 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import {
-  createPublicClient,
-  http,
-  parseAbiItem,
-  parseEther,
-} from "viem";
+import { createPublicClient, http, parseAbiItem, parseEther } from "viem";
 import {
   ERC20_CONTRACT_ADDRESS,
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
@@ -52,17 +47,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
-  const {
-    tokenBalance,
-    refreshBalances,
-    fetchEncryptedBalance,
-  } = useChainBalance();
+  const { tokenBalance, refreshBalances, fetchEncryptedBalance } =
+    useChainBalance();
 
   const handleRefreshEncrypted = () => fetchEncryptedBalance(walletClient);
 
   const handleShield = async (): Promise<void> => {
     if (!amount || !address) return;
-    
+
     setError("");
     setIsProcessing(true);
     setIsApproving(true);
@@ -105,7 +97,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       toast.success("Wrap Complete");
       handleClose(mode);
-
     } catch (error) {
       console.error("Transaction failed:", error);
       setError("Transaction failed. Please try again.");
@@ -124,7 +115,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
     try {
       await checkAndSwitchNetwork();
-      
+
       if (!decryptAmount) {
         setError("No encrypted balance available.");
         return;
@@ -132,15 +123,26 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       const amountWithDecimals = parseEther(decryptAmount.toString());
 
+      // Estimate gas for unwrap
+      const estimatedGas = await publicClient!.estimateContractGas({
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        abi: ENCRYPTEDERC20ABI,
+        functionName: "unwrap",
+        args: [amountWithDecimals],
+        account: address,
+      });
+
       const hash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
         args: [amountWithDecimals],
-        gas: BigInt(50000),
+        gas: estimatedGas,
       });
 
-      const transaction = await publicClient!.waitForTransactionReceipt({ hash });
+      const transaction = await publicClient!.waitForTransactionReceipt({
+        hash,
+      });
 
       if (transaction.status !== "success") {
         setError("Transaction failed");
@@ -157,7 +159,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       const eventPromise = new Promise((resolve) => {
         const unwatch = pubClient.watchEvent({
           address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-          event: parseAbiItem("event Unwrap(address indexed account, uint256 amount)"),
+          event: parseAbiItem(
+            "event Unwrap(address indexed account, uint256 amount)"
+          ),
           onLogs: (logs) => {
             console.log("🎉 Unwrap Event:", logs);
             unwatch();
@@ -174,7 +178,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       await eventPromise;
       toast.success("Unwrap Complete");
       handleClose(mode);
-
     } catch (error) {
       console.error("Transaction failed:", error);
       setError("Transaction failed. Please try again.");
@@ -189,7 +192,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const handleAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const value = e.target.value.replace(/[^0-9.]/g, "");
     if (value.split(".").length > 2) return;
-    
+
     setAmount(value);
 
     if (Number(value) > Number(currentBalance)) {
@@ -199,7 +202,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
-  const handleDecryptAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
+  const handleDecryptAmountChange = (
+    e: ChangeEvent<HTMLInputElement>
+  ): void => {
     const value = e.target.value.replace(/[^0-9.]/g, "");
     if (value.split(".").length > 2) return;
     setDecryptAmount(value);
@@ -210,7 +215,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     setError("");
   };
 
-  const isAmountValid = Number(amount) > 0 && Number(amount) <= Number(tokenBalance?.data?.formatted);
+  const isAmountValid =
+    Number(amount) > 0 &&
+    Number(amount) <= Number(tokenBalance?.data?.formatted);
   const isDecryptAmountValid = Number(decryptAmount) > 0;
 
   // Loading state
@@ -279,18 +286,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="p-4 border rounded-xl mb-4">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-               <div className="w-11 h-11">
-                <IconBuilder
-                  isEncrypted={true}
-                  usdcImage={"/tokens/usdc-token.svg"}
-                  incoImage={"/tokens/inco-token.svg"}
-                  networkImage={"/chains/base-sepolia.svg"}
-                />
-               </div>
+                <div className="w-11 h-11">
+                  <IconBuilder
+                    isEncrypted={true}
+                    usdcImage={"/tokens/usdc-token.svg"}
+                    incoImage={"/tokens/inco-token.svg"}
+                    networkImage={"/chains/base-sepolia.svg"}
+                  />
+                </div>
                 <div>
                   <p className="dark:text-white">USDC</p>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Balance: {formatCurrency(Number(tokenBalance?.data?.formatted))} USDC
+                    Balance:{" "}
+                    {formatCurrency(Number(tokenBalance?.data?.formatted))} USDC
                   </div>
                 </div>
               </div>
