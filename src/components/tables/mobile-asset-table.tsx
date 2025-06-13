@@ -1,8 +1,7 @@
 // components/MobileAssetTable.tsx
 "use client";
 import React, { useState } from "react";
-import {  EyeOff } from "lucide-react";
-import Image from "next/image";
+import { EyeOff } from "lucide-react";
 import { useWalletClient } from "wagmi";
 // import ConfidentialSendDialog from "@/components/confidential-send-dialouge";
 import { Button } from "@/components/ui/button";
@@ -11,32 +10,30 @@ import { useChainBalance } from "@/context/chain-balance-provider";
 import { formatNumber, formatCurrency } from "@/lib/format-number";
 import { MobileAssetTableProps, Asset } from "@/types/wallet";
 import IconBuilder from "../icon-builder";
+import { WalletClient } from "viem";
+import TransactionDialog from "../transaction/transaction-dialouge";
+import ConfidentialSendDialog from "../confidential-send-dialouge";
 
-const MobileAssetTable: React.FC<MobileAssetTableProps> = ({ 
-  title, 
-  totalBalance, 
-  assets, 
-  onActionClick 
+const MobileAssetTable: React.FC<MobileAssetTableProps> = ({
+  title,
+  totalBalance,
+  assets,
 }) => {
   const [depositOpen, setDepositOpen] = useState<boolean>(false);
   const [withdrawOpen, setWithdrawOpen] = useState<boolean>(false);
-  const [showConfidentialValues, setShowConfidentialValues] = useState<boolean>(false);
-  const [transmittedBalance, setTransmittedBalance] = useState<string | null>(null);
-  
-  const walletClient = useWalletClient();
+  const [showConfidentialValues, setShowConfidentialValues] =
+    useState<boolean>(false);
 
-  const {
-    encryptedBalance,
-    isEncryptedLoading,
-    encryptedError,
-    fetchEncryptedBalance,
-  } = useChainBalance();
+  const { data: walletClient } = useWalletClient();
 
-  const handleRefreshEncrypted = (w0: any) => fetchEncryptedBalance(w0);
+  const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
+
+  const handleRefreshEncrypted = (w0: WalletClient) =>
+    fetchEncryptedBalance(w0);
 
   const toggleConfidentialValues = async (): Promise<void> => {
     if (!showConfidentialValues) {
-      await handleRefreshEncrypted(walletClient);
+      await handleRefreshEncrypted(walletClient as WalletClient);
     }
     setShowConfidentialValues(!showConfidentialValues);
   };
@@ -49,17 +46,27 @@ const MobileAssetTable: React.FC<MobileAssetTableProps> = ({
           dollarValue: "$******",
         };
       } else {
-        const formattedBalance = encryptedBalance ? formatNumber(encryptedBalance) : "*****";
-        const formattedDollarValue = encryptedBalance ? formatCurrency(encryptedBalance) : "$******";
+        const formattedBalance = encryptedBalance
+          ? formatNumber(encryptedBalance)
+          : "*****";
+        const formattedDollarValue = encryptedBalance
+          ? formatCurrency(encryptedBalance)
+          : "$******";
         return {
           amount: formattedBalance,
           dollarValue: formattedDollarValue,
         };
       }
     } else {
-      const formattedAmount = typeof asset.amount === "number" ? formatNumber(asset.amount) : asset.amount;
-      const formattedDollarValue = typeof asset.dollarValue === "number" ? formatCurrency(asset.dollarValue) : asset.dollarValue;
-      
+      const formattedAmount =
+        typeof asset.amount === "number"
+          ? formatNumber(asset.amount)
+          : asset.amount;
+      const formattedDollarValue =
+        typeof asset.dollarValue === "number"
+          ? formatCurrency(asset.dollarValue)
+          : asset.dollarValue;
+
       return {
         amount: formattedAmount,
         dollarValue: formattedDollarValue,
@@ -69,7 +76,7 @@ const MobileAssetTable: React.FC<MobileAssetTableProps> = ({
 
   const getFormattedTotalBalance = (): string => {
     if (title === "Encrypted") {
-      return showConfidentialValues 
+      return showConfidentialValues
         ? formatCurrency(encryptedBalance || 0)
         : "$******";
     } else {
@@ -161,7 +168,6 @@ const MobileAssetTable: React.FC<MobileAssetTableProps> = ({
                 ) : (
                   <Button
                     onClick={() => {
-                      setTransmittedBalance(displayValue.amount.toString());
                       setDepositOpen(true);
                     }}
                     className="bg-blue-500 hover:bg-blue-600 shadow-none rounded-full w-full text-white"
@@ -170,17 +176,13 @@ const MobileAssetTable: React.FC<MobileAssetTableProps> = ({
                   </Button>
                 )}
 
-                {/* {title === "Encrypted" && (
+                {title === "Encrypted" && (
                   <div className="">
-                    <ConfidentialSendDialog
-                      balance={
-                        !showConfidentialValues ? "*****" : displayValue.amount.toString()
-                      }
-                    />
+                    <ConfidentialSendDialog />
                   </div>
-                )} */}
+                )}
 
-                {/* <TransactionDialog
+                <TransactionDialog
                   mode="shield"
                   open={depositOpen}
                   onOpenChange={setDepositOpen}
@@ -190,10 +192,12 @@ const MobileAssetTable: React.FC<MobileAssetTableProps> = ({
                   mode="withdraw"
                   open={withdrawOpen}
                   balance={
-                    showConfidentialValues ? displayValue.amount.toString() : "*****"
+                    showConfidentialValues
+                      ? displayValue.amount.toString()
+                      : "*****"
                   }
                   onOpenChange={setWithdrawOpen}
-                /> */}
+                />
               </div>
             </div>
           );

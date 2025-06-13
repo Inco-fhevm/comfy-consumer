@@ -1,3 +1,4 @@
+import { Abi } from "viem";
 
 export interface SelectedAsset {
     name: string;
@@ -20,9 +21,9 @@ export interface SelectedAsset {
   
   export interface ContractWriteArgs {
     address: `0x${string}`;
-    abi: any[];
+    abi: Abi[];
     functionName: string;
-    args: any[];
+    args: unknown[];
   }
   
   export interface TransactionData {
@@ -30,8 +31,8 @@ export interface SelectedAsset {
     txType: string;
     from: string;
     to: string;
-    balanceBefore: any;
-    balanceAfter: any;
+    balanceBefore: string | number | bigint;
+    balanceAfter: string | number | bigint;
     tokenName: string;
     tokenSymbol: string;
     txHash: string;

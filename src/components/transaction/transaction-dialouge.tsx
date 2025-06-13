@@ -32,7 +32,7 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
   );
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  const handleClose = (type?: string): void => {
+  const handleClose = (): void => {
     setSelectedAsset(null);
     onOpenChange(false);
   };
@@ -63,9 +63,9 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
     <div className="transition-opacity duration-200">
       <div className="px-8">
         <TransactionForm
-          mode={mode}
+          mode={mode as "shield" | "withdraw"}
           handleClose={handleClose}
-          currentBalance={balance}
+          currentBalance={balance?.toString() || "0"}
         />
       </div>
     </div>

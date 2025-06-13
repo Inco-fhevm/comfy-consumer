@@ -11,17 +11,15 @@ import {
   useAccount,
   usePublicClient,
   useWalletClient,
-  useChainId,
+  useBalance,
   type UseBalanceReturnType,
 } from "wagmi";
-import { type WalletClient, createPublicClient, http } from "viem";
-import { baseSepolia } from "viem/chains";
+import { type WalletClient } from "viem";
 
 import {
   ENCRYPTED_ERC20_CONTRACT_ADDRESS,
   ENCRYPTEDERC20ABI,
   ERC20_CONTRACT_ADDRESS,
-  ERC20ABI,
 } from "@/lib/constants";
 
 import { reEncryptValue } from "@/lib/inco-lite";
@@ -53,69 +51,17 @@ export const ChainBalanceProvider = ({
   const [encryptedBalance, setEncryptedBalance] = useState<number | null>(null);
   const [isEncryptedLoading, setIsEncryptedLoading] = useState(false);
   const [encryptedError, setEncryptedError] = useState<string | null>(null);
-  const [tokenBalance, setTokenBalance] = useState<UseBalanceReturnType>({
-    data: undefined,
-    isError: false,
-    isLoading: true,
-    isSuccess: false,
-    refetch: async () => {},
-    status: "loading",
-    dataUpdatedAt: 0,
+
+  const tokenBalance = useBalance({
+    address: address,
+    token: tokenAddress,
+    query: {
+      enabled: !!address,
+    },
   });
 
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-  const chainId = useChainId();
-
-  // Create a public client for view calls
-  const viewClient = createPublicClient({
-    chain: baseSepolia,
-    transport: http(),
-  });
-
-  // Fetch token balance using public RPC
-  const fetchTokenBalance = useCallback(async () => {
-    if (!address) return;
-
-    try {
-      const balance = await viewClient.readContract({
-        address: tokenAddress,
-        abi: ERC20ABI,
-        functionName: "balanceOf",
-        args: [address],
-      });
-
-      setTokenBalance({
-        data: {
-          value: balance as bigint,
-          formatted: (Number(balance) / 1e18).toString(),
-          decimals: 18,
-          symbol: "USDC",
-        },
-        isError: false,
-        isLoading: false,
-        isSuccess: true,
-        refetch: fetchTokenBalance,
-        status: "success",
-        dataUpdatedAt: Date.now(),
-      });
-    } catch (error) {
-      setTokenBalance({
-        data: undefined,
-        isError: true,
-        isLoading: false,
-        isSuccess: false,
-        refetch: fetchTokenBalance,
-        status: "error",
-        dataUpdatedAt: Date.now(),
-      });
-    }
-  }, [address, tokenAddress, viewClient]);
-
-  // Initial fetch
-  React.useEffect(() => {
-    fetchTokenBalance();
-  }, [fetchTokenBalance]);
 
   // Encrypted balance fetch function
   const fetchEncryptedBalance = useCallback(
@@ -148,7 +94,6 @@ export const ChainBalanceProvider = ({
         }
 
         const decrypted = await reEncryptValue({
-          isformat: true,
           walletClient: clientToUse,
           handle: balanceHandle.toString(),
         });
@@ -171,13 +116,13 @@ export const ChainBalanceProvider = ({
   const refreshBalances = useCallback(
     (balancesToRefresh: string[], wc?: WalletClient): void => {
       if (balancesToRefresh.includes("token")) {
-        fetchTokenBalance();
+        tokenBalance.refetch();
       }
       if (balancesToRefresh.includes("encrypted")) {
         fetchEncryptedBalance(wc);
       }
     },
-    [fetchTokenBalance, fetchEncryptedBalance]
+    [tokenBalance.refetch, fetchEncryptedBalance]
   );
 
   const contextValue = useMemo(

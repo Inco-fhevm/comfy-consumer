@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { AlertCircle, EyeOff, Loader2 } from "lucide-react";
-import Image from "next/image";
 import { useWalletClient } from "wagmi";
 import { Button } from "../ui/button";
 import ConfidentialSendDialog from "../confidential-send-dialouge";
@@ -80,7 +79,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({ title, assets }) => {
     tokenBalance: usdcBalance,
   } = useChainBalance();
 
-  const walletClient = useWalletClient();
+  const { data: walletClient } = useWalletClient();
   const isEncrypted = title === "Encrypted";
 
   // Helper functions
@@ -178,17 +177,6 @@ export const AssetTable: React.FC<AssetTableProps> = ({ title, assets }) => {
     };
   };
 
-  const getConfidentialSendBalance = (displayValue: DisplayValue): string => {
-    if (!showConfidentialValues) return "*****";
-    if (isEncryptedLoading) return "loading";
-    if (encryptedError) return "error";
-
-    return typeof displayValue.amount === "string"
-      ? displayValue.amount
-      : encryptedBalance
-        ? formatNumber(encryptedBalance)
-        : "0.00";
-  };
 
   return (
     <div className="border rounded-3xl shadow-sm mb-4">
@@ -283,16 +271,7 @@ export const AssetTable: React.FC<AssetTableProps> = ({ title, assets }) => {
                       </Button>
                     )}
 
-                    {isEncrypted && (
-                      <ConfidentialSendDialog
-                        balance={getConfidentialSendBalance(displayValue)}
-                        disabled={
-                          isEncryptedLoading ||
-                          (encryptedError && showConfidentialValues)
-                        }
-                        error={encryptedError && showConfidentialValues}
-                      />
-                    )}
+                    {isEncrypted && <ConfidentialSendDialog />}
                   </div>
                 </td>
               </tr>

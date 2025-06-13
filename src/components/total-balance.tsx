@@ -1,24 +1,17 @@
 import React, { useState, memo } from "react";
 import { Loader, Eye, EyeOff, Key } from "lucide-react";
-import { useAccount, useBalance, useChainId, useWalletClient } from "wagmi";
-import { ERC20_CONTRACT_ADDRESS } from "@/lib/constants";
+import { useWalletClient } from "wagmi";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { formatNumber } from "@/lib/format-number";
 
 const TotalBalance = memo(() => {
   const [isEncrypted, setIsEncrypted] = useState(true);
-  const chainId = useChainId();
-  const {  address } = useAccount();
   const { data: walletClient } = useWalletClient();
 
   const { encryptedBalance, isEncryptedLoading, fetchEncryptedBalance } =
     useChainBalance();
 
-  const tokenBalance = useBalance({
-    address,
-    token: ERC20_CONTRACT_ADDRESS,
-    chainId,
-  });
+  const { tokenBalance } = useChainBalance();
 
   const parsedTokenBalance = tokenBalance?.data?.formatted
     ? (tokenBalance.data.formatted.includes('e') || tokenBalance.data.formatted.length > 15)

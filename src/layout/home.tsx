@@ -8,17 +8,30 @@ import Navbar from "@/components/navbar";
 import ThemeToggle from "@/components/toggle-theme";
 import { useAccount } from "wagmi";
 import ComfyLanding from "@/components/connect-wallet";
+import { Loader2 } from "lucide-react";
 
 const HomeLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { isConnected } = useAccount();
+  const { isConnected, isConnecting, isReconnecting } = useAccount();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Show loading while not mounted or while connecting/reconnecting
+  if (!mounted || isConnecting || isReconnecting) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+       <Loader2
+       className="w-10 h-10 animate-spin text-primary"
+       />
+      </div>
+    );
+  }
+
+  // Only show ComfyLanding if definitely not connected and not in a connecting state
   if (!isConnected) {
     return <ComfyLanding />;
   }

@@ -75,7 +75,7 @@ const ConfidentialSendDialog: React.FC = () => {
   const { writeContractAsync } = useWriteContract();
 
   const publicClient = usePublicClient();
-  const walletClient = useWalletClient();
+  const { data: walletClient } = useWalletClient();
 
   const confidentialSend = async (): Promise<void> => {
     try {
@@ -89,7 +89,7 @@ const ConfidentialSendDialog: React.FC = () => {
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
       });
 
-      if (!walletClient.data?.account) {
+      if (!walletClient?.account) {
         setSendErrorMessage(
           "Wallet not connected. Please reconnect your wallet."
         );

@@ -39,13 +39,10 @@ const MintDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open
   const publicClient = usePublicClient();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
 
-  const {
-    refreshBalances,
-    fetchEncryptedBalance,
-  } = useChainBalance();
-  const walletClient = useWalletClient();
+  const { refreshBalances, fetchEncryptedBalance } = useChainBalance();
+  const { data: walletClient } = useWalletClient();
 
-  const handleUSDCRefresh = () => refreshBalances(["token"]);
+  const handleUSDCRefresh = async () => await refreshBalances(["token"]);
 
   const mintcUSDC = async () => {
     try {
@@ -59,11 +56,11 @@ const MintDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open
         args: [address, amountWithDecimals],
       });
 
-      const transaction = await publicClient.waitForTransactionReceipt({
+      const transaction = await publicClient?.waitForTransactionReceipt({
         hash: cUSDCMintTxHash,
       });
 
-      if (transaction.status === "reverted") {
+      if (transaction?.status === "reverted") {
         throw new Error("Contract Execution Reverted!");
       }
 
@@ -86,15 +83,15 @@ const MintDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open
         args: [address, amountWithDecimals],
       });
 
-      const transaction = await publicClient.waitForTransactionReceipt({
+      const transaction = await publicClient?.waitForTransactionReceipt({
         hash: uSDCMintTxHash,
       });
 
-      if (transaction.status === "reverted") {
+      if (transaction?.status === "reverted") {
         throw new Error("Contract Execution Reverted!");
       }
 
-      await handleUSDCRefresh(["token"]);
+      await handleUSDCRefresh();
     } catch (err) {
       console.error("Error minting USDC:", err);
       throw new Error("Failed to mint USDC");

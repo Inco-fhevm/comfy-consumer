@@ -1,7 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DialogHeaderProps } from "../types/transaction-dialog";
+import { DialogHeaderProps } from "@/types/transaction-dialouge";
 
 const TransactionDialogHeader: React.FC<DialogHeaderProps> = ({ 
   mode, 

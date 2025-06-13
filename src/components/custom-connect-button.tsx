@@ -16,7 +16,7 @@ import { useNetworkSwitch } from "@/hooks/use-network-switch";
 const CustomConnectButton = () => {
   const { checkAndSwitchNetwork } = useNetworkSwitch();
   const { disconnectAsync  } = useDisconnect();
-  const copyAddress = (address) => {
+  const copyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
     // You can add a toast notification here
     console.log("Address copied to clipboard");

@@ -1,4 +1,11 @@
-import { getAddress, formatUnits, WalletClient } from "viem";
+import {
+  getAddress,
+  formatUnits,
+  WalletClient,
+  Account,
+  Transport,
+  Chain,
+} from "viem";
 import { Lightning } from "@inco/js/lite";
 
 export const getConfig = () => {
@@ -38,7 +45,6 @@ export const encryptValue = async ({
 export const reEncryptValue = async ({
   walletClient,
   handle,
-  isformat = false,
 }: {
   walletClient: WalletClient;
   handle: string;
@@ -50,7 +56,9 @@ export const reEncryptValue = async ({
 
   try {
     const incoConfig = getConfig();
-    const reencryptor = await incoConfig.getReencryptor(walletClient.data);
+    const reencryptor = await incoConfig.getReencryptor(
+      walletClient as WalletClient<Transport, Chain, Account>
+    );
     const backoffConfig = {
       maxRetries: 100,
       baseDelayInMs: 1000,
@@ -69,7 +77,7 @@ export const reEncryptValue = async ({
     const decryptedEther = formatUnits(BigInt(decryptedResult.value), 18);
     const formattedValue = parseFloat(decryptedEther).toFixed(0);
 
-    return isformat ? decryptedResult.value : formattedValue;
+    return formattedValue;
   } catch (error: unknown) {
     console.error("Reencryption error:", error);
     if (error instanceof Error) {

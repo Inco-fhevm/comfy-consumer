@@ -23,7 +23,6 @@ import {
 import loadingAnimation from "@/lib/transaction-animation.json";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { toast } from "sonner";
-import Image from "next/image";
 import { baseSepolia } from "viem/chains";
 import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
@@ -51,8 +50,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const walletClient = useWalletClient();
-  
+  const { data: walletClient } = useWalletClient();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
   const {
     tokenBalance,
@@ -292,7 +290,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <div>
                   <p className="dark:text-white">USDC</p>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Balance: {formatCurrency(tokenBalance?.data?.formatted)} USDC
+                    Balance: {formatCurrency(Number(tokenBalance?.data?.formatted))} USDC
                   </div>
                 </div>
               </div>
