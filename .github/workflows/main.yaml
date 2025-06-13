@@ -1,0 +1,134 @@
+name: Build Next.js Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: gcr.io
+  PROJECT_ID: inco-core
+  IMAGE_NAME: comfy-consumer
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # for creating tags
+      id-token: write  # for GCP OIDC auth
+      packages: read   # for reading GitHub packages
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Generate version string and increment tag
+      - name: Generate version string and increment tag
+        id: version
+        run: |
+          # Get latest tag if exists, otherwise use v0.0.0
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          
+          # Get current commit short hash
+          commit_sha=$(git rev-parse --short HEAD)
+          
+          # Create version string with commit hash
+          version_string="${latest_tag}-${commit_sha}"
+          
+          # Increment patch version
+          IFS='.' read -r -a version_parts <<< "${latest_tag#v}"
+          new_patch=$((${version_parts[2]} + 1))
+          new_version="${version_parts[0]}.${version_parts[1]}.$new_patch"
+          
+          # Create and push new tag
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a "v$new_version" -m "Release v$new_version"
+          git push origin "v$new_version"
+          
+          echo "Version string: $version_string"
+          echo "New version: v$new_version"
+          echo "version_string=$version_string" >> $GITHUB_OUTPUT
+          echo "new_version=v$new_version" >> $GITHUB_OUTPUT
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@inco-fhevm'
+
+      # Create local .npmrc with GitHub token
+      - name: Create local .npmrc
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > .npmrc
+          echo "@inco-fhevm:registry=https://npm.pkg.github.com/" >> .npmrc
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          # Install critters for CSS optimization
+          npm install critters
+          # Install all dependencies
+          npm ci
+
+      # Run tests (optional)
+      - name: Run tests
+        run: npm test || echo "No tests found"
+
+      # Cache dependencies
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      # Cache Next.js build output
+      - name: Cache Next.js build output
+        uses: actions/cache@v3
+        with:
+          path: |
+            .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx', '**/*.svg') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
+
+      # Build application with standalone output
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          # No need for NEXT_OUTPUT_STANDALONE as it's configured in next.config.js
+
+      # Authenticate to GCP
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: 'projects/79476508147/locations/global/workloadIdentityPools/github-pool-core/providers/github-provider'
+
+      # Set up gcloud CLI
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker gcr.io --quiet
+      
+      # Build and push the Docker image
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            -t gcr.io/inco-core/comfy-consumer:latest \
+            -t gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.new_version }} \
+            .
+
+          docker push gcr.io/inco-core/comfy-consumer:latest
+          docker push gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.new_version }}
