@@ -1,14 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  output: "standalone",
+  trailingSlash: true,
+
+  experimental: {
+    esmExternals: "loose",
+    skipTrailingSlashRedirect: true,
+  },
   webpack: (config) => {
     config.module.rules.push({
       test: /HeartbeatWorker\.js$/,
-      type: 'javascript/esm',
+      type: "javascript/esm",
     });
-    
-    config.externals.push('pino-pretty', 'lokijs', 'encoding');
-    
+
+    config.externals.push("pino-pretty", "lokijs", "encoding");
+
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -16,20 +22,20 @@ const nextConfig = {
       tls: false,
       crypto: false,
     };
-    
+
     return config;
   },
-  
+
   // Transpile WalletConnect packages to fix SSR issues
   transpilePackages: [
-    '@walletconnect/universal-provider',
-    '@walletconnect/ethereum-provider',
-    '@walletconnect/core',
+    "@walletconnect/universal-provider",
+    "@walletconnect/ethereum-provider",
+    "@walletconnect/core",
   ],
-  
+
   // Experimental features to help with SSR
   experimental: {
-    esmExternals: 'loose',
+    esmExternals: "loose",
   },
 };
 
