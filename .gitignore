@@ -6,8 +6,6 @@
 .pnp.js
 .yarn/install-state.gz
 
-.env
-
 # testing
 /coverage
 
@@ -36,3 +34,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.env
