@@ -3,6 +3,10 @@ const nextConfig = {
   output: "standalone",
   trailingSlash: true,
 
+  env: {
+    NEXT_PUBLIC_REOWN_APP_ID: process.env.REOWN_APP_ID,
+  },
+
   experimental: {
     esmExternals: "loose",
     skipTrailingSlashRedirect: true,
