@@ -126,6 +126,7 @@ jobs:
         run: |
           docker build \
             --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            --build-arg REOWN_APP_ID=${{ secrets.REOWN_APP_ID }} \
             -t gcr.io/inco-core/comfy-consumer:latest \
             -t gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.new_version }} \
             .
