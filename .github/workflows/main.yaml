@@ -106,7 +106,8 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
-          # No need for NEXT_OUTPUT_STANDALONE as it's configured in next.config.js
+          REOWN_APP_ID: ${{ secrets.REOWN_APP_ID }}
+          NEXT_PUBLIC_REOWN_APP_ID: ${{ secrets.REOWN_APP_ID }}
 
       # Authenticate to GCP
       - uses: 'google-github-actions/auth@v2'
