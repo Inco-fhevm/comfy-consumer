@@ -13,10 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { toast } from "sonner";
@@ -28,10 +25,8 @@ import {
   useWriteContract,
 } from "wagmi";
 import { encryptValue } from "@/lib/inco-lite";
-import { parseEther } from "viem";
-import {
-  ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-} from "@/lib/constants";
+import { formatEther, parseEther } from "viem";
+import { ENCRYPTED_ERC20_CONTRACT_ADDRESS } from "@/lib/constants";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -54,10 +49,7 @@ const ConfidentialSendDialog: React.FC = () => {
   const [amountError, setAmountError] = useState<string>("");
   const [sendErrorMessage, setSendErrorMessage] = useState<string>("");
 
-  const {
-    encryptedBalance,
-    fetchEncryptedBalance,
-  } = useChainBalance();
+  const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
 
   const { address: userAddress } = useAccount();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
@@ -223,7 +215,9 @@ const ConfidentialSendDialog: React.FC = () => {
               <Input
                 type="text"
                 value={address}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setAddress(e.target.value)
+                }
                 className={`w-full p-2 text-sm rounded-lg ${
                   addressError
                     ? "border-red-500 focus:ring-red-500"
@@ -241,7 +235,7 @@ const ConfidentialSendDialog: React.FC = () => {
                 <div className="p-3 border rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-11 h-11"> 
+                      <div className="w-11 h-11">
                         <IconBuilder
                           isEncrypted={true}
                           usdcImage={"/tokens/usdc-token.svg"}
@@ -250,23 +244,35 @@ const ConfidentialSendDialog: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <p className="font-medium dark:text-white">
-                          cUSDC
-                        </p>
+                        <p className="font-medium dark:text-white">cUSDC</p>
                         {encryptedBalance && (
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {formatCurrency(encryptedBalance)} cUSDC
-                        </p>
+                            {formatCurrency(
+                              Number(encryptedBalance).toLocaleString(
+                                "fullwide",
+                                { useGrouping: false }
+                              )
+                            )}{" "}
+                            cUSDC
+                          </p>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {console.log(encryptedBalance)}
                       {encryptedBalance && (
                         <Badge
                           variant="secondary"
                           className="h-7 px-3 text-sm text-blue-500 dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 bg-[#E7EEFE] dark:bg-[#1E293B] rounded-full"
-                          onClick={() => setAmount(encryptedBalance.toString())}
+                          onClick={() => {
+                            const fullNumber = Number(
+                              encryptedBalance
+                            ).toLocaleString("fullwide", {
+                              useGrouping: false,
+                            });
+                            setAmount(fullNumber);
+                          }}
                         >
                           Max
                         </Badge>
