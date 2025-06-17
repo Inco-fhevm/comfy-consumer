@@ -260,7 +260,6 @@ const ConfidentialSendDialog: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {console.log(encryptedBalance)}
                       {encryptedBalance && (
                         <Badge
                           variant="secondary"
