@@ -25,7 +25,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { encryptValue } from "@/lib/inco-lite";
-import { formatEther, parseEther } from "viem";
+import {  parseEther } from "viem";
 import { ENCRYPTED_ERC20_CONTRACT_ADDRESS } from "@/lib/constants";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import Image from "next/image";
