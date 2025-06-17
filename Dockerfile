@@ -1,6 +1,7 @@
 FROM node:20-alpine AS builder
-ARG NEXT_PUBLIC_REOWN_APP_ID
-ENV NEXT_PUBLIC_REOWN_APP_ID=$NEXT_PUBLIC_REOWN_APP_ID
+
+ARG REOWN_APP_ID
+ENV REOWN_APP_ID=$REOWN_APP_ID
 WORKDIR /app
 
 # :hammer_and_spanner: Install build tools and Python for native modules
