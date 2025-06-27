@@ -7,12 +7,13 @@ import {
   Chain,
 } from "viem";
 import { Lightning } from "@inco/js/lite";
+import { baseSepolia } from "viem/chains";
 
 export const getConfig = () => {
-  return Lightning.latest("demonet", 84532);
-  // return CURRENT_MODE === MODES.BASE_SEPOLIA
-  //   ? Lightning.latest("devnet", 84532)
-  //   : Lightning.localNode();
+  return Lightning.latest(
+    process.env.NEXT_PUBLIC_INCO_ENV as "testnet" | "demonet" | "devnet",
+    baseSepolia.id
+  );
 };
 
 export const encryptValue = async ({

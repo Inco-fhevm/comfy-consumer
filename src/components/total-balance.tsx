@@ -90,12 +90,12 @@ const TotalBalance = memo(() => {
 
       {encryptedBalance === null ? (
         <div className="text-xs text-gray-500">
-          Showing only shielded balance
+          Showing only unshielded balance
         </div>
       ) : (
         <div className="text-xs text-gray-500">
           {isEncrypted
-            ? "Showing only shielded balance"
+            ? "Showing only unshielded balance"
             : "Showing both shielded and unshielded balances"}
         </div>
       )}
