@@ -7,11 +7,9 @@ import { IncoEnv } from "@/lib/inco-lite";
 interface ContractData {
   encryptedERC20: {
     address: string;
-    abi: any;
   };
   erc20: {
     address: string;
-    abi: any;
   };
   incoEnv: IncoEnv;
   REOWN_APP_ID: string;
