@@ -8,12 +8,11 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { createPublicClient, http, parseAbiItem, parseEther } from "viem";
+import { parseEther } from "viem";
 import { ERC20ABI, ENCRYPTEDERC20ABI } from "@/lib/constants";
 import loadingAnimation from "@/lib/transaction-animation.json";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { toast } from "sonner";
-import { baseSepolia } from "viem/chains";
 import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
