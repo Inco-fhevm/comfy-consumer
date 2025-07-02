@@ -24,15 +24,15 @@ import {
   useWalletClient,
   useWriteContract,
 } from "wagmi";
-import { encryptValue } from "@/lib/inco-lite";
+import { encryptValue, IncoEnv } from "@/lib/inco-lite";
 import {  parseEther } from "viem";
-import { ENCRYPTED_ERC20_CONTRACT_ADDRESS } from "@/lib/constants";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
+import { useContracts } from "@/context/contract-provider";
 
 interface TxResult {
   success: boolean;
@@ -48,6 +48,10 @@ const ConfidentialSendDialog: React.FC = () => {
   const [addressError, setAddressError] = useState<string>("");
   const [amountError, setAmountError] = useState<string>("");
   const [sendErrorMessage, setSendErrorMessage] = useState<string>("");
+
+  const { contracts } = useContracts();
+  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
+  const INCO_ENV = contracts?.incoEnv;
 
   const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
 
@@ -78,7 +82,8 @@ const ConfidentialSendDialog: React.FC = () => {
       const inputCt = await encryptValue({
         value: parseEther(amount.toString()),
         address: userAddress as `0x${string}`,
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        env: INCO_ENV as IncoEnv,
       });
 
       if (!walletClient?.account) {

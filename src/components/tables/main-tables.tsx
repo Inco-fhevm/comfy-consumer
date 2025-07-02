@@ -2,11 +2,11 @@
 import React, { useState, useMemo } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { baseSepolia } from "viem/chains";
-import { ERC20_CONTRACT_ADDRESS } from "@/lib/constants";
 import { AssetTable } from "./asset-tables";
 import WalletTabs from "./wallet-tabs";
 import MobileAssetTable from "./mobile-asset-table";
 import { Asset, CryptoWalletTablesProps } from "@/types/wallet";
+import { useContracts } from "@/context/contract-provider";
 
 const BASE_SEPOLIA_CHAIN_ID = baseSepolia?.id || 84532;
 const USDC_PRICE = 1;
@@ -14,10 +14,12 @@ const USDC_PRICE = 1;
 const CryptoWalletTables: React.FC<CryptoWalletTablesProps> = () => {
   const [activeTab, setActiveTab] = useState<string>("Wallet");
   const { address, isConnected } = useAccount();
+  const { contracts } = useContracts();
+  const ERC20_CONTRACT_ADDRESS = contracts?.erc20?.address;
 
   const baseSepoliaUsdc = useBalance({
     address,
-    token: ERC20_CONTRACT_ADDRESS,
+    token: ERC20_CONTRACT_ADDRESS as `0x${string}`,
     chainId: BASE_SEPOLIA_CHAIN_ID,
   });
 

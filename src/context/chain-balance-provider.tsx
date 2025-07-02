@@ -17,12 +17,11 @@ import {
 import { type WalletClient } from "viem";
 
 import {
-  ENCRYPTED_ERC20_CONTRACT_ADDRESS,
   ENCRYPTEDERC20ABI,
-  ERC20_CONTRACT_ADDRESS,
 } from "@/lib/constants";
 
-import { reEncryptValue } from "@/lib/inco-lite";
+import { IncoEnv, reEncryptValue } from "@/lib/inco-lite";
+import { useContracts } from "./contract-provider";
 
 interface ChainBalanceContextType {
   tokenBalance: UseBalanceReturnType;
@@ -40,13 +39,16 @@ const ChainBalanceContext = createContext<ChainBalanceContextType | undefined>(
 
 interface ChainBalanceProviderProps {
   children: ReactNode;
-  tokenAddress?: `0x${string}`;
 }
 
 export const ChainBalanceProvider = ({
   children,
-  tokenAddress = ERC20_CONTRACT_ADDRESS as `0x${string}`,
 }: ChainBalanceProviderProps) => {
+  const { contracts } = useContracts();
+  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
+  const tokenAddress = contracts?.erc20?.address;
+  const INCO_ENV = contracts?.incoEnv;
+
   const { isConnected, address } = useAccount();
   const [encryptedBalance, setEncryptedBalance] = useState<number | null>(null);
   const [isEncryptedLoading, setIsEncryptedLoading] = useState(false);
@@ -54,9 +56,9 @@ export const ChainBalanceProvider = ({
 
   const tokenBalance = useBalance({
     address: address,
-    token: tokenAddress,
+    token: tokenAddress as `0x${string}`,
     query: {
-      enabled: !!address,
+      enabled: !!address || !!tokenAddress,
     },
   });
 
@@ -79,7 +81,7 @@ export const ChainBalanceProvider = ({
 
       try {
         const balanceHandle = (await publicClient.readContract({
-          address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+          address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
           abi: ENCRYPTEDERC20ABI,
           functionName: "balanceOf",
           args: [address],
@@ -96,6 +98,7 @@ export const ChainBalanceProvider = ({
         const decrypted = await reEncryptValue({
           walletClient: clientToUse,
           handle: balanceHandle.toString(),
+          env: INCO_ENV as IncoEnv,
         });
 
         setEncryptedBalance(Number(decrypted));

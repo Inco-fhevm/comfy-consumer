@@ -5,6 +5,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import HomeLayout from "@/layout/home";
 import { RainbowkitProvider } from "@/context/rainbow-provider";
 import { ChainBalanceProvider } from "@/context/chain-balance-provider";
+import { ContractProvider } from "@/context/contract-provider";
+import { QueryProvider } from "@/context/query-client-provider";
+// TODO: Import ContractProvider here once implemented
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,18 +29,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <RainbowkitProvider>
-            <ChainBalanceProvider>
-              <HomeLayout>{children}</HomeLayout>
-            </ChainBalanceProvider>
-          </RainbowkitProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ContractProvider>
+              <RainbowkitProvider>
+                <ChainBalanceProvider>
+                  <HomeLayout>{children}</HomeLayout>
+                </ChainBalanceProvider>
+              </RainbowkitProvider>
+            </ContractProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

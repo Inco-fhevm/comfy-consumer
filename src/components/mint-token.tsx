@@ -14,9 +14,7 @@ import { parseEther } from "viem";
 import { Loader2, X } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import {
-  ENCRYPTED_ERC20_CONTRACT_ADDRESS,
   ENCRYPTEDERC20ABI,
-  ERC20_CONTRACT_ADDRESS,
   ERC20ABI,
 } from "@/lib/constants";
 import {
@@ -28,6 +26,7 @@ import {
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
+import { useContracts } from "@/context/contract-provider";
 
 const MintDialog = ({
   open,
@@ -36,6 +35,10 @@ const MintDialog = ({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) => {
+  const { contracts } = useContracts();
+  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
+  const ERC20_CONTRACT_ADDRESS = contracts?.erc20?.address;
+
   const [amount, setAmount] = React.useState("");
   const [selectedToken, setSelectedToken] = React.useState("usdc");
   const [isLoading, setIsLoading] = React.useState(false);
@@ -48,6 +51,7 @@ const MintDialog = ({
 
   const { refreshBalances, fetchEncryptedBalance } = useChainBalance();
   const { data: walletClient } = useWalletClient();
+
 
   const handleUSDCRefresh = async () => await refreshBalances(["token"]);
 
@@ -64,7 +68,7 @@ const MintDialog = ({
       const amountWithDecimals = parseEther(amount.toString());
 
       const cUSDCMintTxHash = await writeContractAsync({
-        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "mint",
         args: [address, amountWithDecimals],
@@ -91,7 +95,7 @@ const MintDialog = ({
       const amountWithDecimals = parseEther(amount.toString());
 
       const uSDCMintTxHash = await writeContractAsync({
-        address: ERC20_CONTRACT_ADDRESS,
+        address: ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ERC20ABI,
         functionName: "mint",
         args: [address, amountWithDecimals],

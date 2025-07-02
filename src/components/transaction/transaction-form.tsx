@@ -9,12 +9,7 @@ import {
   useWalletClient,
 } from "wagmi";
 import { createPublicClient, http, parseAbiItem, parseEther } from "viem";
-import {
-  ERC20_CONTRACT_ADDRESS,
-  ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-  ERC20ABI,
-  ENCRYPTEDERC20ABI,
-} from "@/lib/constants";
+import { ERC20ABI, ENCRYPTEDERC20ABI } from "@/lib/constants";
 import loadingAnimation from "@/lib/transaction-animation.json";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { toast } from "sonner";
@@ -22,6 +17,7 @@ import { baseSepolia } from "viem/chains";
 import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
+import { useContracts } from "@/context/contract-provider";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -36,6 +32,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   handleClose,
   currentBalance,
 }) => {
+  const { contracts } = useContracts();
+  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
+  const ERC20_CONTRACT_ADDRESS = contracts?.erc20?.address;
+
   const [amount, setAmount] = useState<string>("");
   const [isApproving, setIsApproving] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -149,33 +149,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         return;
       }
 
-      // Watch for unwrap event
-      const privateRPC = process.env.BASE_SEPOLIA_RPC;
-      const pubClient = createPublicClient({
-        transport: http(privateRPC),
-        chain: baseSepolia,
-      });
+      // Listen for unwrap event via API
+      const res = await fetch("/api/listen-unshield", { method: "POST" });
+      const data = await res.json();
+      if (data.logs) {
+        console.log("🎉 Unwrap Event (API):", data.logs);
+      }
 
-      const eventPromise = new Promise((resolve) => {
-        const unwatch = pubClient.watchEvent({
-          address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-          event: parseAbiItem(
-            "event Unwrap(address indexed account, uint256 amount)"
-          ),
-          onLogs: (logs) => {
-            console.log("🎉 Unwrap Event:", logs);
-            unwatch();
-            resolve(logs);
-          },
-        });
-
-        setTimeout(() => {
-          unwatch();
-          resolve(null);
-        }, 20000);
-      });
-
-      await eventPromise;
       toast.success("Unwrap Complete");
       handleClose(mode);
     } catch (error) {
