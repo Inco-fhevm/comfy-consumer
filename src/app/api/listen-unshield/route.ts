@@ -13,13 +13,13 @@ export async function POST() {
     chain: baseSepolia,
   });
 
-  const eventPromise = new Promise((resolve) => {
+  const eventPromise: Promise<unknown[] | null> = new Promise((resolve) => {
     const unwatch = pubClient.watchEvent({
       address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
       event: parseAbiItem(
         "event Unwrap(address indexed account, uint256 amount)"
       ),
-      onLogs: (logs) => {
+      onLogs: (logs: unknown[]) => {
         unwatch();
         resolve(logs);
       },
@@ -33,7 +33,7 @@ export async function POST() {
 
   const logs = await eventPromise;
 
-  function replacer(key: string, value: any) {
+  function replacer(_key: string, value: unknown) {
     return typeof value === "bigint" ? value.toString() : value;
   }
 
