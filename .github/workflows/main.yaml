@@ -106,8 +106,6 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
-          REOWN_APP_ID: ${{ secrets.REOWN_APP_ID }}
-          NEXT_PUBLIC_REOWN_APP_ID: ${{ secrets.REOWN_APP_ID }}
 
       # Authenticate to GCP
       - uses: 'google-github-actions/auth@v2'
@@ -127,7 +125,6 @@ jobs:
         run: |
           docker build \
             --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-            --build-arg REOWN_APP_ID=${{ secrets.REOWN_APP_ID }} \
             -t gcr.io/inco-core/comfy-consumer:latest \
             -t gcr.io/inco-core/comfy-consumer:${{ steps.version.outputs.new_version }} \
             .

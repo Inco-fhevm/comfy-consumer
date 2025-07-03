@@ -1,8 +1,5 @@
 FROM node:20-alpine AS builder
 
-ARG REOWN_APP_ID
-ENV NEXT_PUBLIC_REOWN_APP_ID=$REOWN_APP_ID
-
 WORKDIR /app
 
 # :hammer_and_spanner: Install build tools and Python for native modules
@@ -16,11 +13,6 @@ ENV PYTHON=/usr/bin/python
 
 # :package: Copy package files
 COPY package.json package-lock.json* ./
-
-# :broom: Remove @inco-fhevm/js from dependencies (temporary build hack)
-RUN cp package.json package.json.backup && \
-    cat package.json | jq 'del(.dependencies."@inco-fhevm/js")' > package.json.tmp && \
-    mv package.json.tmp package.json
 
 # :rocket: Install dependencies (including dev dependencies for flexibility)
 RUN npm install --no-audit
