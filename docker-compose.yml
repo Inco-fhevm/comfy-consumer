@@ -1,0 +1,12 @@
+services:
+  nextjs-app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - BASE_SEPOLIA_RPC=${BASE_SEPOLIA_RPC}
+      - ERC20_CONTRACT_ADDRESS=${ERC20_CONTRACT_ADDRESS}
+      - ENCRYPTED_ERC20_CONTRACT_ADDRESS=${ENCRYPTED_ERC20_CONTRACT_ADDRESS}
+      - INCO_ENV=${INCO_ENV}
+      - REOWN_APP_ID=${REOWN_APP_ID}

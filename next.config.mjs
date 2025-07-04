@@ -2,11 +2,6 @@
 const nextConfig = {
   output: "standalone",
   trailingSlash: true,
-
-  env: {
-    NEXT_PUBLIC_REOWN_APP_ID: process.env.NEXT_PUBLIC_REOWN_APP_ID,
-  },
-
   experimental: {
     esmExternals: "loose",
     skipTrailingSlashRedirect: true,
@@ -16,9 +11,7 @@ const nextConfig = {
       test: /HeartbeatWorker\.js$/,
       type: "javascript/esm",
     });
-
     config.externals.push("pino-pretty", "lokijs", "encoding");
-
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -26,21 +19,13 @@ const nextConfig = {
       tls: false,
       crypto: false,
     };
-
     return config;
   },
-
-  // Transpile WalletConnect packages to fix SSR issues
   transpilePackages: [
     "@walletconnect/universal-provider",
     "@walletconnect/ethereum-provider",
     "@walletconnect/core",
   ],
-
-  // Experimental features to help with SSR
-  experimental: {
-    esmExternals: "loose",
-  },
 };
 
 export default nextConfig;

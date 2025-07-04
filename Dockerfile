@@ -1,60 +1,35 @@
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# :hammer_and_spanner: Install build tools and Python for native modules
-RUN apk add --no-cache python3 make g++ jq
-
-# :jigsaw: Symlink python3 → python (required by node-gyp)
-RUN ln -sf /usr/bin/python3 /usr/bin/python
-
-# :brain: Let node-gyp know where Python is
-ENV PYTHON=/usr/bin/python
-
-# :package: Copy package files
-COPY package.json package-lock.json* ./
-
-# :rocket: Install dependencies (including dev dependencies for flexibility)
-RUN npm install --no-audit
-
-# :file_folder: Copy the full project source
-COPY . .
-
-# :plaster: Fix styled-jsx issue (explicitly add compatible version)
-RUN npm install styled-jsx@5.1.6
-
-# :package: Build the Next.js app (for all environments)
-# NODE_ENV will be set at runtime for the runner stage
-RUN npm run build
-
-FROM node:20-alpine AS runner
-WORKDIR /app
-
-# :seedling: Default to production, but can be overridden at runtime
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# :silhouette: Create a non-root user for security
-RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
-
-# :open_file_folder: Copy only necessary files from builder stage
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-
-# Add environment configuration files for all environments
-COPY --from=builder /app/.env* ./
-
-# Install Sharp for image optimization
-RUN npm install --no-optional sharp
-
-# :silhouette: Switch to non-root user
-USER nextjs
-
-# :satellite_antenna: Expose port 3000
-EXPOSE 3000
-
-# :checkered_flag: Start the app with environment-specific settings
-CMD ["node", "server.js"]
+    FROM node:18-alpine AS base
+    
+    FROM base AS deps
+    # Install Python and build tools needed for native packages
+    RUN apk add --no-cache libc6-compat python3 make g++
+    WORKDIR /app
+    COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+    RUN \
+      if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+      elif [ -f package-lock.json ]; then npm ci; \
+      elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
+      else echo "Lockfile not found." && exit 1; \
+      fi
+    
+    FROM base AS builder
+    WORKDIR /app
+    COPY --from=deps /app/node_modules ./node_modules
+    COPY . .
+    RUN yarn build
+    
+    FROM base AS runner
+    WORKDIR /app
+    ENV NODE_ENV production
+    RUN addgroup --system --gid 1001 nodejs
+    RUN adduser --system --uid 1001 nextjs
+    COPY --from=builder /app/public ./public
+    RUN mkdir .next
+    RUN chown nextjs:nodejs .next
+    COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+    COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+    USER nextjs
+    EXPOSE 3000
+    ENV PORT 3000
+    ENV HOSTNAME "0.0.0.0"
+    CMD ["node", "server.js"]

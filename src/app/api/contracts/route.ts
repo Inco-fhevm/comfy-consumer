@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const ENCRYPTED_ERC20_CONTRACT_ADDRESS =
     process.env.ENCRYPTED_ERC20_CONTRACT_ADDRESS;
