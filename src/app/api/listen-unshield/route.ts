@@ -3,6 +3,8 @@ import { createPublicClient, http } from "viem";
 import { baseSepolia } from "viem/chains";
 import { parseAbiItem } from "viem";
 
+export const dynamic = "force-dynamic";
+
 export async function POST() {
   const privateRPC = process.env.BASE_SEPOLIA_RPC;
   const ENCRYPTED_ERC20_CONTRACT_ADDRESS = process.env
