@@ -17,6 +17,7 @@ import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
 import { useContracts } from "@/context/contract-provider";
+import clientLogger from "@/lib/logging/client-logger";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -59,10 +60,24 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     setIsApproving(true);
 
     try {
+      clientLogger.transaction.start("shield");
+
       await checkAndSwitchNetwork();
       const amountWithDecimals = parseEther(amount.toString());
 
+      clientLogger.info("Starting shield operation", {
+        erc20Contract: ERC20_CONTRACT_ADDRESS,
+        encryptedContract: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        // Note: Not logging amount for security
+      });
+
       // Approve transaction
+      clientLogger.info("Executing ERC20 approve for shield", {
+        contractAddress: ERC20_CONTRACT_ADDRESS,
+        spender: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        // Note: Not logging amount for security
+      });
+
       const approveHash = await writeContractAsync({
         address: ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ERC20ABI,
@@ -70,15 +85,32 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         args: [ENCRYPTED_ERC20_CONTRACT_ADDRESS, amountWithDecimals],
       });
 
+      clientLogger.info("ERC20 approve transaction submitted", {
+        txHash: approveHash,
+        contractAddress: ERC20_CONTRACT_ADDRESS,
+      });
+
       const approveTransaction = await publicClient!.waitForTransactionReceipt({
         hash: approveHash,
       });
 
       if (approveTransaction.status !== "success") {
+        clientLogger.transaction.error("Approval transaction failed", "shield");
         throw new Error("Approval transaction failed");
       }
 
+      clientLogger.info("ERC20 approve transaction confirmed", {
+        txHash: approveHash,
+        status: approveTransaction.status,
+      });
+
       // Wrap transaction
+      clientLogger.info("Executing wrap for shield", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        functionName: "wrap",
+        // Note: Not logging amount for security
+      });
+
       const wrapTxHash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
@@ -86,18 +118,39 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         args: [amountWithDecimals],
       });
 
+      clientLogger.info("Wrap transaction submitted", {
+        txHash: wrapTxHash,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
+
       const wrapTransaction = await publicClient!.waitForTransactionReceipt({
         hash: wrapTxHash,
       });
 
       if (wrapTransaction.status !== "success") {
+        clientLogger.transaction.error("Wrap transaction failed", "shield");
         throw new Error("Wrap transaction failed");
       }
+
+      clientLogger.transaction.success(wrapTxHash, "shield");
+      clientLogger.info("Shield operation completed successfully", {
+        approveTxHash: approveHash,
+        wrapTxHash: wrapTxHash,
+        // Note: Not logging amount for security
+      });
 
       toast.success("Wrap Complete");
       handleClose(mode);
     } catch (error) {
-      console.error("Transaction failed:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      clientLogger.transaction.error(errorMessage, "shield");
+      clientLogger.error("Shield operation failed", {
+        error: errorMessage,
+        erc20Contract: ERC20_CONTRACT_ADDRESS,
+        encryptedContract: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        // Note: Not logging amount for security
+      });
       setError("Transaction failed. Please try again.");
     } finally {
       setIsApproving(false);
@@ -113,22 +166,47 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     setError("");
 
     try {
+      clientLogger.transaction.start("unshield");
+
       await checkAndSwitchNetwork();
 
       if (!decryptAmount) {
+        clientLogger.error("No encrypted balance available for unshield");
         setError("No encrypted balance available.");
         return;
       }
 
       const amountWithDecimals = parseEther(decryptAmount.toString());
 
+      clientLogger.info("Starting unshield operation", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        functionName: "unwrap",
+        // Note: Not logging amount for security in shielded operations
+      });
+
       // Estimate gas for unwrap
+      clientLogger.info("Estimating gas for unwrap operation", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        functionName: "unwrap",
+      });
+
       const estimatedGas = await publicClient!.estimateContractGas({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
         args: [amountWithDecimals],
         account: address,
+      });
+
+      clientLogger.info("Gas estimated for unwrap", {
+        estimatedGas: estimatedGas.toString(),
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
+
+      clientLogger.info("Executing unwrap contract call", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        functionName: "unwrap",
+        gas: estimatedGas.toString(),
       });
 
       const hash = await writeContractAsync({
@@ -139,26 +217,57 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         gas: estimatedGas,
       });
 
+      clientLogger.info("Unwrap transaction submitted", {
+        txHash: hash,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
+
       const transaction = await publicClient!.waitForTransactionReceipt({
         hash,
       });
 
       if (transaction.status !== "success") {
+        clientLogger.transaction.error("Unwrap transaction failed", "unshield");
         setError("Transaction failed");
         return;
       }
 
+      clientLogger.info("Unwrap transaction confirmed", {
+        txHash: hash,
+        status: transaction.status,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
+
       // Listen for unwrap event via API
+      clientLogger.info("Listening for unwrap events via API", {
+        apiEndpoint: "/api/listen-unshield",
+      });
+
       const res = await fetch("/api/listen-unshield", { method: "POST" });
       const data = await res.json();
       if (data.logs) {
-        console.log("🎉 Unwrap Event (API):", data.logs);
+        clientLogger.info("Unwrap event detected via API", {
+          eventCount: data.logs.length,
+          txHash: hash,
+        });
       }
+
+      clientLogger.transaction.success(hash, "unshield");
+      clientLogger.info("Unshield operation completed successfully", {
+        txHash: hash,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
 
       toast.success("Unwrap Complete");
       handleClose(mode);
     } catch (error) {
-      console.error("Transaction failed:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      clientLogger.transaction.error(errorMessage, "unshield");
+      clientLogger.error("Unshield operation failed", {
+        error: errorMessage,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
       setError("Transaction failed. Please try again.");
     } finally {
       await refreshBalances(["token"]);

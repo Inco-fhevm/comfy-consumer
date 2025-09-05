@@ -16,12 +16,11 @@ import {
 } from "wagmi";
 import { type WalletClient } from "viem";
 
-import {
-  ENCRYPTEDERC20ABI,
-} from "@/lib/constants";
+import { ENCRYPTEDERC20ABI } from "@/lib/constants";
 
 import { IncoEnv, reEncryptValue } from "@/lib/inco-lite";
 import { useContracts } from "./contract-provider";
+import clientLogger from "@/lib/logging/client-logger";
 
 interface ChainBalanceContextType {
   tokenBalance: UseBalanceReturnType;
@@ -68,13 +67,30 @@ export const ChainBalanceProvider = ({
   // Encrypted balance fetch function
   const fetchEncryptedBalance = useCallback(
     async (wc?: WalletClient): Promise<void> => {
-      if (!address || !publicClient) return;
+      if (!address || !publicClient) {
+        clientLogger.debug(
+          "Skipping encrypted balance fetch - missing address or public client",
+          {
+            hasAddress: !!address,
+            hasPublicClient: !!publicClient,
+          }
+        );
+        return;
+      }
 
       const clientToUse = wc || walletClient;
       if (!clientToUse) {
+        clientLogger.error(
+          "Wallet client not available for encrypted balance fetch"
+        );
         setEncryptedError("Wallet client not available");
         return;
       }
+
+      clientLogger.info("Starting encrypted balance fetch", {
+        walletAddress: address,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
 
       setIsEncryptedLoading(true);
       setEncryptedError(null);
@@ -87,13 +103,26 @@ export const ChainBalanceProvider = ({
           args: [address],
         })) as bigint;
 
+        clientLogger.debug("Retrieved encrypted balance handle from contract", {
+          balanceHandle: balanceHandle.toString(),
+          isZero:
+            balanceHandle.toString() ===
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+        });
+
         if (
           balanceHandle.toString() ===
           "0x0000000000000000000000000000000000000000000000000000000000000000"
         ) {
+          clientLogger.info("Encrypted balance is zero");
           setEncryptedBalance(0);
           return;
         }
+
+        clientLogger.info("Decrypting encrypted balance", {
+          handle: balanceHandle.toString(),
+          incoEnv: INCO_ENV,
+        });
 
         const decrypted = await reEncryptValue({
           walletClient: clientToUse,
@@ -101,31 +130,56 @@ export const ChainBalanceProvider = ({
           env: INCO_ENV as IncoEnv,
         });
 
-        setEncryptedBalance(Number(decrypted));
+        const decryptedNumber = Number(decrypted);
+        clientLogger.info("Encrypted balance decrypted successfully", {
+          hasBalance: decryptedNumber > 0,
+          // Note: Not logging actual balance value for security
+        });
+
+        setEncryptedBalance(decryptedNumber);
       } catch (err) {
-        console.error("Error fetching encrypted balance:", err);
-        setEncryptedError(
+        const errorMessage =
           err instanceof Error
             ? err.message
-            : "Failed to fetch encrypted balance"
-        );
+            : "Failed to fetch encrypted balance";
+        clientLogger.error("Error fetching encrypted balance", {
+          error: errorMessage,
+          stack: err instanceof Error ? err.stack : undefined,
+          walletAddress: address,
+          contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        });
+
+        setEncryptedError(errorMessage);
       } finally {
         setIsEncryptedLoading(false);
       }
     },
-    [address, publicClient, walletClient]
+    [
+      address,
+      publicClient,
+      walletClient,
+      ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      INCO_ENV,
+    ]
   );
 
   const refreshBalances = useCallback(
     (balancesToRefresh: string[], wc?: WalletClient): void => {
+      clientLogger.info("Refreshing balances", {
+        balancesToRefresh,
+        walletAddress: address,
+      });
+
       if (balancesToRefresh.includes("token")) {
+        clientLogger.debug("Refreshing token balance");
         tokenBalance.refetch();
       }
       if (balancesToRefresh.includes("encrypted")) {
+        clientLogger.debug("Refreshing encrypted balance");
         fetchEncryptedBalance(wc);
       }
     },
-    [tokenBalance.refetch, fetchEncryptedBalance]
+    [tokenBalance, fetchEncryptedBalance, address]
   );
 
   const contextValue = useMemo(

@@ -25,7 +25,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { encryptValue, IncoEnv } from "@/lib/inco-lite";
-import {  parseEther } from "viem";
+import { parseEther } from "viem";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ import { formatCurrency } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
 import { useContracts } from "@/context/contract-provider";
+import clientLogger from "@/lib/logging/client-logger";
 
 interface TxResult {
   success: boolean;
@@ -75,9 +76,18 @@ const ConfidentialSendDialog: React.FC = () => {
 
   const confidentialSend = async (): Promise<void> => {
     try {
+      clientLogger.transaction.start("confidential_send", address);
+
       await checkAndSwitchNetwork();
       setTxResult(null);
       setSendErrorMessage("");
+
+      clientLogger.info("Starting confidential send encryption", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        recipient: address,
+        incoEnv: INCO_ENV,
+        // Note: Not logging amount for security
+      });
 
       const inputCt = await encryptValue({
         value: parseEther(amount.toString()),
@@ -86,12 +96,25 @@ const ConfidentialSendDialog: React.FC = () => {
         env: INCO_ENV as IncoEnv,
       });
 
+      clientLogger.info("Amount encrypted successfully for confidential send", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        recipient: address,
+        // Note: Not logging encrypted data or amount for security
+      });
+
       if (!walletClient?.account) {
+        clientLogger.error("Wallet not connected for confidential send");
         setSendErrorMessage(
           "Wallet not connected. Please reconnect your wallet."
         );
         throw new Error("Wallet not connected.");
       }
+
+      clientLogger.info("Executing confidential transfer contract call", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        functionName: "transfer",
+        recipient: address,
+      });
 
       const hash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
@@ -111,6 +134,12 @@ const ConfidentialSendDialog: React.FC = () => {
         args: [address as `0x${string}`, inputCt],
       });
 
+      clientLogger.info("Confidential transfer transaction submitted", {
+        txHash: hash,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        recipient: address,
+      });
+
       const transaction = await publicClient!.waitForTransactionReceipt({
         hash,
       });
@@ -118,16 +147,34 @@ const ConfidentialSendDialog: React.FC = () => {
       const success = transaction.status === "success";
       setTxResult({ success, hash });
 
-      await fetchEncryptedBalance(walletClient);
-
-      if (!success) {
+      if (success) {
+        clientLogger.transaction.success(hash, "confidential_send");
+        clientLogger.info("Confidential transfer completed successfully", {
+          txHash: hash,
+          contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+          recipient: address,
+        });
+      } else {
+        clientLogger.transaction.error(
+          "Transaction reverted",
+          "confidential_send"
+        );
         setSendErrorMessage("Transaction failed. Please try again later.");
         throw new Error("Transaction failed");
       }
 
+      await fetchEncryptedBalance(walletClient);
       toast.success("Send successful");
     } catch (error) {
-      console.error("Transaction failed:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      clientLogger.transaction.error(errorMessage, "confidential_send");
+      clientLogger.error("Confidential send failed", {
+        error: errorMessage,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        recipient: address,
+      });
+
       setTxResult({ success: false, hash: null });
       if (!sendErrorMessage) {
         setSendErrorMessage("An unexpected error occurred during send.");

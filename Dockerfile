@@ -19,17 +19,24 @@
     RUN yarn build
     
     FROM base AS runner
-    WORKDIR /app
-    ENV NODE_ENV production
-    RUN addgroup --system --gid 1001 nodejs
-    RUN adduser --system --uid 1001 nextjs
-    COPY --from=builder /app/public ./public
-    RUN mkdir .next
-    RUN chown nextjs:nodejs .next
-    COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-    COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-    USER nextjs
-    EXPOSE 3000
-    ENV PORT 3000
-    ENV HOSTNAME "0.0.0.0"
-    CMD ["node", "server.js"]
+WORKDIR /app
+ENV NODE_ENV production
+# Add logging-related environment variables
+ENV LOG_LEVEL info
+ENV SERVICE_NAME comfy-consumer
+ENV APP_VERSION 1.0.0
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+COPY --from=builder /app/public ./public
+RUN mkdir .next
+RUN mkdir logs
+RUN chown nextjs:nodejs .next
+RUN chown nextjs:nodejs logs
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+USER nextjs
+EXPOSE 3000
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+CMD ["node", "server.js"]

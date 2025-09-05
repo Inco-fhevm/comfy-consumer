@@ -13,10 +13,7 @@ import { Label } from "@/components/ui/label";
 import { parseEther } from "viem";
 import { Loader2, X } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import {
-  ENCRYPTEDERC20ABI,
-  ERC20ABI,
-} from "@/lib/constants";
+import { ENCRYPTEDERC20ABI, ERC20ABI } from "@/lib/constants";
 import {
   useAccount,
   usePublicClient,
@@ -27,6 +24,7 @@ import { useChainBalance } from "@/context/chain-balance-provider";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
 import { useContracts } from "@/context/contract-provider";
+import clientLogger from "@/lib/logging/client-logger";
 
 const MintDialog = ({
   open,
@@ -52,7 +50,6 @@ const MintDialog = ({
   const { refreshBalances, fetchEncryptedBalance } = useChainBalance();
   const { data: walletClient } = useWalletClient();
 
-
   const handleUSDCRefresh = async () => await refreshBalances(["token"]);
 
   const handleClose = (): void => {
@@ -64,8 +61,16 @@ const MintDialog = ({
 
   const mintcUSDC = async () => {
     try {
+      clientLogger.transaction.start("mint_cUSDC", address);
+
       await checkAndSwitchNetwork();
       const amountWithDecimals = parseEther(amount.toString());
+
+      clientLogger.info("Minting cUSDC", {
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+        recipient: address,
+        // Note: Not logging amount for security
+      });
 
       const cUSDCMintTxHash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
@@ -74,25 +79,45 @@ const MintDialog = ({
         args: [address, amountWithDecimals],
       });
 
+      clientLogger.info("cUSDC mint transaction submitted", {
+        txHash: cUSDCMintTxHash,
+        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      });
+
       const transaction = await publicClient?.waitForTransactionReceipt({
         hash: cUSDCMintTxHash,
       });
 
       if (transaction?.status === "reverted") {
+        clientLogger.transaction.error(
+          "Contract Execution Reverted",
+          "mint_cUSDC"
+        );
         throw new Error("Contract Execution Reverted!");
       }
 
+      clientLogger.transaction.success(cUSDCMintTxHash, "mint_cUSDC");
       await fetchEncryptedBalance(walletClient);
     } catch (err) {
-      console.error("Error minting cUSDC:", err);
-      throw new Error("Failed to mint cUSDC");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to mint cUSDC";
+      clientLogger.transaction.error(errorMessage, "mint_cUSDC");
+      throw new Error(errorMessage);
     }
   };
 
   const mintUSDC = async () => {
     try {
+      clientLogger.transaction.start("mint_USDC", address);
+
       await checkAndSwitchNetwork();
       const amountWithDecimals = parseEther(amount.toString());
+
+      clientLogger.info("Minting USDC", {
+        contractAddress: ERC20_CONTRACT_ADDRESS,
+        recipient: address,
+        // Note: Not logging amount for security
+      });
 
       const uSDCMintTxHash = await writeContractAsync({
         address: ERC20_CONTRACT_ADDRESS as `0x${string}`,
@@ -101,18 +126,30 @@ const MintDialog = ({
         args: [address, amountWithDecimals],
       });
 
+      clientLogger.info("USDC mint transaction submitted", {
+        txHash: uSDCMintTxHash,
+        contractAddress: ERC20_CONTRACT_ADDRESS,
+      });
+
       const transaction = await publicClient?.waitForTransactionReceipt({
         hash: uSDCMintTxHash,
       });
 
       if (transaction?.status === "reverted") {
+        clientLogger.transaction.error(
+          "Contract Execution Reverted",
+          "mint_USDC"
+        );
         throw new Error("Contract Execution Reverted!");
       }
 
+      clientLogger.transaction.success(uSDCMintTxHash, "mint_USDC");
       await handleUSDCRefresh();
     } catch (err) {
-      console.error("Error minting USDC:", err);
-      throw new Error("Failed to mint USDC");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to mint USDC";
+      clientLogger.transaction.error(errorMessage, "mint_USDC");
+      throw new Error(errorMessage);
     }
   };
 

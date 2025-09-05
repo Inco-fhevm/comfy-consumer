@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "logs": "node scripts/view-logs.js",
+    "logs:errors": "node scripts/view-logs.js --errors",
+    "logs:follow": "node scripts/view-logs.js --follow",
+    "logs:clear": "node scripts/view-logs.js --clear"
   },
   "dependencies": {
     "@inco/js": "^0.1.41",
@@ -30,16 +34,19 @@
     "next-themes": "^0.4.6",
     "react": "^18",
     "react-dom": "^18",
+    "sharp": "^0.34.3",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.31.0",
-    "wagmi": "^2.15.6"
+    "wagmi": "^2.15.6",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/winston": "^2.4.4",
     "eslint": "^8",
     "eslint-config-next": "14.2.16",
     "postcss": "^8",
