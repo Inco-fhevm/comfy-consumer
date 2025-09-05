@@ -25,6 +25,7 @@ import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
 import { useContracts } from "@/context/contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
+import { recordTransaction, recordContractInteraction } from "@/lib/metrics";
 
 const MintDialog = ({
   open,
@@ -97,11 +98,15 @@ const MintDialog = ({
       }
 
       clientLogger.transaction.success(cUSDCMintTxHash, "mint_cUSDC");
+      recordTransaction("mint_cUSDC", "success");
+      recordContractInteraction("encrypted_erc20", "mint", "success");
       await fetchEncryptedBalance(walletClient);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to mint cUSDC";
       clientLogger.transaction.error(errorMessage, "mint_cUSDC");
+      recordTransaction("mint_cUSDC", "error");
+      recordContractInteraction("encrypted_erc20", "mint", "error");
       throw new Error(errorMessage);
     }
   };
@@ -144,11 +149,15 @@ const MintDialog = ({
       }
 
       clientLogger.transaction.success(uSDCMintTxHash, "mint_USDC");
+      recordTransaction("mint_USDC", "success");
+      recordContractInteraction("erc20", "mint", "success");
       await handleUSDCRefresh();
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to mint USDC";
       clientLogger.transaction.error(errorMessage, "mint_USDC");
+      recordTransaction("mint_USDC", "error");
+      recordContractInteraction("erc20", "mint", "error");
       throw new Error(errorMessage);
     }
   };

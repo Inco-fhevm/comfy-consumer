@@ -16,3 +16,41 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - SERVICE_NAME=${SERVICE_NAME:-comfy-consumer}
       - APP_VERSION=${APP_VERSION:-1.0.0}
+      # Metrics configuration
+      - METRICS_PORT=${METRICS_PORT:-9090}
+      - METRICS_TOKEN=${METRICS_TOKEN}
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9091:9090" # Prometheus UI (internal use only)
+    networks:
+      - app-network
+    depends_on:
+      - nextjs-app
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:

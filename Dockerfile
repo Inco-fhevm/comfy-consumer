@@ -21,10 +21,14 @@
     FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV production
-# Add logging-related environment variables
+# Add logging and metrics environment variables
 ENV LOG_LEVEL info
 ENV SERVICE_NAME comfy-consumer
 ENV APP_VERSION 1.0.0
+ENV METRICS_PORT 9090
+
+# Install curl for health checks
+RUN apk add --no-cache curl
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -35,8 +39,12 @@ RUN chown nextjs:nodejs .next
 RUN chown nextjs:nodejs logs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/metrics-server.js ./
+COPY --from=builder /app/start.sh ./
+RUN chown nextjs:nodejs metrics-server.js start.sh
+RUN chmod +x start.sh
 USER nextjs
 EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
-CMD ["node", "server.js"]
+CMD ["./start.sh"]

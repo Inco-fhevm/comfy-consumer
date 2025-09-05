@@ -21,6 +21,7 @@ import { ENCRYPTEDERC20ABI } from "@/lib/constants";
 import { IncoEnv, reEncryptValue } from "@/lib/inco-lite";
 import { useContracts } from "./contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
+import { recordEncryptedBalanceFetch } from "@/lib/metrics";
 
 interface ChainBalanceContextType {
   tokenBalance: UseBalanceReturnType;
@@ -135,6 +136,7 @@ export const ChainBalanceProvider = ({
           hasBalance: decryptedNumber > 0,
           // Note: Not logging actual balance value for security
         });
+        recordEncryptedBalanceFetch("success");
 
         setEncryptedBalance(decryptedNumber);
       } catch (err) {
@@ -148,6 +150,7 @@ export const ChainBalanceProvider = ({
           walletAddress: address,
           contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
         });
+        recordEncryptedBalanceFetch("error");
 
         setEncryptedError(errorMessage);
       } finally {

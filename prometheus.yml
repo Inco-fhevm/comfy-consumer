@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: "comfy-consumer"
+    static_configs:
+      - targets: ["nextjs-app:9090"] # Internal Docker network
+    metrics_path: "/metrics"
+    scheme: "http"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    # Note: Authentication will be handled by the metrics server
+    # The metrics server expects a Bearer token in the Authorization header
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
