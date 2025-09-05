@@ -21,7 +21,7 @@ export const RainbowkitProvider = ({
 
   return (
     <WagmiProvider config={config}>
-      <RainbowKitProvider>{children}</RainbowKitProvider>
+      <RainbowKitProvider initialChain={baseSepolia}>{children}</RainbowKitProvider>
     </WagmiProvider>
   );
 };
