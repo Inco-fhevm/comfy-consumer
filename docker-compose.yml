@@ -3,8 +3,7 @@ services:
     build: .
     ports:
       - "3000:3000"
-    volumes:
-      - ./logs:/app/logs
+    volumes: []
     environment:
       - NODE_ENV=production
       - BASE_SEPOLIA_RPC=${BASE_SEPOLIA_RPC}

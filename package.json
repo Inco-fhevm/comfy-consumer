@@ -6,11 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "logs": "node scripts/view-logs.js",
-    "logs:errors": "node scripts/view-logs.js --errors",
-    "logs:follow": "node scripts/view-logs.js --follow",
-    "logs:clear": "node scripts/view-logs.js --clear"
+    "lint": "next lint"
   },
   "dependencies": {
     "@inco/js": "^0.1.41",

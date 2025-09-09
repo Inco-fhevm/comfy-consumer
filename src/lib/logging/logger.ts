@@ -52,28 +52,8 @@ const consoleFormat = winston.format.combine(
   )
 );
 
-// Define which transports to use
+// Define which transports to use (console-only as requested)
 const transports: winston.transport[] = [];
-
-// File transport for all environments
-transports.push(
-  new winston.transports.File({
-    filename: "logs/error.log",
-    level: "error",
-    format: winston.format.json(),
-    maxsize: 5242880, // 5MB
-    maxFiles: 5,
-  })
-);
-
-transports.push(
-  new winston.transports.File({
-    filename: "logs/combined.log",
-    format: winston.format.json(),
-    maxsize: 5242880, // 5MB
-    maxFiles: 5,
-  })
-);
 
 // Console transport
 if (process.env.NODE_ENV !== "production") {
