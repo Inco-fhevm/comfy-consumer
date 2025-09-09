@@ -37,6 +37,8 @@ RUN mkdir .next
 RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Provide runtime deps for metrics-server.js (requires prom-client)
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder /app/metrics-server.js ./
 COPY --from=builder /app/start.sh ./
 RUN chown nextjs:nodejs metrics-server.js start.sh
