@@ -249,7 +249,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         value: formattedPlaintext,
       } as const;
 
-       const estimatedGas = await publicClient!.estimateContractGas({
+      const estimatedGas = await publicClient!.estimateContractGas({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",

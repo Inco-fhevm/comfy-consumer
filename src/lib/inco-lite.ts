@@ -16,7 +16,7 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-export type IncoEnv = "devnet" | "testnet" 
+export type IncoEnv = "devnet" | "testnet";
 
 /**
  * Get or initialize the Inco configuration based on the current chain
