@@ -18,7 +18,7 @@ import { type WalletClient } from "viem";
 
 import { ENCRYPTEDERC20ABI } from "@/lib/constants";
 
-import { IncoEnv, reEncryptValue } from "@/lib/inco-lite";
+import { decryptValue } from "@/lib/inco-lite";
 import { useContracts } from "./contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
 import { recordEncryptedBalanceFetch } from "@/lib/metrics";
@@ -125,10 +125,9 @@ export const ChainBalanceProvider = ({
           incoEnv: INCO_ENV,
         });
 
-        const decrypted = await reEncryptValue({
+        const decrypted = await decryptValue({
           walletClient: clientToUse,
-          handle: balanceHandle.toString(),
-          env: INCO_ENV as IncoEnv,
+          handle: balanceHandle.toString()
         });
 
         const decryptedNumber = Number(decrypted);

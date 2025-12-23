@@ -8,7 +8,7 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { parseEther } from "viem";
+import { pad, bytesToHex, toHex, parseEther } from "viem";
 import { ERC20ABI, ENCRYPTEDERC20ABI } from "@/lib/constants";
 import loadingAnimation from "@/lib/transaction-animation.json";
 import { useChainBalance } from "@/context/chain-balance-provider";
@@ -18,6 +18,8 @@ import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
 import { useContracts } from "@/context/contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
+import { getConfig } from "@/lib/inco-lite";
+import { AttestedComputeSupportedOps } from "@inco/js/lite";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -183,38 +185,59 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         functionName: "unwrap",
         // Note: Not logging amount for security in shielded operations
       });
-
-      // Estimate gas for unwrap
-      clientLogger.info("Estimating gas for unwrap operation", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        functionName: "unwrap",
+      const balance = await publicClient!.readContract({
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        abi: ENCRYPTEDERC20ABI,
+        functionName: "balanceOf",
+        args: [address],
       });
+      const op = AttestedComputeSupportedOps.Ge;
+
+      const incoConfig = await getConfig();
+      const attestedCompute = await incoConfig.attestedCompute(
+        // @ts-expect-error - walletClient is not typed
+        walletClient,
+        balance,
+        op,
+        amountWithDecimals
+      );
+
+      const plaintext = attestedCompute.plaintext.value;
+
+      const covalidatorSignature = attestedCompute.covalidatorSignatures;
+
+      const formattedPlaintext = (
+        typeof plaintext === "boolean"
+          ? plaintext
+            ? "0x" + "0".repeat(63) + "1"
+            : "0x" + "0".repeat(64)
+          : pad(toHex(plaintext as bigint), { size: 32 })
+      ) as `0x${string}`;
+
+      const signatures = covalidatorSignature.map((sig: Uint8Array) =>
+        bytesToHex(sig)
+      );
+
+      const quorumAttestation = {
+        handle: attestedCompute.handle as `0x${string}`,
+        value: formattedPlaintext,
+      } as const;
 
       const estimatedGas = await publicClient!.estimateContractGas({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
-        args: [amountWithDecimals],
+        args: [amountWithDecimals, quorumAttestation, signatures],
         account: address,
-      });
-
-      clientLogger.info("Gas estimated for unwrap", {
-        estimatedGas: estimatedGas.toString(),
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      });
-
-      clientLogger.info("Executing unwrap contract call", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        functionName: "unwrap",
-        gas: estimatedGas.toString(),
       });
 
       const hash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
-        args: [amountWithDecimals],
+        args: [amountWithDecimals, quorumAttestation, signatures],
         gas: estimatedGas,
+        // value: fees,
       });
 
       clientLogger.info("Unwrap transaction submitted", {
@@ -242,22 +265,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       clientLogger.info("Listening for unwrap events via API", {
         apiEndpoint: "/api/listen-unshield",
       });
-
-      const res = await fetch("/api/listen-unshield", { method: "POST" });
-      const data = await res.json();
-      if (data.logs) {
-        clientLogger.info("Unwrap event detected via API", {
-          eventCount: data.logs.length,
-          txHash: hash,
-        });
-      }
-
-      clientLogger.transaction.success(hash, "unshield");
-      clientLogger.info("Unshield operation completed successfully", {
-        txHash: hash,
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      });
-
       toast.success("Unwrap Complete");
       handleClose(mode);
     } catch (error) {

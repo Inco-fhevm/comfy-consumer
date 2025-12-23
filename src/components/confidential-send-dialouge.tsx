@@ -24,7 +24,7 @@ import {
   useWalletClient,
   useWriteContract,
 } from "wagmi";
-import { encryptValue, IncoEnv } from "@/lib/inco-lite";
+import { encryptValue, getFee } from "@/lib/inco-lite";
 import { parseEther } from "viem";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import Image from "next/image";
@@ -93,7 +93,6 @@ const ConfidentialSendDialog: React.FC = () => {
         value: parseEther(amount.toString()),
         address: userAddress as `0x${string}`,
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-        env: INCO_ENV as IncoEnv,
       });
 
       clientLogger.info("Amount encrypted successfully for confidential send", {
@@ -116,22 +115,39 @@ const ConfidentialSendDialog: React.FC = () => {
         recipient: address,
       });
 
+      const fee = await getFee();
+
       const hash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: [
           {
             inputs: [
-              { internalType: "address", name: "to", type: "address" },
-              { internalType: "bytes", name: "encryptedAmount", type: "bytes" },
+              {
+                internalType: "address",
+                name: "to",
+                type: "address",
+              },
+              {
+                internalType: "bytes",
+                name: "encryptedAmount",
+                type: "bytes",
+              },
             ],
             name: "transfer",
-            outputs: [{ internalType: "bool", name: "", type: "bool" }],
-            stateMutability: "nonpayable",
+            outputs: [
+              {
+                internalType: "bool",
+                name: "",
+                type: "bool",
+              },
+            ],
+            stateMutability: "payable",
             type: "function",
           },
         ],
         functionName: "transfer",
         args: [address as `0x${string}`, inputCt],
+        value: fee,
       });
 
       clientLogger.info("Confidential transfer transaction submitted", {
