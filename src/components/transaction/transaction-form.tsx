@@ -185,32 +185,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         functionName: "unwrap",
         // Note: Not logging amount for security in shielded operations
       });
-
-      // Estimate gas for unwrap
-      // clientLogger.info("Estimating gas for unwrap operation", {
-      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      //   functionName: "unwrap",
-      // });
-
-      // const estimatedGas = await publicClient!.estimateContractGas({
-      //   address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-      //   abi: ENCRYPTEDERC20ABI,
-      //   functionName: "unwrap",
-      //   args: [amountWithDecimals],
-      //   account: address,
-      // });
-
-      // clientLogger.info("Gas estimated for unwrap", {
-      //   estimatedGas: estimatedGas.toString(),
-      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      // });
-
-      // clientLogger.info("Executing unwrap contract call", {
-      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      //   functionName: "unwrap",
-      //   gas: estimatedGas.toString(),
-      // });
-
       const balance = await publicClient!.readContract({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
@@ -291,22 +265,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       clientLogger.info("Listening for unwrap events via API", {
         apiEndpoint: "/api/listen-unshield",
       });
-
-      // const res = await fetch("/api/listen-unshield", { method: "POST" });
-      // const data = await res.json();
-      // if (data.logs) {
-      //   clientLogger.info("Unwrap event detected via API", {
-      //     eventCount: data.logs.length,
-      //     txHash: hash,
-      //   });
-      // }
-
-      // clientLogger.transaction.success(hash, "unshield");
-      // clientLogger.info("Unshield operation completed successfully", {
-      //   txHash: hash,
-      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      // });
-
       toast.success("Unwrap Complete");
       handleClose(mode);
     } catch (error) {
