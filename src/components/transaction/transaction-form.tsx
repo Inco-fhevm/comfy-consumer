@@ -18,7 +18,7 @@ import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
 import { useContracts } from "@/context/contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
-import { getConfig, getFee } from "@/lib/inco-lite";
+import { getConfig } from "@/lib/inco-lite";
 import { AttestedComputeSupportedOps } from "@inco/js/lite";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
@@ -221,14 +221,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       const incoConfig = await getConfig();
       const attestedCompute = await incoConfig.attestedCompute(
+        // @ts-expect-error - walletClient is not typed
         walletClient,
         balance,
         op,
         amountWithDecimals
       );
 
-      const plaintext = await attestedCompute.plaintext.value;
-      const covalidatorSignature = await attestedCompute.covalidatorSignatures;
+      const plaintext = attestedCompute.plaintext.value;
+
+      const covalidatorSignature = attestedCompute.covalidatorSignatures;
 
       const formattedPlaintext = (
         typeof plaintext === "boolean"
@@ -237,7 +239,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             : "0x" + "0".repeat(64)
           : pad(toHex(plaintext as bigint), { size: 32 })
       ) as `0x${string}`;
-      console.log("formattedPlaintext: ", formattedPlaintext);
 
       const signatures = covalidatorSignature.map((sig: Uint8Array) =>
         bytesToHex(sig)
@@ -247,26 +248,22 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         handle: attestedCompute.handle as `0x${string}`,
         value: formattedPlaintext,
       } as const;
-      console.log("quorumAttestation: ", quorumAttestation);
-      
-      const fees = await getFee();
 
-      //  const estimatedGas = await publicClient!.estimateContractGas({
-      //   address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-      //   abi: ENCRYPTEDERC20ABI,
-      //   functionName: "unwrap",
-      //   args: [amountWithDecimals, quorumAttestation, signatures],
-      //   account: address,
-      //   value: fees,
-      // });
+       const estimatedGas = await publicClient!.estimateContractGas({
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        abi: ENCRYPTEDERC20ABI,
+        functionName: "unwrap",
+        args: [amountWithDecimals, quorumAttestation, signatures],
+        account: address,
+      });
 
       const hash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
         args: [amountWithDecimals, quorumAttestation, signatures],
-        // gas: estimatedGas,
-        value: fees,
+        gas: estimatedGas,
+        // value: fees,
       });
 
       clientLogger.info("Unwrap transaction submitted", {

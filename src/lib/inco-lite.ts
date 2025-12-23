@@ -16,6 +16,8 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
+export type IncoEnv = "devnet" | "testnet" 
+
 /**
  * Get or initialize the Inco configuration based on the current chain
  */
@@ -105,7 +107,13 @@ export const attestedCompute = async ({
 
   // Encode the plaintext value as bytes32
   // For boolean: true = 1, false = 0, padded to 32 bytes
-  const encodedValue = pad(toHex(result.plaintext.value ? 1 : 0), { size: 32 });
+  const encodedValue = (
+    typeof result.plaintext.value === "boolean"
+      ? result.plaintext.value
+        ? "0x" + "0".repeat(63) + "1"
+        : "0x" + "0".repeat(64)
+      : pad(toHex(result.plaintext.value as bigint), { size: 32 })
+  ) as `0x${string}`;
 
   // Return in format expected by contract:
   // - plaintext: the actual decrypted value
