@@ -8,7 +8,7 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { parseEther } from "viem";
+import { pad, bytesToHex, toHex, parseEther } from "viem";
 import { ERC20ABI, ENCRYPTEDERC20ABI } from "@/lib/constants";
 import loadingAnimation from "@/lib/transaction-animation.json";
 import { useChainBalance } from "@/context/chain-balance-provider";
@@ -18,6 +18,8 @@ import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
 import { useContracts } from "@/context/contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
+import { getConfig, getFee } from "@/lib/inco-lite";
+import { AttestedComputeSupportedOps } from "@inco/js/lite";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -185,36 +187,86 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       });
 
       // Estimate gas for unwrap
-      clientLogger.info("Estimating gas for unwrap operation", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        functionName: "unwrap",
-      });
+      // clientLogger.info("Estimating gas for unwrap operation", {
+      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      //   functionName: "unwrap",
+      // });
 
-      const estimatedGas = await publicClient!.estimateContractGas({
+      // const estimatedGas = await publicClient!.estimateContractGas({
+      //   address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+      //   abi: ENCRYPTEDERC20ABI,
+      //   functionName: "unwrap",
+      //   args: [amountWithDecimals],
+      //   account: address,
+      // });
+
+      // clientLogger.info("Gas estimated for unwrap", {
+      //   estimatedGas: estimatedGas.toString(),
+      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      // });
+
+      // clientLogger.info("Executing unwrap contract call", {
+      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      //   functionName: "unwrap",
+      //   gas: estimatedGas.toString(),
+      // });
+
+      const balance = await publicClient!.readContract({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
-        functionName: "unwrap",
-        args: [amountWithDecimals],
-        account: address,
+        functionName: "balanceOf",
+        args: [address],
       });
+      const op = AttestedComputeSupportedOps.Ge;
 
-      clientLogger.info("Gas estimated for unwrap", {
-        estimatedGas: estimatedGas.toString(),
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      });
+      const incoConfig = await getConfig();
+      const attestedCompute = await incoConfig.attestedCompute(
+        walletClient,
+        balance,
+        op,
+        amountWithDecimals
+      );
 
-      clientLogger.info("Executing unwrap contract call", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        functionName: "unwrap",
-        gas: estimatedGas.toString(),
-      });
+      const plaintext = await attestedCompute.plaintext.value;
+      const covalidatorSignature = await attestedCompute.covalidatorSignatures;
+
+      const formattedPlaintext = (
+        typeof plaintext === "boolean"
+          ? plaintext
+            ? "0x" + "0".repeat(63) + "1"
+            : "0x" + "0".repeat(64)
+          : pad(toHex(plaintext as bigint), { size: 32 })
+      ) as `0x${string}`;
+      console.log("formattedPlaintext: ", formattedPlaintext);
+
+      const signatures = covalidatorSignature.map((sig: Uint8Array) =>
+        bytesToHex(sig)
+      );
+
+      const quorumAttestation = {
+        handle: attestedCompute.handle as `0x${string}`,
+        value: formattedPlaintext,
+      } as const;
+      console.log("quorumAttestation: ", quorumAttestation);
+      
+      const fees = await getFee();
+
+      //  const estimatedGas = await publicClient!.estimateContractGas({
+      //   address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+      //   abi: ENCRYPTEDERC20ABI,
+      //   functionName: "unwrap",
+      //   args: [amountWithDecimals, quorumAttestation, signatures],
+      //   account: address,
+      //   value: fees,
+      // });
 
       const hash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
-        args: [amountWithDecimals],
-        gas: estimatedGas,
+        args: [amountWithDecimals, quorumAttestation, signatures],
+        // gas: estimatedGas,
+        value: fees,
       });
 
       clientLogger.info("Unwrap transaction submitted", {
@@ -243,20 +295,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         apiEndpoint: "/api/listen-unshield",
       });
 
-      const res = await fetch("/api/listen-unshield", { method: "POST" });
-      const data = await res.json();
-      if (data.logs) {
-        clientLogger.info("Unwrap event detected via API", {
-          eventCount: data.logs.length,
-          txHash: hash,
-        });
-      }
+      // const res = await fetch("/api/listen-unshield", { method: "POST" });
+      // const data = await res.json();
+      // if (data.logs) {
+      //   clientLogger.info("Unwrap event detected via API", {
+      //     eventCount: data.logs.length,
+      //     txHash: hash,
+      //   });
+      // }
 
-      clientLogger.transaction.success(hash, "unshield");
-      clientLogger.info("Unshield operation completed successfully", {
-        txHash: hash,
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      });
+      // clientLogger.transaction.success(hash, "unshield");
+      // clientLogger.info("Unshield operation completed successfully", {
+      //   txHash: hash,
+      //   contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
+      // });
 
       toast.success("Unwrap Complete");
       handleClose(mode);

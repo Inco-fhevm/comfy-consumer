@@ -1,94 +1,147 @@
+import { AttestedComputeSupportedOps, Lightning } from "@inco/js/lite";
+import { handleTypes } from "@inco/js";
+import type { WalletClient } from "viem";
 import {
-  getAddress,
-  formatUnits,
-  WalletClient,
-  Account,
-  Transport,
-  Chain,
+  bytesToHex,
+  createPublicClient,
+  formatEther,
+  http,
+  pad,
+  toHex,
 } from "viem";
-import { Lightning } from "@inco/js/lite";
 import { baseSepolia } from "viem/chains";
 
-export type IncoEnv = "testnet" | "demonet" | "devnet";
+const publicClient = createPublicClient({
+  chain: baseSepolia,
+  transport: http(),
+});
 
-export const getConfig = (env: IncoEnv) => {
-  return Lightning.latest(
-    env,
-    baseSepolia.id
-  );
-};
+/**
+ * Get or initialize the Inco configuration based on the current chain
+ */
+export async function getConfig() {
+  const chainId = publicClient.chain.id;
+  console.log(`🔧 Initializing Inco config for chain: ${chainId}`);
+  const incoConfig = await Lightning.latest("devnet", baseSepolia.id); // Base Sepolia
+  return incoConfig;
+}
 
-export const encryptValue = async ({
+/**
+ * Encrypt a value for a specific contract and account
+ */
+export async function encryptValue({
   value,
   address,
   contractAddress,
-  env
 }: {
   value: bigint;
   address: `0x${string}`;
   contractAddress: `0x${string}`;
-  env: IncoEnv;
-}) => {
-  // Convert the input value to BigInt for proper encryption
-  const valueBigInt = BigInt(value);
+}): Promise<`0x${string}`> {
+  const inco = await getConfig();
 
-  // Format the contract address to checksum format for standardization
-  const checksummedAddress = getAddress(contractAddress);
-
-  const incoConfig = getConfig(env);
-
-  const encryptedData = await incoConfig.encrypt(valueBigInt, {
+  const encryptedData = await inco.encrypt(value, {
     accountAddress: address,
-    dappAddress: checksummedAddress,
+    dappAddress: contractAddress,
+    handleType: handleTypes.euint256,
   });
+  return encryptedData as `0x${string}`;
+}
 
-  console.log("Encrypted data:", encryptedData);
-
-  return encryptedData;
-};
-
-export const reEncryptValue = async ({
+/**
+ * Re-encrypt and decrypt a handle for a specific wallet
+ */
+export async function decryptValue({
   walletClient,
   handle,
-  env,
 }: {
   walletClient: WalletClient;
   handle: string;
-  env: IncoEnv;
+}): Promise<bigint> {
+  const inco = await getConfig();
+
+  // Get attested decrypt for the wallet
+  const attestedDecrypt = await inco.attestedDecrypt(
+    // @ts-expect-error - walletClient is not typed
+    walletClient,
+    [handle]
+  );
+
+  console.log("Attested decrypt: ", attestedDecrypt);
+
+  // Return the decrypted value
+  const formattedValue = formatEther(
+    attestedDecrypt[0].plaintext.value as bigint
+  );
+
+  return BigInt(formattedValue);
+}
+
+export const attestedCompute = async ({
+  walletClient,
+  lhsHandle,
+  op,
+  rhsPlaintext,
+}: {
+  walletClient: WalletClient;
+  lhsHandle: `0x${string}`;
+  op: (typeof AttestedComputeSupportedOps)[keyof typeof AttestedComputeSupportedOps];
+  rhsPlaintext: `0x${string}`;
 }) => {
-  if (!walletClient || !handle) {
-    throw new Error("Missing required parameters for creating reencryptor");
-  }
+  const incoConfig = await getConfig();
 
-  try {
-    const incoConfig = getConfig(env);
-    const reencryptor = await incoConfig.getReencryptor(
-      walletClient as WalletClient<Transport, Chain, Account>
-    );
-    const backoffConfig = {
-      maxRetries: 100,
-      baseDelayInMs: 1000,
-      backoffFactor: 1.5,
-    };
+  const result = await incoConfig.attestedCompute(
+    // @ts-expect-error - walletClient is not typed
+    walletClient,
+    lhsHandle as `0x${string}`,
+    op,
+    rhsPlaintext
+  );
 
-    const decryptedResult = await reencryptor(
-      { handle: handle as `0x${string}` },
-      backoffConfig
-    );
+  // Convert Uint8Array signatures to hex strings
+  const signatures = result.covalidatorSignatures.map((sig: Uint8Array) =>
+    bytesToHex(sig)
+  );
 
-    if (!decryptedResult) {
-      throw new Error("Failed to decrypt");
-    }
+  // Encode the plaintext value as bytes32
+  // For boolean: true = 1, false = 0, padded to 32 bytes
+  const encodedValue = pad(toHex(result.plaintext.value ? 1 : 0), { size: 32 });
 
-    const decryptedEther = formatUnits(BigInt(decryptedResult.value), 18);
-    const formattedValue = parseFloat(decryptedEther).toFixed(0);
-
-    return formattedValue;
-  } catch (error: unknown) {
-    console.error("Reencryption error:", error);
-    if (error instanceof Error) {
-      throw new Error(`Failed to reencrypt: ${error.message}`);
-    }
-    throw new Error("Failed to reencrypt: Unknown error");
-  }
+  // Return in format expected by contract:
+  // - plaintext: the actual decrypted value
+  // - attestation: { handle, value } for the DecryptionAttestation struct
+  // - signature array for verification
+  return {
+    plaintext: result.plaintext.value,
+    attestation: {
+      handle: result.handle,
+      value: encodedValue,
+    },
+    signature: signatures,
+  };
 };
+
+/**
+ * Get the fee required for Inco operations
+ */
+export async function getFee(): Promise<bigint> {
+  const inco = await getConfig();
+
+  // Read the fee from the Lightning contract
+  const fee = await publicClient.readContract({
+    address: inco.executorAddress,
+    abi: [
+      {
+        type: "function",
+        inputs: [],
+        name: "getFee",
+        outputs: [{ name: "", internalType: "uint256", type: "uint256" }],
+        stateMutability: "pure",
+      },
+    ],
+    functionName: "getFee",
+  });
+
+  console.log("Fee: ", fee);
+  return fee;
+}
