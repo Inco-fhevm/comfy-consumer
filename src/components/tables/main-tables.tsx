@@ -21,6 +21,10 @@ const CryptoWalletTables: React.FC<CryptoWalletTablesProps> = () => {
     address,
     token: ERC20_CONTRACT_ADDRESS as `0x${string}`,
     chainId: BASE_SEPOLIA_CHAIN_ID,
+    query: {
+      enabled: !!address && !!ERC20_CONTRACT_ADDRESS,
+      refetchInterval: 3000,
+    },
   });
 
   const walletAssets = useMemo((): Asset[] => {
