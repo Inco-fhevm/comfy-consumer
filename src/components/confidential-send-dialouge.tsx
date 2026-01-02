@@ -24,7 +24,7 @@ import {
   useWalletClient,
   useWriteContract,
 } from "wagmi";
-import { encryptValue, getFee } from "@/lib/inco-lite";
+import { encryptValue, getFee, IncoEnv } from "@/lib/inco-lite";
 import { parseEther } from "viem";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import Image from "next/image";
@@ -93,6 +93,7 @@ const ConfidentialSendDialog: React.FC = () => {
         value: parseEther(amount.toString()),
         address: userAddress as `0x${string}`,
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        env: INCO_ENV as IncoEnv || "testnet",
       });
 
       clientLogger.info("Amount encrypted successfully for confidential send", {

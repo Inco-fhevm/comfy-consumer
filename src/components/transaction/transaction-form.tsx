@@ -193,7 +193,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       });
       const op = AttestedComputeSupportedOps.Ge;
 
-      const incoConfig = await getConfig();
+      const incoConfig = await getConfig(contracts?.incoEnv);
       const attestedCompute = await incoConfig.attestedCompute(
         // @ts-expect-error - walletClient is not typed
         walletClient,
