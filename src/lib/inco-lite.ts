@@ -24,7 +24,7 @@ export type IncoEnv = "devnet" | "testnet";
 export async function getConfig() {
   const chainId = publicClient.chain.id;
   console.log(`🔧 Initializing Inco config for chain: ${chainId}`);
-  const incoConfig = await Lightning.latest("devnet", baseSepolia.id); // Base Sepolia
+  const incoConfig = await Lightning.latest("testnet", baseSepolia.id); // Base Sepolia
   return incoConfig;
 }
 
