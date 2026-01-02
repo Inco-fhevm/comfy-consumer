@@ -21,10 +21,10 @@ export type IncoEnv = "devnet" | "testnet";
 /**
  * Get or initialize the Inco configuration based on the current chain
  */
-export async function getConfig() {
+export async function getConfig(env: IncoEnv = "testnet") {
   const chainId = publicClient.chain.id;
   console.log(`🔧 Initializing Inco config for chain: ${chainId}`);
-  const incoConfig = await Lightning.latest("devnet", baseSepolia.id); // Base Sepolia
+  const incoConfig = await Lightning.latest(env, baseSepolia.id); // Base Sepolia
   return incoConfig;
 }
 
@@ -35,12 +35,14 @@ export async function encryptValue({
   value,
   address,
   contractAddress,
+  env,
 }: {
   value: bigint;
   address: `0x${string}`;
   contractAddress: `0x${string}`;
+  env: IncoEnv;
 }): Promise<`0x${string}`> {
-  const inco = await getConfig();
+  const inco = await getConfig(env);
 
   const encryptedData = await inco.encrypt(value, {
     accountAddress: address,
@@ -56,11 +58,13 @@ export async function encryptValue({
 export async function decryptValue({
   walletClient,
   handle,
+  env,
 }: {
   walletClient: WalletClient;
   handle: string;
+  env: IncoEnv;
 }): Promise<bigint> {
-  const inco = await getConfig();
+  const inco = await getConfig(env);
 
   // Get attested decrypt for the wallet
   const attestedDecrypt = await inco.attestedDecrypt(
