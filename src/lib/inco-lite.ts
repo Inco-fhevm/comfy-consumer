@@ -63,7 +63,7 @@ export async function decryptValue({
   walletClient: WalletClient;
   handle: string;
   env: IncoEnv;
-}): Promise<bigint> {
+}): Promise<number> {
   const inco = await getConfig(env);
 
   // Get attested decrypt for the wallet
@@ -75,12 +75,12 @@ export async function decryptValue({
 
   console.log("Attested decrypt: ", attestedDecrypt);
 
-  // Return the decrypted value
+  // Return the decrypted value formatted from wei to ether
   const formattedValue = formatEther(
     attestedDecrypt[0].plaintext.value as bigint
   );
 
-  return BigInt(formattedValue);
+  return Number(formattedValue);
 }
 
 export const attestedCompute = async ({
