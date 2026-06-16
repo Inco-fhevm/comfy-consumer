@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     requestId: request.headers.get("x-request-id") || undefined,
     method: "GET",
     path: "/api/contracts",
-    ip: request.ip || request.headers.get("x-forwarded-for") || undefined,
+    ip: request.headers.get("x-forwarded-for") || undefined,
     userAgent: request.headers.get("user-agent") || undefined,
   });
 
@@ -20,20 +20,18 @@ export async function GET(request: NextRequest) {
       process.env.ENCRYPTED_ERC20_CONTRACT_ADDRESS;
     const ERC20_CONTRACT_ADDRESS = process.env.ERC20_CONTRACT_ADDRESS;
     const INCO_ENV = process.env.INCO_ENV;
-    const REOWN_APP_ID = process.env.REOWN_APP_ID;
+    const REOWN_APP_ID = process.env.REOWN_APP_ID ?? "";
 
     // Validate required environment variables
     if (
       !ENCRYPTED_ERC20_CONTRACT_ADDRESS ||
       !ERC20_CONTRACT_ADDRESS ||
-      !INCO_ENV ||
-      !REOWN_APP_ID
+      !INCO_ENV
     ) {
       requestLogger.error("Missing required environment variables", {
         hasEncryptedERC20: !!ENCRYPTED_ERC20_CONTRACT_ADDRESS,
         hasERC20: !!ERC20_CONTRACT_ADDRESS,
         hasIncoEnv: !!INCO_ENV,
-        hasReownAppId: !!REOWN_APP_ID,
       });
 
       return NextResponse.json(

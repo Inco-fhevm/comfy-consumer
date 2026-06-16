@@ -1,2 +1,6 @@
 .env
 node_modules/
+.next/
+.git/
+.agents/
+npm-debug.log*

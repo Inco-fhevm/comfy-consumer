@@ -2,8 +2,6 @@
 import React, { createContext, useContext, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { IncoEnv } from "@/lib/inco-lite";
-
 interface ContractData {
   encryptedERC20: {
     address: string;
@@ -11,7 +9,6 @@ interface ContractData {
   erc20: {
     address: string;
   };
-  incoEnv: IncoEnv;
   REOWN_APP_ID: string;
 }
 

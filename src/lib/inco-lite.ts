@@ -1,5 +1,5 @@
-import { AttestedComputeSupportedOps, Lightning } from "@inco/js/lite";
-import { handleTypes } from "@inco/js";
+import { AttestedComputeSupportedOps, Lightning } from "@inco/lightning-js/lite";
+import { handleTypes } from "@inco/lightning-js";
 import type { WalletClient } from "viem";
 import {
   bytesToHex,
@@ -16,16 +16,22 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-export type IncoEnv = "devnet" | "testnet";
+// Cached singleton — the Lightning config is immutable for a given network.
+let lightningPromise: ReturnType<typeof Lightning.baseSepoliaTestnet> | null =
+  null;
 
 /**
- * Get or initialize the Inco configuration based on the current chain
+ * Get or initialize the Inco Lightning configuration for Base Sepolia.
+ *
+ * In @inco/lightning-js (v1) the network is selected explicitly via
+ * `Lightning.baseSepoliaTestnet()` (chain 84532) — no env string needed.
  */
-export async function getConfig(env: IncoEnv = "testnet") {
-  const chainId = publicClient.chain.id;
-  console.log(`🔧 Initializing Inco config for chain: ${chainId}`);
-  const incoConfig = await Lightning.latest(env, baseSepolia.id); // Base Sepolia
-  return incoConfig;
+export async function getConfig() {
+  if (!lightningPromise) {
+    console.log(`🔧 Initializing Inco Lightning config for chain: ${baseSepolia.id}`);
+    lightningPromise = Lightning.baseSepoliaTestnet();
+  }
+  return lightningPromise;
 }
 
 /**
@@ -35,14 +41,12 @@ export async function encryptValue({
   value,
   address,
   contractAddress,
-  env,
 }: {
   value: bigint;
   address: `0x${string}`;
   contractAddress: `0x${string}`;
-  env: IncoEnv;
 }): Promise<`0x${string}`> {
-  const inco = await getConfig(env);
+  const inco = await getConfig();
 
   const encryptedData = await inco.encrypt(value, {
     accountAddress: address,
@@ -58,13 +62,11 @@ export async function encryptValue({
 export async function decryptValue({
   walletClient,
   handle,
-  env,
 }: {
   walletClient: WalletClient;
   handle: string;
-  env: IncoEnv;
 }): Promise<number> {
-  const inco = await getConfig(env);
+  const inco = await getConfig();
 
   // Get attested decrypt for the wallet
   const attestedDecrypt = await inco.attestedDecrypt(

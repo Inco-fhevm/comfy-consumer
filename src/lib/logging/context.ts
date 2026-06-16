@@ -47,7 +47,7 @@ function generateRequestId(): string {
  */
 export async function getRequestContext() {
   try {
-    const headersList = headers();
+    const headersList = await headers();
     return {
       requestId: headersList.get("x-request-id") || generateRequestId(),
       userAgent: headersList.get("user-agent") || "unknown",

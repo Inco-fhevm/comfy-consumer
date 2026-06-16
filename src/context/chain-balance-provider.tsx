@@ -18,7 +18,7 @@ import { type WalletClient } from "viem";
 
 import { ENCRYPTEDERC20ABI } from "@/lib/constants";
 
-import { decryptValue, IncoEnv } from "@/lib/inco-lite";
+import { decryptValue } from "@/lib/inco-lite";
 import { useContracts } from "./contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
 import { recordEncryptedBalanceFetch } from "@/lib/metrics";
@@ -47,7 +47,6 @@ export const ChainBalanceProvider = ({
   const { contracts } = useContracts();
   const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
   const tokenAddress = contracts?.erc20?.address;
-  const INCO_ENV = contracts?.incoEnv;
 
   const { isConnected, address } = useAccount();
   const [encryptedBalance, setEncryptedBalance] = useState<number | null>(null);
@@ -122,13 +121,11 @@ export const ChainBalanceProvider = ({
 
         clientLogger.info("Decrypting encrypted balance", {
           handle: balanceHandle.toString(),
-          incoEnv: INCO_ENV,
         });
 
         const decrypted = await decryptValue({
           walletClient: clientToUse,
           handle: balanceHandle.toString(),
-          env: INCO_ENV as IncoEnv || "testnet",
         });
 
         const decryptedNumber = Number(decrypted);
@@ -162,7 +159,6 @@ export const ChainBalanceProvider = ({
       publicClient,
       walletClient,
       ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      INCO_ENV,
     ]
   );
 

@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { parseEther } from "viem";
 import { Loader2, X } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { ENCRYPTEDERC20ABI, ERC20ABI } from "@/lib/constants";
+import { ENCRYPTEDERC20ABI, ERC20ABI, TX_CONFIRMATIONS } from "@/lib/constants";
 import {
   useAccount,
   usePublicClient,
@@ -87,6 +87,7 @@ const MintDialog = ({
 
       const transaction = await publicClient?.waitForTransactionReceipt({
         hash: cUSDCMintTxHash,
+        confirmations: TX_CONFIRMATIONS,
       });
 
       if (transaction?.status === "reverted") {
@@ -138,6 +139,7 @@ const MintDialog = ({
 
       const transaction = await publicClient?.waitForTransactionReceipt({
         hash: uSDCMintTxHash,
+        confirmations: TX_CONFIRMATIONS,
       });
 
       if (transaction?.status === "reverted") {

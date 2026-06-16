@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   const requestLogger = createRequestLogger({
     method: request.method,
     path: "/api/logs",
-    ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
+    ip: request.headers.get("x-forwarded-for") || "unknown",
     userAgent: request.headers.get("user-agent") || "unknown",
   });
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       ...metadata,
       request: {
         id: request.headers.get("x-request-id") || "unknown",
-        ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
+        ip: request.headers.get("x-forwarded-for") || "unknown",
         userAgent: request.headers.get("user-agent") || "unknown",
       },
     });

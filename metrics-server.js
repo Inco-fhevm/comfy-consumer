@@ -65,7 +65,15 @@ console.log(`Metrics server token: ${METRICS_TOKEN}`);
 
 // Create metrics server
 const metricsServer = http.createServer(async (req, res) => {
-  // Check authentication
+  // Health endpoint is an unauthenticated liveness probe (used by the Docker
+  // healthcheck / orchestrators) — it exposes no sensitive data.
+  if (req.url === "/health") {
+    res.statusCode = 200;
+    res.end("OK");
+    return;
+  }
+
+  // Everything else (e.g. /metrics) requires the bearer token.
   const authHeader = req.headers.authorization;
   if (!authHeader || authHeader !== `Bearer ${METRICS_TOKEN}`) {
     res.statusCode = 401;
@@ -81,9 +89,6 @@ const metricsServer = http.createServer(async (req, res) => {
       res.statusCode = 500;
       res.end("Error generating metrics");
     }
-  } else if (req.url === "/health") {
-    res.statusCode = 200;
-    res.end("OK");
   } else {
     res.statusCode = 404;
     res.end("Not Found");

@@ -9,7 +9,7 @@ import {
   useWalletClient,
 } from "wagmi";
 import { pad, bytesToHex, toHex, parseEther } from "viem";
-import { ERC20ABI, ENCRYPTEDERC20ABI } from "@/lib/constants";
+import { ERC20ABI, ENCRYPTEDERC20ABI, TX_CONFIRMATIONS } from "@/lib/constants";
 import loadingAnimation from "@/lib/transaction-animation.json";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ import IconBuilder from "../icon-builder";
 import { useContracts } from "@/context/contract-provider";
 import clientLogger from "@/lib/logging/client-logger";
 import { getConfig } from "@/lib/inco-lite";
-import { AttestedComputeSupportedOps } from "@inco/js/lite";
+import { AttestedComputeSupportedOps } from "@inco/lightning-js/lite";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -94,6 +94,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       const approveTransaction = await publicClient!.waitForTransactionReceipt({
         hash: approveHash,
+        confirmations: TX_CONFIRMATIONS,
       });
 
       if (approveTransaction.status !== "success") {
@@ -127,6 +128,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       const wrapTransaction = await publicClient!.waitForTransactionReceipt({
         hash: wrapTxHash,
+        confirmations: TX_CONFIRMATIONS,
       });
 
       if (wrapTransaction.status !== "success") {
@@ -193,7 +195,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       });
       const op = AttestedComputeSupportedOps.Ge;
 
-      const incoConfig = await getConfig(contracts?.incoEnv);
+      const incoConfig = await getConfig();
       const attestedCompute = await incoConfig.attestedCompute(
         // @ts-expect-error - walletClient is not typed
         walletClient,
@@ -247,6 +249,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       const transaction = await publicClient!.waitForTransactionReceipt({
         hash,
+        confirmations: TX_CONFIRMATIONS,
       });
 
       if (transaction.status !== "success") {
@@ -261,10 +264,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
       });
 
-      // Listen for unwrap event via API
-      clientLogger.info("Listening for unwrap events via API", {
-        apiEndpoint: "/api/listen-unshield",
-      });
       toast.success("Unwrap Complete");
       handleClose(mode);
     } catch (error) {

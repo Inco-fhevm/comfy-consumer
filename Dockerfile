@@ -1,4 +1,4 @@
-    FROM node:18-alpine AS base
+    FROM node:22-alpine AS base
     
     FROM base AS deps
     # Install Python and build tools needed for native packages
@@ -7,7 +7,7 @@
     COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
     RUN \
       if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-      elif [ -f package-lock.json ]; then npm ci; \
+      elif [ -f package-lock.json ]; then npm ci --legacy-peer-deps; \
       elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
       else echo "Lockfile not found." && exit 1; \
       fi
@@ -16,7 +16,7 @@
     WORKDIR /app
     COPY --from=deps /app/node_modules ./node_modules
     COPY . .
-    RUN yarn build
+    RUN npm run build
     
     FROM base AS runner
 WORKDIR /app
