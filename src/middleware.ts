@@ -31,7 +31,7 @@ export function middleware(request: NextRequest) {
         url: request.url,
         path: request.nextUrl.pathname,
         query: Object.fromEntries(request.nextUrl.searchParams),
-        ip: request.ip || request.headers.get("x-forwarded-for") || "unknown",
+        ip: request.headers.get("x-forwarded-for") || "unknown",
         userAgent: request.headers.get("user-agent") || "unknown",
       },
       service: process.env.SERVICE_NAME || "comfy-consumer",

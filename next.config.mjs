@@ -7,7 +7,6 @@ const nextConfig = {
   trailingSlash: true,
   experimental: {
     esmExternals: "loose",
-    skipTrailingSlashRedirect: true,
   },
   webpack: (config) => {
     config.module.rules.push({

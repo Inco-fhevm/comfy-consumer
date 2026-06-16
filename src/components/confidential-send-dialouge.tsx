@@ -24,7 +24,8 @@ import {
   useWalletClient,
   useWriteContract,
 } from "wagmi";
-import { encryptValue, getFee, IncoEnv } from "@/lib/inco-lite";
+import { encryptValue } from "@/lib/inco-lite";
+import { TX_CONFIRMATIONS } from "@/lib/constants";
 import { parseEther } from "viem";
 import { useChainBalance } from "@/context/chain-balance-provider";
 import Image from "next/image";
@@ -52,7 +53,6 @@ const ConfidentialSendDialog: React.FC = () => {
 
   const { contracts } = useContracts();
   const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
-  const INCO_ENV = contracts?.incoEnv;
 
   const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
 
@@ -85,7 +85,6 @@ const ConfidentialSendDialog: React.FC = () => {
       clientLogger.info("Starting confidential send encryption", {
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
         recipient: address,
-        incoEnv: INCO_ENV,
         // Note: Not logging amount for security
       });
 
@@ -93,7 +92,6 @@ const ConfidentialSendDialog: React.FC = () => {
         value: parseEther(amount.toString()),
         address: userAddress as `0x${string}`,
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-        env: INCO_ENV as IncoEnv || "testnet",
       });
 
       clientLogger.info("Amount encrypted successfully for confidential send", {
@@ -115,8 +113,6 @@ const ConfidentialSendDialog: React.FC = () => {
         functionName: "transfer",
         recipient: address,
       });
-
-      const fee = await getFee();
 
       const hash = await writeContractAsync({
         address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
@@ -142,13 +138,12 @@ const ConfidentialSendDialog: React.FC = () => {
                 type: "bool",
               },
             ],
-            stateMutability: "payable",
+            stateMutability: "nonpayable",
             type: "function",
           },
         ],
         functionName: "transfer",
         args: [address as `0x${string}`, inputCt],
-        value: fee,
       });
 
       clientLogger.info("Confidential transfer transaction submitted", {
@@ -159,6 +154,7 @@ const ConfidentialSendDialog: React.FC = () => {
 
       const transaction = await publicClient!.waitForTransactionReceipt({
         hash,
+        confirmations: TX_CONFIRMATIONS,
       });
 
       const success = transaction.status === "success";
