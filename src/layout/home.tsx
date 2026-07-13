@@ -8,7 +8,12 @@ import Navbar from "@/components/navbar";
 import ThemeToggle from "@/components/toggle-theme";
 import { useAccount } from "wagmi";
 import ComfyLanding from "@/components/connect-wallet";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeftRight, type LucideIcon } from "lucide-react";
+
+// trailingSlash is enabled, so usePathname() yields e.g. "/transactions/".
+// Normalize before comparing against link paths (which have no trailing slash).
+const stripTrailingSlash = (p: string) =>
+  p.length > 1 ? p.replace(/\/+$/, "") : p;
 
 const HomeLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -36,11 +41,21 @@ const HomeLayout = ({ children }: { children: React.ReactNode }) => {
     return <ComfyLanding />;
   }
 
-  const sidebarLinks = [
+  const sidebarLinks: {
+    name: string;
+    path: string;
+    basePath?: string;
+    icon?: LucideIcon;
+  }[] = [
     {
       name: "My Assets",
       basePath: "private-assets",
       path: "/",
+    },
+    {
+      name: "Transactions",
+      path: "/transactions",
+      icon: ArrowLeftRight,
     },
   ];
 
@@ -63,12 +78,16 @@ const HomeLayout = ({ children }: { children: React.ReactNode }) => {
 
         <div className="flex-1">
           {sidebarLinks.map((link) => {
-            const isSelected = pathname === link.path;
-            const iconPath = isSelected
-              ? `/icons/${link.basePath}-selected.svg`
-              : isDarkTheme
-              ? `/icons/${link.basePath}-dark.svg`
-              : `/icons/${link.basePath}-notselected.svg`;
+            const isSelected =
+              stripTrailingSlash(pathname) === stripTrailingSlash(link.path);
+            const LinkIcon = link.icon;
+            const iconPath = link.basePath
+              ? isSelected
+                ? `/icons/${link.basePath}-selected.svg`
+                : isDarkTheme
+                ? `/icons/${link.basePath}-dark.svg`
+                : `/icons/${link.basePath}-notselected.svg`
+              : null;
 
             return (
               <Link key={link.name} href={link.path}>
@@ -79,12 +98,25 @@ const HomeLayout = ({ children }: { children: React.ReactNode }) => {
                       : ""
                   }`}
                 >
-                  <Image
-                    src={iconPath}
-                    alt={link.name}
-                    width={20}
-                    height={20}
-                  />
+                  {LinkIcon ? (
+                    <LinkIcon
+                      size={20}
+                      className={
+                        isSelected
+                          ? "text-blue-500 dark:text-blue-400"
+                          : "text-gray-500 dark:text-gray-300"
+                      }
+                    />
+                  ) : (
+                    iconPath && (
+                      <Image
+                        src={iconPath}
+                        alt={link.name}
+                        width={20}
+                        height={20}
+                      />
+                    )
+                  )}
                   <span
                     className={`${
                       isSelected
@@ -110,8 +142,9 @@ const HomeLayout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const currentPage =
-    sidebarLinks.find((link) => link.path === pathname)?.name ||
-    "Private Assets";
+    sidebarLinks.find(
+      (link) => stripTrailingSlash(link.path) === stripTrailingSlash(pathname)
+    )?.name || "Private Assets";
 
   return (
     <div className="flex h-screen text-gray-900 dark:text-gray-100">

@@ -1,11 +1,14 @@
-import React, { useState }   from "react";
+import React, { useState } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import MintDialog from "./mint-token";
+import AddTokenDialog from "./add-token-dialog";
 import Image from "next/image";
 import CustomConnectButton from "./custom-connect-button";
 
 const Navbar = ({ currentPage }: { currentPage: string }) => {
   const [open, setOpen] = useState(false);
+  const [addTokenOpen, setAddTokenOpen] = useState(false);
 
   return (
     <header className="border-b p-4 flex justify-between items-center relative">
@@ -27,16 +30,22 @@ const Navbar = ({ currentPage }: { currentPage: string }) => {
         <Button
           variant="ghost"
           className="font-semibold"
+          onClick={() => setAddTokenOpen(true)}
+        >
+          <Plus className="h-4 w-4 md:mr-1" />
+          <span className="hidden md:inline">Add token</span>
+        </Button>
+        <Button
+          variant="ghost"
+          className="font-semibold"
           onClick={() => setOpen(true)}
         >
           Mint now
         </Button>
         <CustomConnectButton />
       </div>
-      <MintDialog
-        open={open}
-        onOpenChange={setOpen}
-      />
+      <MintDialog open={open} onOpenChange={setOpen} />
+      <AddTokenDialog open={addTokenOpen} onOpenChange={setAddTokenOpen} />
     </header>
   );
 };

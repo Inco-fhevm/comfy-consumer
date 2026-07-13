@@ -4,10 +4,11 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import HomeLayout from "@/layout/home";
 import { RainbowkitProvider } from "@/context/rainbow-provider";
-import { ChainBalanceProvider } from "@/context/chain-balance-provider";
 import { ContractProvider } from "@/context/contract-provider";
+import { TokenRegistryProvider } from "@/context/token-registry-provider";
+import { SessionKeyProvider } from "@/context/session-key-provider";
+import { TokenBalancesProvider } from "@/context/token-balances-provider";
 import { QueryProvider } from "@/context/query-client-provider";
-// TODO: Import ContractProvider here once implemented
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <QueryProvider>
           <ThemeProvider
             attribute="class"
@@ -38,9 +39,13 @@ export default function RootLayout({
           >
             <ContractProvider>
               <RainbowkitProvider>
-                <ChainBalanceProvider>
-                  <HomeLayout>{children}</HomeLayout>
-                </ChainBalanceProvider>
+                <TokenRegistryProvider>
+                  <SessionKeyProvider>
+                    <TokenBalancesProvider>
+                      <HomeLayout>{children}</HomeLayout>
+                    </TokenBalancesProvider>
+                  </SessionKeyProvider>
+                </TokenRegistryProvider>
               </RainbowkitProvider>
             </ContractProvider>
           </ThemeProvider>

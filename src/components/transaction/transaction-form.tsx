@@ -7,16 +7,16 @@ import {
   useWriteContract,
   usePublicClient,
   useWalletClient,
+  useBalance,
 } from "wagmi";
-import { pad, bytesToHex, toHex, parseEther } from "viem";
+import { pad, bytesToHex, toHex, parseUnits } from "viem";
 import { ERC20ABI, ENCRYPTEDERC20ABI, TX_CONFIRMATIONS } from "@/lib/constants";
 import loadingAnimation from "@/lib/transaction-animation.json";
-import { useChainBalance } from "@/context/chain-balance-provider";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/format-number";
+import { formatNumber } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
-import { useContracts } from "@/context/contract-provider";
+import { TokenInfo } from "@/types/token";
 import clientLogger from "@/lib/logging/client-logger";
 import { getConfig } from "@/lib/inco-lite";
 import { AttestedComputeSupportedOps } from "@inco/lightning-js/lite";
@@ -27,16 +27,18 @@ interface TransactionFormProps {
   mode: "shield" | "withdraw";
   handleClose: (mode: string) => void;
   currentBalance: string;
+  token: TokenInfo;
+  onSuccess?: () => void;
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   mode,
   handleClose,
-  currentBalance,
+  token,
+  onSuccess,
 }) => {
-  const { contracts } = useContracts();
-  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
-  const ERC20_CONTRACT_ADDRESS = contracts?.erc20?.address;
+  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = token.encryptedAddress;
+  const ERC20_CONTRACT_ADDRESS = token.erc20Address;
 
   const [amount, setAmount] = useState<string>("");
   const [isApproving, setIsApproving] = useState<boolean>(false);
@@ -49,10 +51,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
-  const { tokenBalance, refreshBalances, fetchEncryptedBalance } =
-    useChainBalance();
-
-  const handleRefreshEncrypted = () => fetchEncryptedBalance(walletClient);
+  const tokenBalance = useBalance({
+    address,
+    token: ERC20_CONTRACT_ADDRESS,
+    query: { enabled: !!address, refetchInterval: 3000 },
+  });
 
   const handleShield = async (): Promise<void> => {
     if (!amount || !address) return;
@@ -65,7 +68,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       clientLogger.transaction.start("shield");
 
       await checkAndSwitchNetwork();
-      const amountWithDecimals = parseEther(amount.toString());
+      const amountWithDecimals = parseUnits(amount.toString(), token.decimals);
 
       clientLogger.info("Starting shield operation", {
         erc20Contract: ERC20_CONTRACT_ADDRESS,
@@ -81,7 +84,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       });
 
       const approveHash = await writeContractAsync({
-        address: ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        address: ERC20_CONTRACT_ADDRESS,
         abi: ERC20ABI,
         functionName: "approve",
         args: [ENCRYPTED_ERC20_CONTRACT_ADDRESS, amountWithDecimals],
@@ -115,7 +118,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       });
 
       const wrapTxHash = await writeContractAsync({
-        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
         abi: ENCRYPTEDERC20ABI,
         functionName: "wrap",
         args: [amountWithDecimals],
@@ -159,8 +162,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     } finally {
       setIsApproving(false);
       setIsProcessing(false);
-      await refreshBalances(["token"]);
-      await handleRefreshEncrypted();
+      tokenBalance.refetch();
+      onSuccess?.();
     }
   };
 
@@ -180,7 +183,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         return;
       }
 
-      const amountWithDecimals = parseEther(decryptAmount.toString());
+      const amountWithDecimals = parseUnits(
+        decryptAmount.toString(),
+        token.decimals
+      );
 
       clientLogger.info("Starting unshield operation", {
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
@@ -188,7 +194,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         // Note: Not logging amount for security in shielded operations
       });
       const balance = await publicClient!.readContract({
-        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
         abi: ENCRYPTEDERC20ABI,
         functionName: "balanceOf",
         args: [address],
@@ -226,7 +232,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       } as const;
 
       const estimatedGas = await publicClient!.estimateContractGas({
-        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
         args: [amountWithDecimals, quorumAttestation, signatures],
@@ -234,7 +240,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       });
 
       const hash = await writeContractAsync({
-        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
+        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
         abi: ENCRYPTEDERC20ABI,
         functionName: "unwrap",
         args: [amountWithDecimals, quorumAttestation, signatures],
@@ -276,8 +282,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       });
       setError("Transaction failed. Please try again.");
     } finally {
-      await refreshBalances(["token"]);
-      await handleRefreshEncrypted();
+      tokenBalance.refetch();
+      onSuccess?.();
       setIsApproving(false);
       setIsProcessing(false);
     }
@@ -289,7 +295,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
     setAmount(value);
 
-    if (Number(value) > Number(currentBalance)) {
+    if (Number(value) > Number(tokenBalance?.data?.formatted)) {
       setError(`Insufficient balance.`);
     } else {
       setError("");
@@ -349,6 +355,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   usdcImage={"/tokens/usdc-token.svg"}
                   incoImage={"/tokens/inco-token.svg"}
                   networkImage={"/chains/base-sepolia.svg"}
+                  isCustom={token.isCustom}
+                  symbol={token.symbol}
                 />
               </div>
               <div className="text-3xl flex gap-2 items-center font-semibold mb-1 bg-transparent text-center w-full text-black dark:text-white disabled:opacity-50">
@@ -362,7 +370,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               </div>
             </div>
             <div className="text-[#AFAFAF] dark:text-gray-400 break-all leading-tight max-w-full overflow-wrap-anywhere">
-              {decryptAmount || "0"} cUSDC
+              {decryptAmount || "0"} {token.encryptedSymbol}
             </div>
             {error && (
               <div className="text-red-500 dark:text-red-400 text-sm mt-2">
@@ -386,13 +394,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     usdcImage={"/tokens/usdc-token.svg"}
                     incoImage={"/tokens/inco-token.svg"}
                     networkImage={"/chains/base-sepolia.svg"}
+                    isCustom={token.isCustom}
+                    symbol={token.symbol}
                   />
                 </div>
                 <div>
-                  <p className="dark:text-white">USDC</p>
+                  <p className="dark:text-white">{token.symbol}</p>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     Balance:{" "}
-                    {formatCurrency(Number(tokenBalance?.data?.formatted))} USDC
+                    {formatNumber(Number(tokenBalance?.data?.formatted))}{" "}
+                    {token.symbol}
                   </div>
                 </div>
               </div>
@@ -417,7 +428,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 disabled={isProcessing}
               />
               <div className="text-[#AFAFAF] dark:text-gray-400 break-all leading-tight max-w-full overflow-wrap-anywhere">
-                {amount || "0"} USDC
+                {amount || "0"} {token.symbol}
               </div>
               {error && (
                 <div className="text-red-500 dark:text-red-400 text-sm mt-2">

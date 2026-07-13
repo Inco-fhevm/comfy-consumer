@@ -26,14 +26,13 @@ import {
 } from "wagmi";
 import { encryptValue } from "@/lib/inco-lite";
 import { TX_CONFIRMATIONS } from "@/lib/constants";
-import { parseEther } from "viem";
-import { useChainBalance } from "@/context/chain-balance-provider";
+import { parseUnits } from "viem";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/format-number";
+import { formatNumber } from "@/lib/format-number";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
-import { useContracts } from "@/context/contract-provider";
+import { TokenInfo } from "@/types/token";
 import clientLogger from "@/lib/logging/client-logger";
 
 interface TxResult {
@@ -41,7 +40,17 @@ interface TxResult {
   hash: string | null;
 }
 
-const ConfidentialSendDialog: React.FC = () => {
+interface ConfidentialSendDialogProps {
+  token: TokenInfo;
+  encryptedBalance?: number | null;
+  onSuccess?: () => void;
+}
+
+const ConfidentialSendDialog: React.FC<ConfidentialSendDialogProps> = ({
+  token,
+  encryptedBalance,
+  onSuccess,
+}) => {
   const [open, setOpen] = useState<boolean>(false);
   const [amount, setAmount] = useState<string>("");
   const [address, setAddress] = useState<string>("");
@@ -51,10 +60,7 @@ const ConfidentialSendDialog: React.FC = () => {
   const [amountError, setAmountError] = useState<string>("");
   const [sendErrorMessage, setSendErrorMessage] = useState<string>("");
 
-  const { contracts } = useContracts();
-  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
-
-  const { encryptedBalance, fetchEncryptedBalance } = useChainBalance();
+  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = token.encryptedAddress;
 
   const { address: userAddress } = useAccount();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
@@ -89,7 +95,7 @@ const ConfidentialSendDialog: React.FC = () => {
       });
 
       const inputCt = await encryptValue({
-        value: parseEther(amount.toString()),
+        value: parseUnits(amount.toString(), token.decimals),
         address: userAddress as `0x${string}`,
         contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
       });
@@ -176,7 +182,7 @@ const ConfidentialSendDialog: React.FC = () => {
         throw new Error("Transaction failed");
       }
 
-      await fetchEncryptedBalance(walletClient);
+      onSuccess?.();
       toast.success("Send successful");
     } catch (error) {
       const errorMessage =
@@ -306,19 +312,23 @@ const ConfidentialSendDialog: React.FC = () => {
                           usdcImage={"/tokens/usdc-token.svg"}
                           incoImage={"/tokens/inco-token.svg"}
                           networkImage={"/chains/base-sepolia.svg"}
+                          isCustom={token.isCustom}
+                          symbol={token.symbol}
                         />
                       </div>
                       <div>
-                        <p className="font-medium dark:text-white">cUSDC</p>
+                        <p className="font-medium dark:text-white">
+                          {token.encryptedSymbol}
+                        </p>
                         {encryptedBalance && (
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {formatCurrency(
+                            {formatNumber(
                               Number(encryptedBalance).toLocaleString(
                                 "fullwide",
                                 { useGrouping: false }
                               )
                             )}{" "}
-                            cUSDC
+                            {token.encryptedSymbol}
                           </p>
                         )}
                       </div>
@@ -362,7 +372,7 @@ const ConfidentialSendDialog: React.FC = () => {
                 />
               </div>
               <p className="text-gray-500 dark:text-gray-400 break-all leading-tight max-w-full overflow-wrap-anywhere overflow-y-auto max-h-24">
-                {amount || "0"} cUSDC
+                {amount || "0"} {token.encryptedSymbol}
               </p>
               <div className="flex items-center justify-center mt-1">
                 <span className="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-mono px-3 py-1 rounded-md text-xs uppercase tracking-wider">

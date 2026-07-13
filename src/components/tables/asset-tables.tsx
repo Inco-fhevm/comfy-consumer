@@ -1,7 +1,6 @@
+"use client";
 import React, { useState } from "react";
-import { useChainBalance } from "@/context/chain-balance-provider";
-import { AlertCircle, EyeOff, Loader2 } from "lucide-react";
-import { useWalletClient } from "wagmi";
+import { AlertCircle, EyeOff, Loader2, X } from "lucide-react";
 import { Button } from "../ui/button";
 import ConfidentialSendDialog from "../confidential-send-dialouge";
 import TransactionDialog from "../transaction/transaction-dialouge";
@@ -11,11 +10,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatNumber, formatCurrency } from "@/lib/format-number";
-import { AssetTableProps, Asset, DisplayValue } from "@/types/asset-table";
+import { formatNumber } from "@/lib/format-number";
 import IconBuilder from "../icon-builder";
+import { TokenInfo } from "@/types/token";
+import { useTokenBalance } from "@/context/token-balances-provider";
+import { useTokenRegistry } from "@/context/token-registry-provider";
+import { useSessionKey } from "@/context/session-key-provider";
 
-// Reusable components
+type Variant = "wallet" | "encrypted";
+
 const LoadingDisplay = ({ size = "w-4 h-4" }: { size?: string }) => (
   <div className="flex items-center">
     <Loader2 className={`${size} mr-1 animate-spin`} />
@@ -62,143 +65,160 @@ const EyeIcon = () => (
   </svg>
 );
 
-export const AssetTable: React.FC<AssetTableProps> = ({ title, assets }) => {
-  const [depositOpen, setDepositOpen] = useState<boolean>(false);
-  const [withdrawOpen, setWithdrawOpen] = useState<boolean>(false);
-  const [showConfidentialValues, setShowConfidentialValues] =
-    useState<boolean>(false);
-  const [transmittedBalance, setTransmittedBalance] = useState<string | null>(
-    null
+const AssetRow: React.FC<{ token: TokenInfo; variant: Variant }> = ({
+  token,
+  variant,
+}) => {
+  const b = useTokenBalance(token.id);
+  const { removeToken } = useTokenRegistry();
+  const { refreshBalances } = useSessionKey();
+
+  const [shieldOpen, setShieldOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+
+  const isEncrypted = variant === "encrypted";
+
+  const toggleReveal = (): void => {
+    if (b.revealed) b.hide();
+    else void b.reveal();
+  };
+
+  const renderAmount = (): React.ReactNode => {
+    if (!isEncrypted) {
+      if (b.walletLoading) return <LoadingDisplay size="w-3 h-3" />;
+      return formatNumber(b.wallet);
+    }
+    if (!b.revealed) return "*****";
+    if (b.encryptedLoading) return <LoadingDisplay size="w-3 h-3" />;
+    if (b.encryptedError)
+      return <ErrorDisplay onClick={() => void b.reveal()} size="w-3 h-3" />;
+    return formatNumber(b.encrypted ?? 0);
+  };
+
+  return (
+    <tr>
+      <td className="py-4 pl-6">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11">
+            <IconBuilder
+              isEncrypted={isEncrypted}
+              usdcImage={"/tokens/usdc-token.svg"}
+              incoImage={"/tokens/inco-token.svg"}
+              networkImage={"/chains/base-sepolia.svg"}
+              isCustom={token.isCustom}
+              symbol={token.symbol}
+            />
+          </div>
+          <div>
+            <div className="font-medium">
+              {isEncrypted ? token.encryptedSymbol : token.symbol}
+            </div>
+            <div className="text-sm text-gray-500">on Base Sepolia</div>
+          </div>
+        </div>
+      </td>
+      <td className="py-4 pl-6 md:pr-6">
+        <div className="break-all leading-tight max-w-full overflow-wrap-anywhere font-medium">
+          {renderAmount()}
+        </div>
+      </td>
+      <td className="py-4 pr-6 text-right">
+        <div className="flex items-center justify-end space-x-2">
+          {isEncrypted ? (
+            <>
+              <button
+                onClick={toggleReveal}
+                aria-label={b.revealed ? "Hide balance" : "Reveal balance"}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+              >
+                {b.revealed ? <EyeOff className="w-5 h-5" /> : <EyeIcon />}
+              </button>
+              <Button
+                onClick={() => setWithdrawOpen(true)}
+                className="rounded-full"
+                variant="outline"
+              >
+                Unshield
+              </Button>
+              <ConfidentialSendDialog
+                token={token}
+                encryptedBalance={b.revealed ? b.encrypted : null}
+                onSuccess={refreshBalances}
+              />
+            </>
+          ) : (
+            <Button
+              onClick={() => setShieldOpen(true)}
+              className="bg-blue-500 hover:bg-blue-600 rounded-full dark:text-white"
+            >
+              Shield
+            </Button>
+          )}
+
+          {token.isCustom && (
+            <button
+              onClick={() => removeToken(token.id)}
+              aria-label="Remove token"
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </td>
+
+      {/* Dialogs (portal to body) */}
+      {!isEncrypted && (
+        <TransactionDialog
+          mode="shield"
+          open={shieldOpen}
+          onOpenChange={setShieldOpen}
+          balance={String(b.wallet)}
+          token={token}
+          onSuccess={refreshBalances}
+        />
+      )}
+      {isEncrypted && (
+        <TransactionDialog
+          mode="withdraw"
+          open={withdrawOpen}
+          onOpenChange={setWithdrawOpen}
+          token={token}
+          onSuccess={refreshBalances}
+        />
+      )}
+    </tr>
   );
+};
 
-  const {
-    encryptedBalance,
-    fetchEncryptedBalance,
-    isEncryptedLoading,
-    encryptedError,
-    tokenBalance: usdcBalance,
-  } = useChainBalance();
+interface AssetTableProps {
+  title: string;
+  variant: Variant;
+  tokens: TokenInfo[];
+}
 
-  const { data: walletClient } = useWalletClient();
-  const isEncrypted = title === "Encrypted";
-
-  // Helper functions
-  const handleRefreshEncrypted = () => fetchEncryptedBalance(walletClient);
-
-  const handleRetry = async (): Promise<void> => {
-    if (showConfidentialValues && encryptedError) {
-      try {
-        await handleRefreshEncrypted();
-      } catch (err) {
-        console.error("Failed to retry loading encrypted balance:", err);
-      }
-    }
-  };
-
-  const toggleConfidentialValues = async (): Promise<void> => {
-    if (!showConfidentialValues) {
-      try {
-        await handleRefreshEncrypted();
-      } catch (err) {
-        console.error("Failed to refresh encrypted balance:", err);
-      }
-    }
-    setShowConfidentialValues(!showConfidentialValues);
-  };
-
-  const getEncryptedDisplayValue = (): string | React.ReactNode => {
-    if (!showConfidentialValues) return "$******";
-    if (isEncryptedLoading) return <LoadingDisplay />;
-    if (encryptedError) return <ErrorDisplay onClick={handleRetry} />;
-    return encryptedBalance ? formatCurrency(encryptedBalance) : "$0.00";
-  };
-
-  const getWalletDisplayValue = (): string => {
-    const balance = Number(usdcBalance?.data?.formatted) || 0;
-    return formatCurrency(balance);
-  };
-
-  const renderBalanceDisplay = (): string | React.ReactNode => {
-    return isEncrypted ? getEncryptedDisplayValue() : getWalletDisplayValue();
-  };
-
-  const getAssetDisplayValue = (asset: Asset): DisplayValue => {
-    const isConfidentialAsset = asset.name === "cUSDC";
-
-    if (!isConfidentialAsset) {
-      // Regular assets
-      if (
-        typeof asset.amount === "number" &&
-        typeof asset.dollarValue === "number"
-      ) {
-        return {
-          amount: formatNumber(asset.amount),
-          dollarValue: formatCurrency(asset.dollarValue),
-        };
-      }
-      const balance = Number(usdcBalance?.data?.formatted) || 0;
-      return {
-        amount: formatNumber(balance),
-        dollarValue: formatCurrency(balance),
-      };
-    }
-
-    // Confidential assets (cUSDC)
-    if (!showConfidentialValues) {
-      return {
-        amount: "*****",
-        dollarValue: "$******",
-      };
-    }
-
-    if (isEncryptedLoading) {
-      const loadingDisplay = <LoadingDisplay size="w-3 h-3" />;
-      return {
-        amount: loadingDisplay,
-        dollarValue: loadingDisplay,
-      };
-    }
-
-    if (encryptedError) {
-      const errorDisplay = (
-        <ErrorDisplay onClick={handleRetry} size="w-3 h-3" />
-      );
-      return {
-        amount: errorDisplay,
-        dollarValue: errorDisplay,
-      };
-    }
-
-    return {
-      amount: encryptedBalance ? formatNumber(encryptedBalance) : "0.00",
-      dollarValue: encryptedBalance
-        ? formatCurrency(encryptedBalance)
-        : "$0.00",
-    };
-  };
-
+export const AssetTable: React.FC<AssetTableProps> = ({
+  title,
+  variant,
+  tokens,
+}) => {
+  const { revealAll, isGranting } = useSessionKey();
 
   return (
     <div className="border rounded-3xl shadow-sm mb-4">
       {/* Header */}
       <div className="flex justify-between items-center gap-4 mb-4 border-b p-6">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="text-xl font-semibold break-all leading-tight max-w-full md:max-w-xs overflow-wrap-anywhere">
-          {renderBalanceDisplay()}
-        </div>
-        {isEncrypted && (
-          <button onClick={toggleConfidentialValues}>
-            {showConfidentialValues ? (
-              <EyeOff
-                className="w-6 h-6"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ) : (
-              <EyeIcon />
-            )}
-          </button>
+        {variant === "encrypted" && tokens.length > 0 && (
+          <Button
+            variant="outline"
+            className="rounded-full h-9 px-4 text-sm"
+            onClick={() => void revealAll()}
+            disabled={isGranting}
+          >
+            {isGranting && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+            Decrypt all
+          </Button>
         )}
       </div>
 
@@ -212,86 +232,11 @@ export const AssetTable: React.FC<AssetTableProps> = ({ title, assets }) => {
           </tr>
         </thead>
         <tbody>
-          {assets.map((asset, index) => {
-            const displayValue = getAssetDisplayValue(asset);
-
-            return (
-              <tr key={index}>
-                <td className="py-4 pl-6">
-                  <div className="flex items-center gap-3">
-                    {/* <Image src={asset.icon} alt={asset.name} width={44} height={44} /> */}
-                    <div className="w-11 h-11">
-                      <IconBuilder
-                        isEncrypted={asset.isEncrypted}
-                        usdcImage={"/tokens/usdc-token.svg"}
-                        incoImage={"/tokens/inco-token.svg"}
-                        networkImage={"/chains/base-sepolia.svg"}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="font-medium">{asset.name}</div>
-                      <div className="text-sm text-gray-500">
-                        on {asset.chain}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 pl-6 md:pr-6">
-                  <div>
-                    <div className="break-all leading-tight max-w-full overflow-wrap-anywhere">
-                      {displayValue.amount}
-                    </div>
-                    <div className="text-gray-500 break-all leading-tight max-w-full overflow-wrap-anywhere">
-                      {displayValue.dollarValue}
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 pr-6 text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    {isEncrypted ? (
-                      <Button
-                        onClick={() => setWithdrawOpen(true)}
-                        className="rounded-full"
-                        variant="outline"
-                      >
-                        Unshield
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => {
-                          setTransmittedBalance(
-                            displayValue.amount?.toString() || "0"
-                          );
-                          setDepositOpen(true);
-                        }}
-                        className="bg-blue-500 hover:bg-blue-600 rounded-full dark:text-white"
-                      >
-                        Shield
-                      </Button>
-                    )}
-
-                    {isEncrypted && <ConfidentialSendDialog />}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
+          {tokens.map((token) => (
+            <AssetRow key={token.id} token={token} variant={variant} />
+          ))}
         </tbody>
       </table>
-
-      {/* Dialogs */}
-      <TransactionDialog
-        mode="shield"
-        open={depositOpen}
-        balance={transmittedBalance}
-        onOpenChange={setDepositOpen}
-      />
-      <TransactionDialog
-        mode="withdraw"
-        open={withdrawOpen}
-        onOpenChange={setWithdrawOpen}
-      />
     </div>
   );
 };

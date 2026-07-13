@@ -1,10 +1,10 @@
 import { AttestedComputeSupportedOps, Lightning } from "@inco/lightning-js/lite";
-import { handleTypes } from "@inco/lightning-js";
-import type { WalletClient } from "viem";
+import { handleTypes, type HexString } from "@inco/lightning-js";
+import type { PrivateKeyAccount, WalletClient } from "viem";
 import {
   bytesToHex,
   createPublicClient,
-  formatEther,
+  formatUnits,
   http,
   pad,
   toHex,
@@ -16,16 +16,10 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-// Cached singleton — the Lightning config is immutable for a given network.
+// Cached singleton, the Lightning config is immutable for a given network.
 let lightningPromise: ReturnType<typeof Lightning.baseSepoliaTestnet> | null =
   null;
 
-/**
- * Get or initialize the Inco Lightning configuration for Base Sepolia.
- *
- * In @inco/lightning-js (v1) the network is selected explicitly via
- * `Lightning.baseSepoliaTestnet()` (chain 84532) — no env string needed.
- */
 export async function getConfig() {
   if (!lightningPromise) {
     console.log(`🔧 Initializing Inco Lightning config for chain: ${baseSepolia.id}`);
@@ -34,9 +28,6 @@ export async function getConfig() {
   return lightningPromise;
 }
 
-/**
- * Encrypt a value for a specific contract and account
- */
 export async function encryptValue({
   value,
   address,
@@ -56,15 +47,14 @@ export async function encryptValue({
   return encryptedData as `0x${string}`;
 }
 
-/**
- * Re-encrypt and decrypt a handle for a specific wallet
- */
 export async function decryptValue({
   walletClient,
   handle,
+  decimals = 18,
 }: {
   walletClient: WalletClient;
   handle: string;
+  decimals?: number;
 }): Promise<number> {
   const inco = await getConfig();
 
@@ -77,11 +67,63 @@ export async function decryptValue({
 
   console.log("Attested decrypt: ", attestedDecrypt);
 
-  // Return the decrypted value formatted from wei to ether
-  const formattedValue = formatEther(
-    attestedDecrypt[0].plaintext.value as bigint
+  // Return the decrypted value formatted using the token's decimals
+  const formattedValue = formatUnits(
+    attestedDecrypt[0].plaintext.value as bigint,
+    decimals
   );
 
+  return Number(formattedValue);
+}
+
+const DEFAULT_SESSION_VERIFIER =
+  "0xc34569efc25901bdd6b652164a2c8a7228b23005";
+
+export async function grantSessionKey({
+  walletClient,
+  granteeAddress,
+  expiresAt,
+}: {
+  walletClient: WalletClient;
+  granteeAddress: `0x${string}`;
+  expiresAt: Date;
+}) {
+  const inco = await getConfig();
+  const voucher = await inco.grantSessionKeyAllowanceVoucher(
+    // @ts-expect-error - wagmi's WalletClient is structurally looser than the SDK's
+    walletClient,
+    granteeAddress,
+    expiresAt,
+    DEFAULT_SESSION_VERIFIER
+  );
+  return voucher;
+}
+
+export type SessionVoucher = Awaited<ReturnType<typeof grantSessionKey>>;
+
+export async function decryptValueWithVoucher({
+  account,
+  voucher,
+  handle,
+  decimals = 18,
+}: {
+  account: PrivateKeyAccount;
+  voucher: SessionVoucher;
+  handle: string;
+  decimals?: number;
+}): Promise<number> {
+  const inco = await getConfig();
+  const results = await inco.attestedDecryptWithVoucher(
+    // @inco/lightning-js bundles its own viem, so cast to the SDK's own
+    // PrivateKeyAccount type to bridge the duplicate-viem nominal mismatch.
+    account as Parameters<typeof inco.attestedDecryptWithVoucher>[0],
+    voucher,
+    [handle as HexString]
+  );
+  const formattedValue = formatUnits(
+    results[0].plaintext.value as bigint,
+    decimals
+  );
   return Number(formattedValue);
 }
 
@@ -111,8 +153,6 @@ export const attestedCompute = async ({
     bytesToHex(sig)
   );
 
-  // Encode the plaintext value as bytes32
-  // For boolean: true = 1, false = 0, padded to 32 bytes
   const encodedValue = (
     typeof result.plaintext.value === "boolean"
       ? result.plaintext.value
@@ -121,10 +161,6 @@ export const attestedCompute = async ({
       : pad(toHex(result.plaintext.value as bigint), { size: 32 })
   ) as `0x${string}`;
 
-  // Return in format expected by contract:
-  // - plaintext: the actual decrypted value
-  // - attestation: { handle, value } for the DecryptionAttestation struct
-  // - signature array for verification
   return {
     plaintext: result.plaintext.value,
     attestation: {
@@ -135,9 +171,6 @@ export const attestedCompute = async ({
   };
 };
 
-/**
- * Get the fee required for Inco operations
- */
 export async function getFee(): Promise<bigint> {
   const inco = await getConfig();
 

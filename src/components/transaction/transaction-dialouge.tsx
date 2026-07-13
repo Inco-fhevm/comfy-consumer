@@ -26,6 +26,8 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
   onOpenChange,
   mode = "deposit",
   balance,
+  token,
+  onSuccess,
 }) => {
   const [selectedAsset, setSelectedAsset] = useState<SelectedAsset | null>(
     null
@@ -66,6 +68,8 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
           mode={mode as "shield" | "withdraw"}
           handleClose={handleClose}
           currentBalance={balance?.toString() || "0"}
+          token={token}
+          onSuccess={onSuccess}
         />
       </div>
     </div>

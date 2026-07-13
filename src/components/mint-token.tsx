@@ -1,5 +1,9 @@
 import React from "react";
-import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Sheet,
   SheetContent,
@@ -10,20 +14,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { parseEther } from "viem";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { parseUnits } from "viem";
 import { Loader2, X } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ENCRYPTEDERC20ABI, ERC20ABI, TX_CONFIRMATIONS } from "@/lib/constants";
 import {
   useAccount,
   usePublicClient,
-  useWalletClient,
   useWriteContract,
 } from "wagmi";
-import { useChainBalance } from "@/context/chain-balance-provider";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
-import { useContracts } from "@/context/contract-provider";
+import { useTokenRegistry } from "@/context/token-registry-provider";
+import { useSessionKey } from "@/context/session-key-provider";
 import clientLogger from "@/lib/logging/client-logger";
 import { recordTransaction, recordContractInteraction } from "@/lib/metrics";
 
@@ -34,12 +44,12 @@ const MintDialog = ({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) => {
-  const { contracts } = useContracts();
-  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = contracts?.encryptedERC20?.address;
-  const ERC20_CONTRACT_ADDRESS = contracts?.erc20?.address;
+  const { tokens } = useTokenRegistry();
+  const { refreshBalances } = useSessionKey();
 
+  const [selectedTokenId, setSelectedTokenId] = React.useState<string>("");
+  const [side, setSide] = React.useState<"base" | "confidential">("base");
   const [amount, setAmount] = React.useState("");
-  const [selectedToken, setSelectedToken] = React.useState("usdc");
   const [isLoading, setIsLoading] = React.useState(false);
   const { address } = useAccount();
   const [error, setError] = React.useState("");
@@ -48,147 +58,92 @@ const MintDialog = ({
   const { checkAndSwitchNetwork } = useNetworkSwitch();
   const isMobile = useMediaQuery("(max-width: 640px)");
 
-  const { refreshBalances, fetchEncryptedBalance } = useChainBalance();
-  const { data: walletClient } = useWalletClient();
-
-  const handleUSDCRefresh = async () => await refreshBalances(["token"]);
+  const token =
+    tokens.find((t) => t.id === selectedTokenId) ?? tokens[0] ?? null;
 
   const handleClose = (): void => {
     setAmount("");
-    setSelectedToken("usdc");
+    setSide("base");
     setError("");
     onOpenChange(false);
   };
 
-  const mintcUSDC = async () => {
-    try {
-      clientLogger.transaction.start("mint_cUSDC", address);
-
-      await checkAndSwitchNetwork();
-      const amountWithDecimals = parseEther(amount.toString());
-
-      clientLogger.info("Minting cUSDC", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        recipient: address,
-        // Note: Not logging amount for security
-      });
-
-      const cUSDCMintTxHash = await writeContractAsync({
-        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-        abi: ENCRYPTEDERC20ABI,
-        functionName: "mint",
-        args: [address, amountWithDecimals],
-      });
-
-      clientLogger.info("cUSDC mint transaction submitted", {
-        txHash: cUSDCMintTxHash,
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-      });
-
-      const transaction = await publicClient?.waitForTransactionReceipt({
-        hash: cUSDCMintTxHash,
-        confirmations: TX_CONFIRMATIONS,
-      });
-
-      if (transaction?.status === "reverted") {
-        clientLogger.transaction.error(
-          "Contract Execution Reverted",
-          "mint_cUSDC"
-        );
-        throw new Error("Contract Execution Reverted!");
-      }
-
-      clientLogger.transaction.success(cUSDCMintTxHash, "mint_cUSDC");
-      recordTransaction("mint_cUSDC", "success");
-      recordContractInteraction("encrypted_erc20", "mint", "success");
-      await fetchEncryptedBalance(walletClient);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to mint cUSDC";
-      clientLogger.transaction.error(errorMessage, "mint_cUSDC");
-      recordTransaction("mint_cUSDC", "error");
-      recordContractInteraction("encrypted_erc20", "mint", "error");
-      throw new Error(errorMessage);
-    }
-  };
-
-  const mintUSDC = async () => {
-    try {
-      clientLogger.transaction.start("mint_USDC", address);
-
-      await checkAndSwitchNetwork();
-      const amountWithDecimals = parseEther(amount.toString());
-
-      clientLogger.info("Minting USDC", {
-        contractAddress: ERC20_CONTRACT_ADDRESS,
-        recipient: address,
-        // Note: Not logging amount for security
-      });
-
-      const uSDCMintTxHash = await writeContractAsync({
-        address: ERC20_CONTRACT_ADDRESS as `0x${string}`,
-        abi: ERC20ABI,
-        functionName: "mint",
-        args: [address, amountWithDecimals],
-      });
-
-      clientLogger.info("USDC mint transaction submitted", {
-        txHash: uSDCMintTxHash,
-        contractAddress: ERC20_CONTRACT_ADDRESS,
-      });
-
-      const transaction = await publicClient?.waitForTransactionReceipt({
-        hash: uSDCMintTxHash,
-        confirmations: TX_CONFIRMATIONS,
-      });
-
-      if (transaction?.status === "reverted") {
-        clientLogger.transaction.error(
-          "Contract Execution Reverted",
-          "mint_USDC"
-        );
-        throw new Error("Contract Execution Reverted!");
-      }
-
-      clientLogger.transaction.success(uSDCMintTxHash, "mint_USDC");
-      recordTransaction("mint_USDC", "success");
-      recordContractInteraction("erc20", "mint", "success");
-      await handleUSDCRefresh();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to mint USDC";
-      clientLogger.transaction.error(errorMessage, "mint_USDC");
-      recordTransaction("mint_USDC", "error");
-      recordContractInteraction("erc20", "mint", "error");
-      throw new Error(errorMessage);
-    }
-  };
-
   const handleSubmit = async () => {
+    if (!token) return;
     try {
       setIsLoading(true);
       setError("");
 
-      if (selectedToken === "usdc") {
-        await mintUSDC();
-      } else {
-        await mintcUSDC();
+      await checkAndSwitchNetwork();
+      const amountWithDecimals = parseUnits(amount.toString(), token.decimals);
+
+      const isConfidential = side === "confidential";
+      const contractAddress = isConfidential
+        ? token.encryptedAddress
+        : token.erc20Address;
+      const abi = isConfidential ? ENCRYPTEDERC20ABI : ERC20ABI;
+      const label = isConfidential ? token.encryptedSymbol : token.symbol;
+      const txKind = `mint_${label}`;
+
+      clientLogger.transaction.start(txKind, address);
+      clientLogger.info(`Minting ${label}`, {
+        contractAddress,
+        recipient: address,
+        // Note: Not logging amount for security
+      });
+
+      const txHash = await writeContractAsync({
+        address: contractAddress,
+        abi,
+        functionName: "mint",
+        args: [address, amountWithDecimals],
+      });
+
+      const transaction = await publicClient?.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: TX_CONFIRMATIONS,
+      });
+
+      if (transaction?.status === "reverted") {
+        clientLogger.transaction.error("Contract Execution Reverted", txKind);
+        throw new Error("Contract Execution Reverted!");
       }
 
+      clientLogger.transaction.success(txHash, txKind);
+      recordTransaction(isConfidential ? "mint_cUSDC" : "mint_USDC", "success");
+      recordContractInteraction(
+        isConfidential ? "encrypted_erc20" : "erc20",
+        "mint",
+        "success"
+      );
+
+      // Refresh balances so the freshly minted amount shows without a manual
+      // re-reveal (wallet balances refetch; revealed shielded balances re-decrypt).
+      refreshBalances();
       handleClose();
     } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to mint";
+      clientLogger.transaction.error(errorMessage, "mint");
+      recordTransaction(
+        side === "confidential" ? "mint_cUSDC" : "mint_USDC",
+        "error"
+      );
       console.error("Minting error:", err);
-      setError(`Failed to mint ${selectedToken.toUpperCase()}`);
+      setError(
+        `Failed to mint ${
+          side === "confidential" ? token?.encryptedSymbol : token?.symbol
+        }`
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Dynamic component selection based on device type
   const DialogComponent = isMobile ? Sheet : AlertDialog;
   const DialogContentComponent = isMobile ? SheetContent : AlertDialogContent;
   const DialogHeaderComponent = isMobile ? SheetHeader : "div";
-  const DialogTitleComponent = isMobile ? SheetTitle : "div";
+  const DialogTitleComponent = isMobile ? SheetTitle : AlertDialogTitle;
 
   const renderDialogHeader = (): React.ReactNode => (
     <DialogHeaderComponent className="px-8 py-6 pb-2 flex flex-row items-center justify-between">
@@ -211,25 +166,43 @@ const MintDialog = ({
   const renderContent = (): React.ReactNode => (
     <div className="transition-opacity duration-200">
       <div className="px-8 pb-8 space-y-6">
-        <div className="text-sm text-gray-600 mb-4">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           Select token and enter amount
         </div>
 
+        {tokens.length > 1 && (
+          <Select
+            value={token?.id ?? ""}
+            onValueChange={(v) => {
+              setSelectedTokenId(v);
+              setSide("base");
+            }}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="h-12 rounded-xl">
+              <SelectValue placeholder="Select token" />
+            </SelectTrigger>
+            <SelectContent>
+              {tokens.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.symbol} / {t.encryptedSymbol}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <RadioGroup
-          value={selectedToken}
-          onValueChange={setSelectedToken}
+          value={side}
+          onValueChange={(v) => setSide(v as "base" | "confidential")}
           className="grid grid-cols-2 gap-3"
           disabled={isLoading}
         >
           {[
+            { value: "base", label: token?.symbol ?? "Token", isEncrypted: false },
             {
-              value: "usdc",
-              label: "USDC",
-              isEncrypted: false,
-            },
-            {
-              value: "cusdc",
-              label: "cUSDC",
+              value: "confidential",
+              label: token?.encryptedSymbol ?? "cToken",
               isEncrypted: true,
             },
           ].map(({ value, label, isEncrypted }) => (
@@ -251,6 +224,8 @@ const MintDialog = ({
                     usdcImage={"/tokens/usdc-token.svg"}
                     incoImage={"/tokens/inco-token.svg"}
                     networkImage={"/chains/base-sepolia.svg"}
+                    isCustom={!!token?.isCustom}
+                    symbol={token?.symbol}
                   />
                 </div>
                 <span className="font-medium">{label}</span>
@@ -278,7 +253,7 @@ const MintDialog = ({
           <Button
             className="w-full h-12 rounded-xl dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
             onClick={handleSubmit}
-            disabled={!amount || Number(amount) <= 0 || isLoading}
+            disabled={!token || !amount || Number(amount) <= 0 || isLoading}
           >
             {isLoading ? (
               <div className="flex items-center gap-2">

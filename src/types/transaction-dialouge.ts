@@ -1,4 +1,4 @@
-// types/transaction-dialog.ts
+import { TokenInfo } from "@/types/token";
 export type TransactionMode = "shield" | "withdraw" | "deposit";
 
 export interface SelectedAsset {
@@ -19,6 +19,8 @@ export interface TransactionDialogProps {
   onOpenChange: (open: boolean) => void;
   mode?: TransactionMode;
   balance?: string | number | null;
+  token: TokenInfo;
+  onSuccess?: () => void;
 }
 
 export interface DialogHeaderProps {
