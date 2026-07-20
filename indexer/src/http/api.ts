@@ -4,10 +4,12 @@ import { pool } from "../db.js";
 // Read API. Handles, never amounts.
 export function registerReadApi(app: FastifyInstance) {
   const addr = (a: string) => a.toLowerCase();
+  const PAGE = 10;      // default page size
+  const MAX_PAGE = 100; // cap on ?limit
 
   // Parse ?limit and ?cursor.
   const pageParams = (req: any) => {
-    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const limit = Math.min(Number(req.query.limit) || PAGE, MAX_PAGE);
     const [cb, cl] = req.query.cursor ? String(req.query.cursor).split("_") : [null, null];
     return { limit, cb, cl };
   };

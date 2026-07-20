@@ -14,8 +14,12 @@ export interface NetworkContracts {
   chainId: number;
   /** Human label for the UI. */
   label: string;
+  /** Testnet vs mainnet — drives faucet links and the network badge. */
+  testnet: boolean;
   /** Block explorer base URL for tx/address links. */
   explorer: string;
+  /** Public USDC faucet URL (testnet only). */
+  usdcFaucet?: string;
   /** Factory the indexer watches. */
   wrapperFactory: `0x${string}` | null;
   /** CommonVault holding the backing. */
@@ -28,7 +32,9 @@ export const ADDRESSES: Record<NetworkName, NetworkContracts> = {
   baseSepolia: {
     chainId: 84532,
     label: "Base Sepolia",
+    testnet: true,
     explorer: "https://sepolia.basescan.org",
+    usdcFaucet: "https://faucet.circle.com/",
     wrapperFactory: "0x8d9DD2D7298EAB92eEb72319F6F95e0a1c24AF14",
     vault: "0xAEC2f2255EbF28d1Eb5cF1eC659a1878F0F3B6Bc",
     defaultTokens: [
@@ -39,6 +45,7 @@ export const ADDRESSES: Record<NetworkName, NetworkContracts> = {
   base: {
     chainId: 8453,
     label: "Base",
+    testnet: false,
     explorer: "https://basescan.org",
     wrapperFactory: null, // TBD before mainnet
     defaultTokens: [],
