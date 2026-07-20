@@ -36,6 +36,7 @@ export const cfg = {
   backupRpc: req("BACKUP_RPC_URL"),
   databaseUrl: req("DATABASE_URL"),
   port: Number(process.env.PORT ?? 8080),
+  corsOrigins: (process.env.CORS_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
 };
 
 // Enabled providers need a key.
