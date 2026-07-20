@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Comfy — confidential ERC20 wrapper app + indexer
 
-## Getting Started
+pnpm monorepo, three folders:
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+config/     Single source of truth: ABIs, deployed addresses, event topic0 hashes,
+            and the TokenInfo type — shared by client and indexer (@comfy/config).
+indexer/    Webhook-based EVM factory indexer (GCP Cloud Run) — indexes the official
+            ConfidentialERC20WrapperFactory and its child wrappers. Stores handles only,
+            never decrypted amounts. See indexer/README.md and the BUILD SPEC.
+client/     Next.js dApp (mint, shield/unshield, confidential send, add/deploy tokens).
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+corepack enable pnpm        # pnpm isn't required to be preinstalled
+pnpm install                # links workspaces + installs everything
+pnpm dev                    # runs the web app (client/)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> The client currently ships with its own `node_modules` (migrated from the old
+> single-repo layout) so it runs without a workspace install. Run `pnpm install` at the
+> root once to unify dependencies and wire the `@comfy/config` workspace link that the
+> client and indexer both consume.
 
-## Learn More
+## Privacy invariant (indexer)
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The indexer is **read-only on-chain, holds no keys, and never decrypts**. Confidential
+transfer/approval amounts exist only as `euint256` handles (`bytes32`) and are stored as
+opaque handles. The only plaintext amounts anywhere are `Wrap`/`Unwrap`/`Burn`, which are
+already public (the underlying ERC20 movement is visible on-chain regardless).

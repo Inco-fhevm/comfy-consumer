@@ -6,7 +6,7 @@ export const TOPIC0 = {
   Unwrapped: "0x742cbb4a6bddd5e23aa0c14356065c236bdbc921cddb7f1f763161eb2030f3ef",
   Burn: "0xc6c4132f6250531f66c30d176444d900432e0ff7bb9e3e4ef8c8b33670218419",
 
-  // CToken — confidential (amount is an euint256 handle)
+  // CToken — confidential euint256 handle
   ConfidentialTransfer: "0x67500e8d0ed826d2194f514dd0d8124f35648ab6e3fb5e6ed867134cffe661e9",
 
   // CToken — metadata

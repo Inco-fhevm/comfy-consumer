@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* Apple grouped-list model: a cool-gray canvas (systemGroupedBackground
+       #F2F2F7) with white cells (#FFF) so cards float. Grays are Apple's system
+       grays (hue ~240). One accent: Comfy blue. */
+    --background: 240 20% 96%; /* systemGroupedBackground #F2F2F7 */
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 221 90% 59%; /* #3673F5 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 16% 94%; /* fill / hover, between systemGray6 and Gray5 */
+    --secondary-foreground: 0 0% 18%;
+    --muted: 240 16% 94%;
+    --muted-foreground: 0 0% 34%;
+    --text-muted: 0 0% 26%;
+    --accent: 240 16% 94%;
+    --accent-foreground: 0 0% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 145 63% 37%;
+    --border: 240 11% 90%; /* hairline separator ~ systemGray5 #E5E5EA */
+    --input: 240 11% 90%;
+    --ring: 221 90% 59%;
+    --radius: 0.85rem;
+    --sidebar-background: 240 20% 96%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-border: 240 11% 90%;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: 0 0% 8%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 221 90% 62%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 17%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 17%;
+    --muted-foreground: 0 0% 76%;
+    --text-muted: 0 0% 84%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 145 55% 55%;
+    --border: 0 0% 18%;
+    --input: 0 0% 20%;
+    --ring: 221 90% 62%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 16%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    /* Global size bump for more comfortable reading. */
+    font-size: 17.5px;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* --font-sans (Urbanist) is provided by next/font on <body>; don't redefine it. */
+    font-family: var(--font-sans), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  /* Gentle optical tracking on large headings. */
+  .tracking-apple {
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.28);
+    border-radius: 9999px;
+  }
+}
+
+@layer components {
+  /* Soft "material" surface: a subtle top-to-bottom gradient, a layered two-border
+     bevel (outer border + inner highlight ring), a top light-catch, and a low,
+     wide depth shadow. Tactile, Apple-like — no backdrop blur. */
+  .surface {
+    /* Light: flat white Apple card — hairline border + soft, low shadow. */
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow:
+      0 1px 2px hsl(240 10% 12% / 0.04),
+      0 10px 28px -18px hsl(240 10% 12% / 0.14);
+  }
+  .dark .surface {
+    background-image: linear-gradient(
+      to bottom,
+      hsl(var(--card)),
+      hsl(var(--secondary) / 0.4)
+    );
+    box-shadow:
+      inset 0 0 0 1px hsl(0 0% 100% / 0.04),
+      inset 0 1px 1px hsl(0 0% 100% / 0.06),
+      0 1px 2px hsl(0 0% 0% / 0.3),
+      0 18px 42px -26px hsl(0 0% 0% / 0.65);
+  }
+
+  /* Textured buttons — a bevel (gradient + inner highlight + border) so they read
+     as tactile, like the reference's texture buttons. My own recipe. */
+  .btn-primary {
+    background-image: linear-gradient(
+      to bottom,
+      hsl(var(--primary)),
+      hsl(var(--primary) / 0.86)
+    );
+    color: hsl(var(--primary-foreground));
+    border: 1px solid hsl(var(--primary) / 0.65);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.28),
+      0 1px 2px hsl(var(--primary) / 0.35),
+      0 6px 16px -6px hsl(var(--primary) / 0.5);
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  .btn-primary:hover {
+    filter: brightness(1.05);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+  }
+
+  .btn-secondary {
+    background-image: linear-gradient(
+      to bottom,
+      hsl(var(--card)),
+      hsl(var(--secondary))
+    );
+    color: hsl(var(--secondary-foreground));
+    border: 1px solid hsl(var(--border));
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.6),
+      0 1px 2px hsl(0 0% 0% / 0.04);
+    transition: filter 0.15s ease, transform 0.1s ease, background-color 0.15s ease;
+  }
+  .dark .btn-secondary {
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.06),
+      0 1px 2px hsl(0 0% 0% / 0.25);
+  }
+  .btn-secondary:hover {
+    filter: brightness(0.98);
+  }
+  .dark .btn-secondary:hover {
+    filter: brightness(1.15);
+  }
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+  .btn-secondary:disabled {
+    opacity: 0.5;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Aligned figures for money — no digit jitter as values change. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}
+
+/* Staggered row entrance — transform + opacity only, ease-out. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.row-in {
+  animation: row-in 240ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+/* A hidden balance eases into focus when revealed (the privacy signature, subtle). */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.reveal-in {
+  animation: reveal-in 280ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

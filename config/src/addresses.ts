@@ -1,30 +1,20 @@
-// Deployed addresses + per-network config. One chain is live today; the shape is
-// ready for more. The client selects the active network by name (env), so nothing
-// chain-specific is hardcoded in the frontend.
 export type NetworkName = "baseSepolia" | "base";
 
 export interface DefaultToken {
-  /** Underlying public ERC20. Its confidential wrapper is deployed/looked up by the factory. */
   erc20: `0x${string}`;
-  /** Base symbol (e.g. USDC); the confidential symbol is derived as c<symbol>. */
+  // Confidential symbol derived as c<symbol>
   symbol: string;
 }
 
 export interface NetworkContracts {
   chainId: number;
-  /** Human label for the UI. */
   label: string;
-  /** Testnet vs mainnet — drives faucet links and the network badge. */
   testnet: boolean;
-  /** Block explorer base URL for tx/address links. */
   explorer: string;
-  /** Public USDC faucet URL (testnet only). */
   usdcFaucet?: string;
-  /** Factory the indexer watches. */
   wrapperFactory: `0x${string}` | null;
-  /** CommonVault holding the backing. */
   vault?: `0x${string}`;
-  /** Tokens always surfaced so a fresh wallet has something to shield. */
+  // Always surfaced for fresh wallets
   defaultTokens: DefaultToken[];
 }
 
@@ -35,8 +25,9 @@ export const ADDRESSES: Record<NetworkName, NetworkContracts> = {
     testnet: true,
     explorer: "https://sepolia.basescan.org",
     usdcFaucet: "https://faucet.circle.com/",
-    wrapperFactory: "0x8d9DD2D7298EAB92eEb72319F6F95e0a1c24AF14",
-    vault: "0xAEC2f2255EbF28d1Eb5cF1eC659a1878F0F3B6Bc",
+    // Audited payable factory (old one broken)
+    wrapperFactory: "0x75a85c9B885fC5eb1a258ffaA0a9A1ef5DE9b768",
+    vault: "0x25044490E040f619B6288a3a17042a30c48Ec154",
     defaultTokens: [
       // Circle USDC on Base Sepolia.
       { erc20: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC" },

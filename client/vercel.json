@@ -1,0 +1,4 @@
+{
+  "framework": "nextjs",
+  "installCommand": "echo using existing node_modules"
+}

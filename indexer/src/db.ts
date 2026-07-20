@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS public_flows (     -- public amounts
   PRIMARY KEY (block_hash, log_index)
 );
 CREATE INDEX IF NOT EXISTS public_flows_child ON public_flows (child, block_number DESC);
+CREATE INDEX IF NOT EXISTS public_flows_account ON public_flows (account, block_number DESC);
 
 CREATE TABLE IF NOT EXISTS confidential_events ( -- handle only, never amounts
   child        TEXT    NOT NULL REFERENCES children(address),
@@ -60,6 +61,8 @@ CREATE TABLE IF NOT EXISTS confidential_events ( -- handle only, never amounts
   PRIMARY KEY (block_hash, log_index)
 );
 CREATE INDEX IF NOT EXISTS confidential_events_child ON confidential_events (child, block_number DESC);
+CREATE INDEX IF NOT EXISTS confidential_events_from ON confidential_events (from_addr, block_number DESC);
+CREATE INDEX IF NOT EXISTS confidential_events_to ON confidential_events (to_addr, block_number DESC);
 
 CREATE TABLE IF NOT EXISTS holdings (         -- wallets per ctoken, for assets
   wrapper_address     TEXT   NOT NULL REFERENCES children(address),
