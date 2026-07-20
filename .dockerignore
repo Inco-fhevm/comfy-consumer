@@ -1,6 +1,9 @@
-.env
-node_modules/
-.next/
-.git/
-.agents/
-npm-debug.log*
+# Force fresh, platform-correct installs in the image (tsx/esbuild are native).
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/.git
+**/.env
+**/.env.*
+**/*.tsbuildinfo

@@ -1,0 +1,37 @@
+# Local dev: postgres + the indexer. Point a testnet webhook (QuickNode or Alchemy,
+# filtered by the factory + child addresses) at http://<tunnel>/webhook, or just let the
+# reconciler backfill from Base Sepolia RPC (set START_BLOCK to the factory deploy block).
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: indexer
+      POSTGRES_PASSWORD: indexer
+      POSTGRES_DB: indexer
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # survives rebuilds & `compose down` (not `down -v`)
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U indexer"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  indexer:
+    build:
+      context: ..
+      dockerfile: indexer/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env                 # NETWORK, ENABLED_PROVIDERS, keys, RPC URLs, START_BLOCK, PORT
+    environment:
+      # DB lives in this compose network — override whatever .env says (host uses localhost).
+      DATABASE_URL: postgres://indexer:indexer@postgres:5432/indexer
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
