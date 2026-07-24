@@ -1,39 +1,65 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useEffect, useState, ChangeEvent } from "react";
+import { Check, ExternalLink, LoaderCircle, Lock, Send } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { X, Loader2, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useMediaQuery } from "@/hooks/use-media-query";
-import { toast } from "sonner";
+  AnimatePresence,
+  motion,
+  MotionConfig,
+  useReducedMotion,
+} from "motion/react";
+import { parseUnits } from "viem";
 import {
   useAccount,
   usePublicClient,
   useWalletClient,
   useWriteContract,
 } from "wagmi";
-import { encryptValue, getFee } from "@/lib/inco-lite";
-import { explorerTx, TX_CONFIRMATIONS } from "@/lib/constants";
-import { parseUnits } from "viem";
+import { toast } from "sonner";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
+import { encryptValue, getFee } from "@/lib/inco-lite";
+import { explorerTx, CTOKEN_ABI } from "@/lib/constants";
+import { confirmTx } from "@/lib/tx";
+import { addressSchema, amountSchema, firstError } from "@/lib/validation";
+import { sanitizeAmountInput } from "@/lib/utils";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "./icon-builder";
 import { ShieldedBalance } from "./shielded-balance";
 import { TokenInfo } from "@/types/token";
 import clientLogger from "@/lib/logging/client-logger";
+import { recordTransaction } from "@/lib/metrics";
 
-interface TxResult {
-  success: boolean;
-  hash: string | null;
+const HEX = "0123456789abcdef";
+const rand = () => HEX[Math.floor(Math.random() * HEX.length)];
+const CIPHER_LEN = 8;
+const DOTS = "•".repeat(CIPHER_LEN);
+
+type Phase = "idle" | "encrypting" | "sending";
+
+// Scrambles hex then settles to dots — the "encrypting" beat
+function ScrambleAmount({ active, reduce }: { active: boolean; reduce: boolean }) {
+  const animate = active && !reduce;
+  const [scrambled, setScrambled] = useState(DOTS);
+  useEffect(() => {
+    if (!animate) return;
+    let raf = 0;
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 500);
+      const locked = Math.floor(t * CIPHER_LEN);
+      let out = "";
+      for (let i = 0; i < CIPHER_LEN; i++) out += i < locked ? "•" : rand();
+      setScrambled(out);
+      if (t < 1) raf = requestAnimationFrame(step);
+      else setScrambled(DOTS);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [animate]);
+  return (
+    <span className="font-mono tabular tracking-widest">
+      {animate ? scrambled : DOTS}
+    </span>
+  );
 }
 
 interface ConfidentialSendDialogProps {
@@ -47,176 +73,81 @@ const ConfidentialSendDialog: React.FC<ConfidentialSendDialogProps> = ({
   onSuccess,
   triggerClassName,
 }) => {
-  const [open, setOpen] = useState<boolean>(false);
-  const [amount, setAmount] = useState<string>("");
-  const [address, setAddress] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [txResult, setTxResult] = useState<TxResult | null>(null);
-  const [addressError, setAddressError] = useState<string>("");
-  const [amountError, setAmountError] = useState<string>("");
-  const [sendErrorMessage, setSendErrorMessage] = useState<string>("");
-
-  const ENCRYPTED_ERC20_CONTRACT_ADDRESS = token.encryptedAddress;
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [address, setAddress] = useState("");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [error, setError] = useState("");
+  const [hash, setHash] = useState<string | null>(null);
+  const busy = phase !== "idle";
+  const reduce = useReducedMotion() ?? false;
 
   const { address: userAddress } = useAccount();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
-
-  const isMobile = useMediaQuery("(max-width: 640px)");
-
-  const handleAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    const value = e.target.value.replace(/[^0-9.]/g, "");
-    if (value.split(".").length > 2) return;
-    setAmount(value);
-  };
-
   const { writeContractAsync } = useWriteContract();
-
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
 
   const confidentialSend = async (): Promise<void> => {
-    try {
-      clientLogger.transaction.start("confidential_send", address);
+    await checkAndSwitchNetwork();
+    if (!walletClient?.account) throw new Error("Wallet not connected.");
 
-      await checkAndSwitchNetwork();
-      setTxResult(null);
-      setSendErrorMessage("");
+    const ciphertext = await encryptValue({
+      value: parseUnits(amount, token.decimals),
+      address: userAddress as `0x${string}`,
+      contractAddress: token.encryptedAddress,
+    });
 
-      clientLogger.info("Starting confidential send encryption", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        recipient: address,
-        // amount omitted for security
-      });
+    const fee = await getFee();
+    const txHash = await writeContractAsync({
+      address: token.encryptedAddress,
+      abi: CTOKEN_ABI,
+      functionName: "confidentialTransfer",
+      args: [address as `0x${string}`, ciphertext],
+      value: fee,
+    });
 
-      const inputCt = await encryptValue({
-        value: parseUnits(amount.toString(), token.decimals),
-        address: userAddress as `0x${string}`,
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-      });
-
-      clientLogger.info("Amount encrypted successfully for confidential send", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        recipient: address,
-        // ciphertext omitted for security
-      });
-
-      if (!walletClient?.account) {
-        clientLogger.error("Wallet not connected for confidential send");
-        setSendErrorMessage(
-          "Wallet not connected. Please reconnect your wallet."
-        );
-        throw new Error("Wallet not connected.");
-      }
-
-      clientLogger.info("Executing confidential transfer contract call", {
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        functionName: "confidentialTransfer",
-        recipient: address,
-      });
-
-      // Inlined: bundled ABI is stale
-      const fee = await getFee();
-      const hash = await writeContractAsync({
-        address: ENCRYPTED_ERC20_CONTRACT_ADDRESS as `0x${string}`,
-        abi: [
-          {
-            type: "function",
-            name: "confidentialTransfer",
-            stateMutability: "payable",
-            inputs: [
-              { name: "to", type: "address" },
-              { name: "ciphertext", type: "bytes" },
-            ],
-            outputs: [{ name: "", type: "bytes32" }],
-          },
-        ] as const,
-        functionName: "confidentialTransfer",
-        args: [address as `0x${string}`, inputCt],
-        value: fee,
-      });
-
-      clientLogger.info("Confidential transfer transaction submitted", {
-        txHash: hash,
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        recipient: address,
-      });
-
-      const transaction = await publicClient!.waitForTransactionReceipt({
-        hash,
-        confirmations: TX_CONFIRMATIONS,
-      });
-
-      const success = transaction.status === "success";
-      setTxResult({ success, hash });
-
-      if (success) {
-        clientLogger.transaction.success(hash, "confidential_send");
-        clientLogger.info("Confidential transfer completed successfully", {
-          txHash: hash,
-          contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-          recipient: address,
-        });
-      } else {
-        clientLogger.transaction.error(
-          "Transaction reverted",
-          "confidential_send"
-        );
-        setSendErrorMessage("Transaction failed. Please try again later.");
-        throw new Error("Transaction failed");
-      }
-
-      onSuccess?.();
-      toast.success("Send successful");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      clientLogger.transaction.error(errorMessage, "confidential_send");
-      clientLogger.error("Confidential send failed", {
-        error: errorMessage,
-        contractAddress: ENCRYPTED_ERC20_CONTRACT_ADDRESS,
-        recipient: address,
-      });
-
-      setTxResult({ success: false, hash: null });
-      if (!sendErrorMessage) {
-        setSendErrorMessage("An unexpected error occurred during send.");
-      }
-      toast.error("Send failed");
-    }
+    await confirmTx(publicClient!, txHash);
+    setHash(txHash);
   };
 
   const handleSend = async (): Promise<void> => {
-    setAddressError("");
-    setAmountError("");
-
-    if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
-      setAddressError("Enter a valid wallet address.");
+    const err =
+      firstError(addressSchema.safeParse(address)) ??
+      firstError(amountSchema.safeParse(amount));
+    if (err) {
+      setError(err);
       return;
     }
-
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      setAmountError("Enter a valid amount.");
-      return;
-    }
-
+    setError("");
+    setPhase("encrypting");
+    // A short beat so the encryption reads, even though it's instant
+    if (!reduce) await new Promise((r) => setTimeout(r, 500));
+    setPhase("sending");
     try {
-      setIsLoading(true);
       await confidentialSend();
-      setAmount("");
-      setAddress("");
-    } catch (error) {
-      console.error("Send failed:", error);
+      recordTransaction("confidential_send", "success");
+      onSuccess?.();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Send failed";
+      clientLogger.error("Confidential send failed", { error: msg });
+      recordTransaction("confidential_send", "error");
+      setError("An unexpected error occurred during send.");
+      toast.error("Send failed");
     } finally {
-      setIsLoading(false);
+      setPhase("idle");
     }
   };
 
-  const DialogComponent = isMobile ? Sheet : Dialog;
-  const DialogContentComponent = isMobile ? SheetContent : DialogContent;
-  const DialogHeaderComponent = isMobile ? SheetHeader : DialogHeader;
-  const DialogTitleComponent = isMobile ? SheetTitle : DialogTitle;
+  const handleDone = (): void => {
+    setOpen(false);
+    setHash(null);
+    setAmount("");
+    setAddress("");
+    setError("");
+  };
 
-  const isValid = amount && Number(amount) > 0 && address;
+  const isValid = Number(amount) > 0 && address;
 
   return (
     <>
@@ -231,146 +162,184 @@ const ConfidentialSendDialog: React.FC<ConfidentialSendDialogProps> = ({
         Send
       </button>
 
-      <DialogComponent open={open} onOpenChange={setOpen}>
-        <DialogContentComponent
-          className={`grid gap-0 ${
-            isMobile ? "w-full rounded-t-2xl" : "w-[400px]"
-          } p-0 `}
-          side={isMobile ? "bottom" : undefined}
-        >
-          <DialogHeaderComponent className="px-6 py-4 flex-row flex items-center justify-between">
-            <DialogTitleComponent className="text-lg font-semibold dark:text-white">
-              Send Confidential Amount
-            </DialogTitleComponent>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
-              onClick={() => setOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </DialogHeaderComponent>
-
-          <div className="px-6 pb-6 space-y-6">
-            <div
-              className={`space-y-6 transition-opacity duration-200 ${
-                isLoading ? "pointer-events-none opacity-50" : ""
-              }`}
-            >
-            <div className="space-y-1">
-              <label className="text-sm text-gray-500 dark:text-gray-400">
-                To:
-              </label>
-              <Input
-                type="text"
-                value={address}
-                disabled={isLoading}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setAddress(e.target.value)
-                }
-                className={`w-full p-2 text-sm rounded-lg ${
-                  addressError
-                    ? "border-red-500 focus:ring-red-500"
-                    : "focus:ring-blue-500 dark:focus:ring-blue-600/20"
-                }`}
-                placeholder="0xYourWalletAddressHere"
-              />
-              {addressError && (
-                <p className="text-red-500 text-sm">{addressError}</p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3 rounded-xl border border-border p-3">
-              <div className="h-10 w-10 shrink-0">
-                <IconBuilder symbol={token.symbol} address={token.erc20Address} />
-              </div>
-              <p className="font-medium">{token.encryptedSymbol}</p>
-            </div>
-
-            <ShieldedBalance
-              tokenId={token.id}
-              symbol={token.encryptedSymbol}
-              onMax={(v) => setAmount(String(v))}
-            />
-
-            <div className="border rounded-xl p-6 text-center space-y-2">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  className={`text-3xl font-medium bg-transparent dark:text-white text-center w-full focus:outline-none ${
-                    amountError ? "text-red-500" : ""
-                  }`}
-                  placeholder="0"
-                  disabled={isLoading}
-                />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 break-all leading-tight max-w-full overflow-wrap-anywhere overflow-y-auto max-h-24">
-                {amount || "0"} {token.encryptedSymbol}
-              </p>
-              <div className="flex items-center justify-center mt-1">
-                <span className="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-mono px-3 py-1 rounded-md text-xs uppercase tracking-wider">
-                  encrypted amount
-                </span>
-              </div>
-              {amountError && (
-                <p className="text-red-500 text-sm">{amountError}</p>
-              )}
-            </div>
-            </div>
-
-            <div>
-              <Button
-                className="w-full rounded-full h-12 dark:bg-[#3673F5] dark:text-white dark:hover:bg-[#3673F5]/80"
-                disabled={!isValid || isLoading}
-                onClick={handleSend}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  "Send"
-                )}
-              </Button>
-
-              {sendErrorMessage && (
-                <div className=" text-red-700 dark:text-red-300 p-3 rounded-lg text-sm text-center">
-                  {sendErrorMessage}
-                </div>
-              )}
-
-              {txResult?.success && (
-                <div className="text-sm text-center mt-6">
-                  <p
-                    className={`font-medium ${
-                      txResult.success ? "text-green-500" : "text-red-500"
-                    }`}
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={(o) => (o ? setOpen(true) : handleDone())}
+        title="Send Confidential Amount"
+      >
+        <div className="px-8 pb-6">
+          <MotionConfig
+            transition={
+              reduce ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 32 }
+            }
+          >
+            <motion.div layout>
+              <AnimatePresence mode="wait" initial={false}>
+                {hash ? (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col items-center gap-3 py-8 text-center"
                   >
-                    Transaction Successful
-                  </p>
-                  {txResult.hash && (
-                    <a
-                      href={explorerTx(txResult.hash)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline text-blue-500 mt-1 inline-block"
+                    <motion.div
+                      initial={reduce ? false : { scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 420, damping: 18 }}
+                      className="flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success"
                     >
-                      View on explorer
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
+                      <Check className="h-7 w-7" strokeWidth={2.5} />
+                    </motion.div>
+                    <div>
+                      <p className="font-semibold">
+                        Sent {amount} {token.encryptedSymbol}
+                      </p>
+                      <a
+                        href={explorerTx(hash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                      >
+                        View transaction <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                    <button
+                      onClick={handleDone}
+                      className="btn-secondary mt-2 h-10 rounded-full px-6 text-sm font-medium"
+                    >
+                      Done
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="form"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div
+                      className={`space-y-4 transition-opacity duration-200 ${
+                        busy ? "pointer-events-none opacity-50" : ""
+                      }`}
+                    >
+                      <div className="space-y-1.5">
+                        <label className="text-sm text-muted-foreground">To</label>
+                        <Input
+                          type="text"
+                          value={address}
+                          disabled={busy}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setAddress(e.target.value.trim())
+                          }
+                          className="w-full rounded-xl"
+                          placeholder="Recipient wallet address"
+                        />
+                      </div>
 
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-              Your send amount will be hidden onchain.
-            </p>
-          </div>
-        </DialogContentComponent>
-      </DialogComponent>
+                      <div className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/40 p-4">
+                        <div className="h-10 w-10 shrink-0">
+                          <IconBuilder symbol={token.symbol} address={token.erc20Address} />
+                        </div>
+                        <div className="font-medium">{token.encryptedSymbol}</div>
+                      </div>
+
+                      <ShieldedBalance
+                        tokenId={token.id}
+                        symbol={token.encryptedSymbol}
+                        onMax={(v) => setAmount(String(v))}
+                      />
+                    </div>
+
+                    <div className="my-4 rounded-2xl border border-border p-6 text-center">
+                      {busy ? (
+                        <motion.div
+                          animate={
+                            reduce
+                              ? {}
+                              : { filter: ["blur(0px)", "blur(4px)", "blur(0px)"] }
+                          }
+                          transition={{ duration: 0.5, ease: [0.77, 0, 0.175, 1] }}
+                          className="text-4xl font-semibold tracking-apple"
+                        >
+                          <ScrambleAmount active={phase === "encrypting"} reduce={reduce} />
+                        </motion.div>
+                      ) : (
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={amount}
+                          onChange={(e) => setAmount(sanitizeAmountInput(e.target.value))}
+                          className="w-full bg-transparent text-center text-4xl font-semibold tracking-apple outline-none"
+                          placeholder="0"
+                          autoFocus
+                        />
+                      )}
+                      <div className="mt-2 flex items-center justify-center gap-1 text-xs font-mono uppercase tracking-wider text-success">
+                        {busy && (
+                          <motion.span
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                            className="inline-flex"
+                          >
+                            <Lock className="h-3 w-3" />
+                          </motion.span>
+                        )}
+                        encrypted amount
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {error && (
+                        <motion.p
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mb-3 text-center text-sm text-destructive"
+                        >
+                          {error}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+
+                    <button
+                      onClick={handleSend}
+                      disabled={!isValid || busy}
+                      className="btn-primary flex h-12 w-full items-center justify-center gap-2 rounded-full font-semibold"
+                    >
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.span
+                          key={phase}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          className="inline-flex items-center gap-2"
+                        >
+                          {phase === "encrypting" ? (
+                            <>
+                              <Lock className="h-4 w-4" /> Encrypting…
+                            </>
+                          ) : phase === "sending" ? (
+                            <>
+                              <LoaderCircle className="h-4 w-4 animate-spin" /> Sending…
+                            </>
+                          ) : (
+                            "Send"
+                          )}
+                        </motion.span>
+                      </AnimatePresence>
+                    </button>
+
+                    <p className="mt-4 text-center text-sm text-muted-foreground">
+                      Your send amount will be hidden onchain.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </MotionConfig>
+        </div>
+      </ResponsiveDialog>
     </>
   );
 };

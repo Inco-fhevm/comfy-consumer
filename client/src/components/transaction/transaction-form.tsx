@@ -12,25 +12,27 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { pad, bytesToHex, toHex, parseUnits, erc20Abi } from "viem";
-import { Check, Loader2, ExternalLink } from "lucide-react";
+import { parseUnits, erc20Abi } from "viem";
+import { Check, LoaderCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import {
   ERC20_ABI,
   CTOKEN_ABI,
   WRAPPER_FACTORY_ABI,
   WRAPPER_FACTORY_ADDRESS,
-  TX_CONFIRMATIONS,
   explorerTx,
 } from "@/lib/constants";
 import { formatNumber } from "@/lib/format-number";
+import { sanitizeAmountInput } from "@/lib/utils";
+import { confirmTx } from "@/lib/tx";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
 import { ShieldedBalance } from "../shielded-balance";
 import { TokenInfo } from "@/types/token";
-import { getConfig } from "@/lib/inco-lite";
+import { attestedCompute } from "@/lib/inco-lite";
 import { AttestedComputeSupportedOps } from "@inco/lightning-js/lite";
 import clientLogger from "@/lib/logging/client-logger";
+import { recordTransaction } from "@/lib/metrics";
 
 interface TransactionFormProps {
   mode: "shield" | "withdraw";
@@ -68,10 +70,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const validWithdraw = amountNum > 0;
 
   const onAmount = (e: ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value.replace(/[^0-9.]/g, "");
-    if (v.split(".").length > 2) return;
+    const v = sanitizeAmountInput(e.target.value);
     setAmount(v);
-    setPhase("idle"); // amount changed → re-check allowance below
+    setPhase("idle");
     if (mode === "shield" && Number(v) > walletBalance) setError("Insufficient balance.");
     else setError("");
   };
@@ -123,18 +124,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           functionName: "approve",
           args: [WRAPPER_FACTORY_ADDRESS, amountWei],
         });
-        const receipt = await publicClient!.waitForTransactionReceipt({
-          hash,
-          confirmations: TX_CONFIRMATIONS,
-        });
-        if (receipt.status !== "success") throw new Error("Approval failed");
+        await confirmTx(publicClient!, hash);
       }
       setPhase("approved");
     } catch (err) {
-      clientLogger.transaction.error(
-        err instanceof Error ? err.message : "approve failed",
-        "shield"
-      );
+      clientLogger.error("Approve failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       setError("Approval failed. Please try again.");
       setPhase("idle");
     }
@@ -152,20 +148,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         functionName: "wrap",
         args: [token.erc20Address, amountWei],
       });
-      const receipt = await publicClient!.waitForTransactionReceipt({
-        hash,
-        confirmations: TX_CONFIRMATIONS,
-      });
-      if (receipt.status !== "success") throw new Error("Wrap failed");
-      clientLogger.transaction.success(hash, "shield");
+      await confirmTx(publicClient!, hash);
       toast.success(`Shielded ${amount} ${token.symbol}`);
+      recordTransaction("shield", "success");
       onSuccess?.();
       setSuccessHash(hash);
     } catch (err) {
-      clientLogger.transaction.error(
-        err instanceof Error ? err.message : "wrap failed",
-        "shield"
-      );
+      clientLogger.error("Wrap failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      recordTransaction("shield", "error");
       setError("Wrap failed. Please try again.");
       setPhase("approved");
     }
@@ -193,39 +185,26 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         functionName: "lastIncomingTransferCounter",
         args: [address, period],
       })) as bigint;
-      const checkpointHandle = await publicClient!.readContract({
+      const checkpointHandle = (await publicClient!.readContract({
         address: ctoken,
         abi: CTOKEN_ABI,
         functionName: "balanceCheckpoint",
         args: [address, period, counter],
-      });
+      })) as `0x${string}`;
 
-      const incoConfig = await getConfig();
-      const attested = await incoConfig.attestedCompute(
-        // @ts-expect-error - wagmi walletClient is structurally looser than the SDK's
+      const { attestation, signature } = await attestedCompute({
         walletClient,
-        checkpointHandle,
-        AttestedComputeSupportedOps.Ge,
-        amountWei
-      );
-      const plaintext = attested.plaintext.value;
-      const value = (
-        typeof plaintext === "boolean"
-          ? plaintext
-            ? "0x" + "0".repeat(63) + "1"
-            : "0x" + "0".repeat(64)
-          : pad(toHex(plaintext as bigint), { size: 32 })
-      ) as `0x${string}`;
-      const signatures = attested.covalidatorSignatures.map((s: Uint8Array) =>
-        bytesToHex(s)
-      );
+        lhsHandle: checkpointHandle,
+        op: AttestedComputeSupportedOps.Ge,
+        rhsPlaintext: amountWei,
+      });
       const args = [
         address,
         amountWei,
         period,
         counter,
-        { handle: attested.handle as `0x${string}`, value },
-        signatures,
+        { handle: attestation.handle as `0x${string}`, value: attestation.value },
+        signature,
       ] as const;
 
       const gas = await publicClient!.estimateContractGas({
@@ -242,20 +221,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         args,
         gas,
       });
-      const receipt = await publicClient!.waitForTransactionReceipt({
-        hash,
-        confirmations: TX_CONFIRMATIONS,
-      });
-      if (receipt.status !== "success") throw new Error("Unwrap failed");
-      clientLogger.transaction.success(hash, "unshield");
+      await confirmTx(publicClient!, hash);
       toast.success(`Unshielded ${amount} ${token.symbol}`);
+      recordTransaction("unshield", "success");
       onSuccess?.();
       setSuccessHash(hash);
     } catch (err) {
-      clientLogger.transaction.error(
-        err instanceof Error ? err.message : "unwrap failed",
-        "unshield"
-      );
+      clientLogger.error("Unwrap failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      recordTransaction("unshield", "error");
       setError("Transaction failed. Please try again.");
     } finally {
       setProcessing(false);
@@ -398,18 +373,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     {mode === "withdraw" ? (
                       processing ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin" /> Unshielding…
+                          <LoaderCircle className="h-4 w-4 animate-spin" /> Unshielding…
                         </>
                       ) : (
                         "Unshield"
                       )
                     ) : phase === "approving" ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Approving {token.symbol}…
+                        <LoaderCircle className="h-4 w-4 animate-spin" /> Approving {token.symbol}…
                       </>
                     ) : phase === "wrapping" ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Shielding…
+                        <LoaderCircle className="h-4 w-4 animate-spin" /> Shielding…
                       </>
                     ) : phase === "approved" ? (
                       "Shield now"

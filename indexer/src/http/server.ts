@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { registerReceiver } from "./receiver.js";
 import { registerReadApi } from "./api.js";
+import { registerConsentApi } from "./consent.js";
 import { cfg } from "../config.js";
 
 // HTTP: ingest + read API.
@@ -17,5 +18,6 @@ export function buildServer(): FastifyInstance {
   app.get("/health", async () => ({ ok: true }));
   registerReceiver(app);
   registerReadApi(app);
+  registerConsentApi(app);
   return app;
 }

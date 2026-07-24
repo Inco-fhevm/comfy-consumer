@@ -1,5 +1,6 @@
 import { type FastifyInstance } from "fastify";
 import { pool } from "../db.js";
+import { cfg } from "../config.js";
 
 // Read API. Handles, never amounts.
 export function registerReadApi(app: FastifyInstance) {
@@ -33,7 +34,7 @@ export function registerReadApi(app: FastifyInstance) {
     const { limit, offset, page } = pageParams(req);
     const total = await count(`SELECT count(*) c FROM public_flows WHERE child = $1`, [child]);
     const { rows } = await pool.query(
-      `SELECT kind, account, amount, block_number, tx_hash FROM public_flows
+      `SELECT kind, account, amount, block_number, block_time, tx_hash FROM public_flows
        WHERE child = $1 ORDER BY block_number DESC, log_index DESC LIMIT $2 OFFSET $3`,
       [child, limit, offset],
     );
@@ -46,7 +47,7 @@ export function registerReadApi(app: FastifyInstance) {
     const { limit, offset, page } = pageParams(req);
     const total = await count(`SELECT count(*) c FROM confidential_events WHERE child = $1`, [child]);
     const { rows } = await pool.query(
-      `SELECT kind, from_addr, to_addr, handle, block_number, tx_hash FROM confidential_events
+      `SELECT kind, from_addr, to_addr, handle, block_number, block_time, tx_hash FROM confidential_events
        WHERE child = $1 ORDER BY block_number DESC, log_index DESC LIMIT $2 OFFSET $3`,
       [child, limit, offset],
     );
@@ -75,13 +76,13 @@ export function registerReadApi(app: FastifyInstance) {
     );
     const { rows } = await pool.query(
       `WITH tx AS (
-         SELECT 'transfer' AS type, child, kind, from_addr, to_addr, handle, NULL::numeric AS amount, block_number, log_index, tx_hash
+         SELECT 'transfer' AS type, child, kind, from_addr, to_addr, handle, NULL::numeric AS amount, block_number, block_time, log_index, tx_hash
          FROM confidential_events WHERE from_addr = $1 OR to_addr = $1
          UNION ALL
-         SELECT 'flow' AS type, child, kind, account, NULL, NULL, amount, block_number, log_index, tx_hash
+         SELECT 'flow' AS type, child, kind, account, NULL, NULL, amount, block_number, block_time, log_index, tx_hash
          FROM public_flows WHERE account = $1)
        SELECT tx.type, tx.child AS token, c.symbol, c.decimals, tx.kind, tx.from_addr, tx.to_addr,
-              tx.handle, tx.amount, tx.block_number, tx.tx_hash
+              tx.handle, tx.amount, tx.block_number, tx.block_time, tx.tx_hash
        FROM tx JOIN children c ON c.address = tx.child
        ORDER BY tx.block_number DESC, tx.log_index DESC LIMIT $2 OFFSET $3`,
       [wallet, limit, offset],
@@ -91,4 +92,34 @@ export function registerReadApi(app: FastifyInstance) {
 
   app.get("/sync", async () =>
     (await pool.query(`SELECT * FROM sync_state`)).rows[0] ?? null);
+
+  // Cached USD prices; optional ?tokens filter.
+  app.get("/prices", async (req: any) => {
+    const now = Math.floor(Date.now() / 1000);
+    const want = String(req.query.tokens ?? "")
+      .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean).slice(0, 200);
+    const { rows } = want.length
+      ? await pool.query(
+          `SELECT token, usd, confidence, source, updated_at FROM token_prices
+           WHERE chain_id = $1 AND token = ANY($2)`,
+          [cfg.chainId, want],
+        )
+      : await pool.query(
+          `SELECT token, usd, confidence, source, updated_at FROM token_prices
+           WHERE chain_id = $1`,
+          [cfg.chainId],
+        );
+    const prices: Record<string, unknown> = {};
+    for (const r of rows) {
+      const updatedAt = Number(r.updated_at);
+      prices[r.token] = {
+        usd: Number(r.usd),
+        confidence: r.confidence == null ? null : Number(r.confidence),
+        source: r.source,
+        updated_at: updatedAt,
+        stale: now - updatedAt > cfg.priceTtl,
+      };
+    }
+    return { chainId: cfg.chainId, ttl: cfg.priceTtl, count: Object.keys(prices).length, prices };
+  });
 }

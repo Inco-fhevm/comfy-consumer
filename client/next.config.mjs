@@ -1,5 +1,40 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Report-Only until connect-src (RPC, indexer, Inco) is verified in-app, then enforce
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https: wss:",
+  "worker-src 'self' blob:",
+  "frame-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Content-Security-Policy-Report-Only", value: csp },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  // Pin file-tracing to this app; avoids picking a stray parent lockfile
+  outputFileTracingRoot: __dirname,
   // standalone only for Docker; Vercel uses native output
   output: process.env.VERCEL ? undefined : "standalone",
   images: {
@@ -19,9 +54,10 @@ const nextConfig = {
       tls: false,
       crypto: false,
     };
-    // @x402/* are OPTIONAL peer deps of @coinbase/cdp-sdk (x402 payments), pulled
-    // in transitively by the Base wallet connector and never used here. They
-    // aren't installed, so stop webpack from failing on the unresolved imports.
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      ".js": [".ts", ".tsx", ".js", ".jsx"],
+    };
     config.plugins.push(
       new webpack.IgnorePlugin({ resourceRegExp: /^@x402\// })
     );

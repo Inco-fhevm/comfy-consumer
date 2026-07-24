@@ -5,32 +5,24 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   ReactNode,
 } from "react";
 import { useAccount, useReadContracts } from "wagmi";
-import { erc20Abi, formatUnits } from "viem";
-import { getUsdPrice } from "@/lib/prices";
+import { erc20Abi, formatUnits, type Abi } from "viem";
+import { useQuery } from "@tanstack/react-query";
+import { CTOKEN_ABI } from "@/lib/constants";
+import { getPrices } from "@/lib/indexer";
 import { useTokenRegistry } from "./token-registry-provider";
 import { useSessionKey } from "./session-key-provider";
+import { useLatest } from "@/hooks/use-latest";
 import { TokenInfo } from "@/types/token";
 import clientLogger from "@/lib/logging/client-logger";
+import { recordEncryptedBalanceFetch } from "@/lib/metrics";
 
 const ZERO_HANDLE = "0x" + "0".repeat(64);
 const isRealHandle = (h?: string | null): h is string =>
   !!h && h !== ZERO_HANDLE;
-
-// CToken JSON isn't as const
-const CONFIDENTIAL_BALANCE_OF_ABI = [
-  {
-    type: "function",
-    name: "confidentialBalanceOf",
-    stateMutability: "view",
-    inputs: [{ name: "account", type: "address" }],
-    outputs: [{ name: "", type: "bytes32" }],
-  },
-] as const;
 
 interface EncEntry {
   value: number | null;
@@ -69,6 +61,8 @@ interface Ctx {
   busy: boolean;
   get: (id: string) => TokenBalance;
   totals: Totals;
+  // Unit USD price, or null.
+  priceOf: (erc20Address: string) => number | null;
 }
 
 const BalancesContext = createContext<Ctx | undefined>(undefined);
@@ -112,7 +106,7 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
   } = useReadContracts({
     contracts: tokens.map((t) => ({
       address: t.encryptedAddress,
-      abi: CONFIDENTIAL_BALANCE_OF_ABI,
+      abi: CTOKEN_ABI as Abi,
       functionName: "confidentialBalanceOf" as const,
       args: address ? [address] : undefined,
     })),
@@ -132,19 +126,31 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
     return m;
   }, [tokens, handleData]);
 
-  const handleByIdRef = useRef(handleById);
-  useEffect(() => {
-    handleByIdRef.current = handleById;
-  }, [handleById]);
+  // USD prices by erc20 address.
+  const tokenAddrs = useMemo(
+    () => tokens.map((t) => t.erc20Address.toLowerCase()),
+    [tokens]
+  );
+  const { data: priceData } = useQuery({
+    queryKey: ["prices", tokenAddrs],
+    queryFn: ({ signal }) => getPrices(tokenAddrs, signal),
+    enabled: tokenAddrs.length > 0,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  const priceByErc20 = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const [a, v] of Object.entries(priceData?.prices ?? {})) m.set(a.toLowerCase(), v.usd);
+    return m;
+  }, [priceData]);
+  const priceOf = useCallback(
+    (erc20: string): number | null => priceByErc20.get(erc20.toLowerCase()) ?? null,
+    [priceByErc20]
+  );
 
-  const encRef = useRef(enc);
-  useEffect(() => {
-    encRef.current = enc;
-  }, [enc]);
-  const revealedRef = useRef(revealed);
-  useEffect(() => {
-    revealedRef.current = revealed;
-  }, [revealed]);
+  const handleByIdRef = useLatest(handleById);
+  const encRef = useLatest(enc);
+  const revealedRef = useLatest(revealed);
 
   const decryptOne = useCallback(
     async (t: TokenInfo) => {
@@ -159,19 +165,21 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
       try {
         const value = await decryptHandle(handle, decimals);
         setEnc((p) => ({ ...p, [t.id]: { value: Number(value), loading: false, error: null, handle, decimals } }));
+        recordEncryptedBalanceFetch("success");
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to decrypt";
         clientLogger.error("Shielded balance decrypt failed", {
           error: msg,
           contractAddress: t.encryptedAddress,
         });
+        recordEncryptedBalanceFetch("error");
         setEnc((p) => ({
           ...p,
           [t.id]: { value: p[t.id]?.value ?? null, loading: false, error: msg, handle, decimals },
         }));
       }
     },
-    [decryptHandle]
+    [decryptHandle, handleByIdRef]
   );
 
   const revealOne = useCallback(
@@ -185,7 +193,7 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
       await ensureSession();
       await decryptOne(t);
     },
-    [tokens, ensureSession, decryptOne]
+    [tokens, ensureSession, decryptOne, handleByIdRef]
   );
 
   const hideOne = useCallback((id: string) => {
@@ -215,7 +223,7 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
     } finally {
       setBusy(false);
     }
-  }, [tokens, refetchWallet, refetchHandles, ensureSession, decryptOne]);
+  }, [tokens, refetchWallet, refetchHandles, ensureSession, decryptOne, handleByIdRef]);
 
   const hideAll = useCallback(() => setRevealed(new Set()), []);
 
@@ -224,7 +232,7 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
     refetchHandles();
     const ids = revealedRef.current;
     tokens.filter((t) => ids.has(t.id)).forEach((t) => void decryptOne(t));
-  }, [refetchWallet, refetchHandles, tokens, decryptOne]);
+  }, [refetchWallet, refetchHandles, tokens, decryptOne, revealedRef]);
 
   // Re-decrypt when the handle OR the (corrected) decimals change
   useEffect(() => {
@@ -270,12 +278,14 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
     let usdWallet = 0;
     let usdShielded = 0;
     for (const t of tokens) {
-      const price = getUsdPrice(t.symbol);
+      const price = priceByErc20.get(t.erc20Address.toLowerCase());
+      // Exclude tokens with no found price from the total
+      if (price == null) continue;
       usdWallet += (walletById[t.id] ?? 0) * price;
       if (revealed.has(t.id)) usdShielded += (enc[t.id]?.value ?? 0) * price;
     }
     return { usdWallet, usdShielded, usdCombined: usdWallet + usdShielded };
-  }, [walletById, enc, tokens, revealed]);
+  }, [walletById, enc, tokens, revealed, priceByErc20]);
 
   const isRevealed = useCallback((id: string) => revealed.has(id), [revealed]);
   const allRevealed = tokens.length > 0 && tokens.every((t) => revealed.has(t.id));
@@ -293,8 +303,9 @@ export const TokenBalancesProvider = ({ children }: { children: ReactNode }) => 
       busy,
       get,
       totals,
+      priceOf,
     }),
-    [revealOne, hideOne, revealAll, hideAll, refresh, isRevealed, revealed, allRevealed, busy, get, totals]
+    [revealOne, hideOne, revealAll, hideAll, refresh, isRevealed, revealed, allRevealed, busy, get, totals, priceOf]
   );
 
   return (

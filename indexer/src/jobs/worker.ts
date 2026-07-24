@@ -13,7 +13,7 @@ type Row = {
   log_index: number;
   tx_hash: string;
   address: string;
-  raw: { topics: [`0x${string}`, ...`0x${string}`[]]; data: `0x${string}` };
+  raw: { topics: [`0x${string}`, ...`0x${string}`[]]; data: `0x${string}`; blockTime?: number };
 };
 
 type Item = { row: Row; event: Classified };
@@ -113,18 +113,18 @@ async function apply(db: PoolClient, row: Row, event: Classified, rpc: Rpc): Pro
   // Must be a known child.
   if (!rpc.known.has(emitter)) return "orphan"; // buffer until WrapperCreated lands
 
-  const at = [row.block_number, row.block_hash, row.log_index, row.tx_hash];
+  const at = [row.block_number, row.block_hash, row.log_index, row.tx_hash, row.raw.blockTime ?? null];
 
   if (event.kind === "public") {
     await db.query(
-      `INSERT INTO public_flows (child, kind, account, amount, block_number, block_hash, log_index, tx_hash)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (block_hash, log_index) DO NOTHING`,
+      `INSERT INTO public_flows (child, kind, account, amount, block_number, block_hash, log_index, tx_hash, block_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (block_hash, log_index) DO NOTHING`,
       [emitter, event.event, event.account, event.amount, ...at],
     );
   } else if (event.kind === "confidential") {
     await db.query(
-      `INSERT INTO confidential_events (child, kind, from_addr, to_addr, handle, block_number, block_hash, log_index, tx_hash)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (block_hash, log_index) DO NOTHING`,
+      `INSERT INTO confidential_events (child, kind, from_addr, to_addr, handle, block_number, block_hash, log_index, tx_hash, block_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (block_hash, log_index) DO NOTHING`,
       [emitter, event.event, event.from, event.to, event.handle, ...at],
     );
     // Refresh each wallet's balance handle.

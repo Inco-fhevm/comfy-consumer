@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Download, LoaderCircle, CircleCheck, CircleAlert, X } from "lucide-react";
 import { formatUnits } from "viem";
 import {
   Dialog,
@@ -9,18 +9,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getTransactions, type IndexerTx } from "@/lib/indexer";
-import { classifyKind, keepTx } from "@/lib/tx-format";
+import { classifyKind, keepTx, ZERO } from "@/lib/tx-format";
 import clientLogger from "@/lib/logging/client-logger";
 
 const LIMIT = 100; // indexer max page size
 const MAX_PAGES = 10000; // runaway guard
-const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
 type Status = "idle" | "running" | "done" | "error";
 type DecimalsFor = (token: string, fallback: number) => number;
 
 interface ExportRow {
   block: number;
+  dateUtc: string;
   type: string;
   direction: string;
   token: string;
@@ -38,6 +38,9 @@ function toRow(tx: IndexerTx, me: string, decimalsFor: DecimalsFor): ExportRow {
   const isPublic = tx.amount != null;
   return {
     block: Number(tx.block_number),
+    dateUtc: tx.block_time
+      ? new Date(Number(tx.block_time) * 1000).toISOString()
+      : "",
     type: k.label,
     direction: k.direction === "in" ? "In" : "Out",
     token: tx.symbol.replace(/^c/, ""),
@@ -45,8 +48,8 @@ function toRow(tx: IndexerTx, me: string, decimalsFor: DecimalsFor): ExportRow {
     // Full-precision decimal string (never scientific); "Encrypted" when confidential.
     amount: isPublic ? formatUnits(BigInt(tx.amount as string), decimals) : "Encrypted",
     visibility: isPublic ? "Public" : "Confidential",
-    from: tx.from_addr ?? ZERO_ADDR,
-    to: tx.to_addr ?? ZERO_ADDR,
+    from: tx.from_addr ?? ZERO,
+    to: tx.to_addr ?? ZERO,
     tx: tx.tx_hash,
   };
 }
@@ -120,6 +123,7 @@ export function ExportTransactionsDialog({
       const writeXlsxFile = (await import("write-excel-file")).default;
       const schema = [
         { column: "Block", type: Number, value: (r: ExportRow) => r.block, width: 12 },
+        { column: "Date (UTC)", type: String, value: (r: ExportRow) => r.dateUtc, width: 22 },
         { column: "Type", type: String, value: (r: ExportRow) => r.type, width: 13 },
         { column: "Direction", type: String, value: (r: ExportRow) => r.direction, width: 10 },
         { column: "Token", type: String, value: (r: ExportRow) => r.token, width: 10 },
@@ -198,7 +202,7 @@ export function ExportTransactionsDialog({
             {status === "running" && (
               <>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
                   Preparing your file…
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
@@ -226,7 +230,7 @@ export function ExportTransactionsDialog({
             {status === "done" && (
               <>
                 <div className="flex items-center gap-2 text-sm text-success">
-                  <CheckCircle2 className="h-5 w-5" />
+                  <CircleCheck className="h-5 w-5" />
                   Exported {fetched.toLocaleString()} transactions.
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -244,7 +248,7 @@ export function ExportTransactionsDialog({
             {status === "error" && (
               <>
                 <div className="flex items-center gap-2 text-sm text-destructive">
-                  <AlertCircle className="h-5 w-5" />
+                  <CircleAlert className="h-5 w-5" />
                   {errorMsg || "Export failed."}
                 </div>
                 <div className="flex gap-2">

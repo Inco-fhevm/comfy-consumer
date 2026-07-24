@@ -1,13 +1,21 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccount } from "wagmi";
-import { Wallet, ArrowLeftRight, Loader2, type LucideIcon } from "lucide-react";
+import {
+  Wallet,
+  ArrowLeftRight,
+  CircleHelp,
+  LoaderCircle,
+  type LucideIcon,
+} from "lucide-react";
 import Navbar from "@/components/navbar";
 import ThemeToggle from "@/components/toggle-theme";
 import ComfyLanding from "@/components/connect-wallet";
+import { useMounted } from "@/hooks/use-mounted";
+import { SUPPORT_URL } from "@/lib/constants";
 
 // trailingSlash on: paths end with slash
 const strip = (p: string) => (p.length > 1 ? p.replace(/\/+$/, "") : p);
@@ -19,15 +27,13 @@ const NAV: { name: string; path: string; icon: LucideIcon }[] = [
 
 const HomeLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = strip(usePathname());
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const { isConnected, isConnecting, isReconnecting } = useAccount();
-
-  useEffect(() => setMounted(true), []);
 
   if (!mounted || isConnecting || isReconnecting) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -37,7 +43,7 @@ const HomeLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex h-screen">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border lg:flex">
-        <div className="px-5 pb-3 pt-6">
+        <div className="px-5 pb-3 pt-4">
           <Link href="/">
             <Image
               src="/icons/comfy-logo.svg"
@@ -71,7 +77,16 @@ const HomeLayout = ({ children }: { children: React.ReactNode }) => {
           })}
         </nav>
 
-        <div className="border-t border-border px-3 py-3">
+        <div className="space-y-1 border-y border-border px-3 py-3">
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <CircleHelp className="h-[18px] w-[18px]" strokeWidth={2.1} />
+            Support
+          </a>
           <ThemeToggle />
         </div>
       </aside>

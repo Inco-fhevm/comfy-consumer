@@ -20,7 +20,7 @@ import {
 } from "@/lib/constants";
 import { getAssets, getToken, type IndexerAsset } from "@/lib/indexer";
 import { TokenInfo } from "@/types/token";
-import clientLogger from "@/lib/logging/client-logger";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 const STORAGE_KEY = "comfy.customTokens.v2";
 
@@ -146,7 +146,7 @@ export const TokenRegistryProvider = ({ children }: { children: ReactNode }) => 
   const { address } = useAccount();
   const publicClient = usePublicClient();
 
-  const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
+  const [customTokens, setCustomTokens] = useLocalStorage<TokenInfo[]>(STORAGE_KEY, []);
   const [defaultTokens, setDefaultTokens] = useState<TokenInfo[]>([]);
 
   // Polled so received tokens appear
@@ -157,19 +157,6 @@ export const TokenRegistryProvider = ({ children }: { children: ReactNode }) => 
     refetchInterval: 15000,
   });
 
-  // Not lazy init: SSR hydration
-  useEffect(() => {
-    try {
-      const rawStored = window.localStorage.getItem(STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (rawStored) setCustomTokens(JSON.parse(rawStored) as TokenInfo[]);
-    } catch (err) {
-      clientLogger.error("Failed to load custom tokens from storage", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, []);
-
   useEffect(() => {
     if (!publicClient || DEFAULT_TOKEN_ADDRESSES.length === 0) return;
     let cancelled = false;
@@ -179,24 +166,12 @@ export const TokenRegistryProvider = ({ children }: { children: ReactNode }) => 
       )
     ).then((resolved) => {
       if (cancelled) return;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDefaultTokens(resolved.filter(Boolean) as TokenInfo[]);
     });
     return () => {
       cancelled = true;
     };
   }, [publicClient]);
-
-  const persist = useCallback((next: TokenInfo[]) => {
-    setCustomTokens(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (err) {
-      clientLogger.error("Failed to persist custom tokens", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, []);
 
   const resolveToken = useCallback(
     async (raw: string): Promise<TokenInfo> => {
@@ -212,20 +187,15 @@ export const TokenRegistryProvider = ({ children }: { children: ReactNode }) => 
       if (customTokens.some((t) => t.id === info.id)) {
         throw new Error("Token already added.");
       }
-      persist([...customTokens, info]);
-      clientLogger.info("Custom token added", {
-        encrypted: info.encryptedAddress,
-        erc20: info.erc20Address,
-        symbol: info.symbol,
-      });
+      setCustomTokens([...customTokens, info]);
       return info;
     },
-    [resolveToken, customTokens, persist]
+    [resolveToken, customTokens, setCustomTokens]
   );
 
   const removeToken = useCallback(
-    (id: string) => persist(customTokens.filter((t) => t.id !== id)),
-    [customTokens, persist]
+    (id: string) => setCustomTokens(customTokens.filter((t) => t.id !== id)),
+    [customTokens, setCustomTokens]
   );
 
   // Dedupe by underlying; holdings win

@@ -21,6 +21,7 @@ export const alchemy: Provider = {
         blockHash: block.hash as `0x${string}`,
         logIndex: Number(log.index ?? log.logIndex),
         txHash: (log.transaction?.hash ?? log.transactionHash) as `0x${string}`,
+        blockTime: Number(block.timestamp ?? 0),
       };
     });
   },

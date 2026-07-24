@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS public_flows (     -- public amounts
   block_hash   TEXT    NOT NULL,
   log_index    INTEGER NOT NULL,
   tx_hash      TEXT    NOT NULL,
+  block_time   BIGINT,                         -- unix seconds (UTC)
   PRIMARY KEY (block_hash, log_index)
 );
 CREATE INDEX IF NOT EXISTS public_flows_child ON public_flows (child, block_number DESC);
@@ -58,9 +59,14 @@ CREATE TABLE IF NOT EXISTS confidential_events ( -- handle only, never amounts
   block_hash   TEXT    NOT NULL,
   log_index    INTEGER NOT NULL,
   tx_hash      TEXT    NOT NULL,
+  block_time   BIGINT,                          -- unix seconds (UTC)
   PRIMARY KEY (block_hash, log_index)
 );
 CREATE INDEX IF NOT EXISTS confidential_events_child ON confidential_events (child, block_number DESC);
+
+-- Add block_time to existing tables.
+ALTER TABLE public_flows        ADD COLUMN IF NOT EXISTS block_time BIGINT;
+ALTER TABLE confidential_events ADD COLUMN IF NOT EXISTS block_time BIGINT;
 CREATE INDEX IF NOT EXISTS confidential_events_from ON confidential_events (from_addr, block_number DESC);
 CREATE INDEX IF NOT EXISTS confidential_events_to ON confidential_events (to_addr, block_number DESC);
 
@@ -78,6 +84,27 @@ CREATE INDEX IF NOT EXISTS holdings_user ON holdings (user_address);
 CREATE TABLE IF NOT EXISTS sync_state (       -- reconciler watermark
   chain_id        INTEGER PRIMARY KEY,
   finalized_block BIGINT  NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS token_prices (     -- USD price cache
+  chain_id   INTEGER NOT NULL,
+  token      TEXT    NOT NULL,                -- underlying erc20
+  usd        NUMERIC NOT NULL,
+  confidence NUMERIC,                         -- 0..1, nullable
+  source     TEXT    NOT NULL,
+  updated_at BIGINT  NOT NULL,                -- unix seconds
+  PRIMARY KEY (chain_id, token)
+);
+
+CREATE TABLE IF NOT EXISTS consents (         -- signed ToS acceptance
+  address       TEXT NOT NULL,                -- pseudonymous, public on-chain
+  terms_version TEXT NOT NULL,
+  terms_hash    TEXT NOT NULL,
+  message       TEXT NOT NULL,                -- exact signed text
+  signature     TEXT NOT NULL,                -- proof
+  signed_at     BIGINT NOT NULL,              -- unix seconds, attested
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (address, terms_version)
 );
 `;
 
@@ -104,6 +131,59 @@ export async function insertLogs(logs: NormLog[], db: Pool | PoolClient = pool) 
        ON CONFLICT (chain_id, block_hash, log_index) DO NOTHING`,
       [cfg.chainId, l.blockNumber.toString(), l.blockHash, l.logIndex, l.txHash,
        l.address, l.topic0, jsonify(l)],
+    );
+  }
+}
+
+export interface PriceRow {
+  chainId: number;
+  token: string;
+  usd: number;
+  confidence: number | null;
+  source: string;
+  updatedAt: number; // unix seconds
+}
+
+export interface ConsentRow {
+  address: string;
+  termsVersion: string;
+  termsHash: string;
+  message: string;
+  signature: string;
+  signedAt: number;
+}
+
+// Store consent; first acceptance wins.
+export async function insertConsent(c: ConsentRow, db: Pool | PoolClient = pool) {
+  await db.query(
+    `INSERT INTO consents (address, terms_version, terms_hash, message, signature, signed_at)
+     VALUES ($1,$2,$3,$4,$5,$6)
+     ON CONFLICT (address, terms_version) DO NOTHING`,
+    [c.address.toLowerCase(), c.termsVersion, c.termsHash, c.message, c.signature, c.signedAt],
+  );
+}
+
+// Lookup a wallet's consent for a version.
+export async function getConsent(address: string, version: string, db: Pool | PoolClient = pool) {
+  const { rows } = await db.query(
+    `SELECT signed_at FROM consents WHERE address = $1 AND terms_version = $2`,
+    [address.toLowerCase(), version],
+  );
+  return rows[0] ?? null;
+}
+
+// Upsert prices; newest wins.
+export async function upsertPrices(rows: PriceRow[], db: Pool | PoolClient = pool) {
+  for (const p of rows) {
+    await db.query(
+      `INSERT INTO token_prices (chain_id, token, usd, confidence, source, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (chain_id, token) DO UPDATE SET
+         usd        = EXCLUDED.usd,
+         confidence = EXCLUDED.confidence,
+         source     = EXCLUDED.source,
+         updated_at = EXCLUDED.updated_at`,
+      [p.chainId, p.token.toLowerCase(), p.usd, p.confidence, p.source, p.updatedAt],
     );
   }
 }

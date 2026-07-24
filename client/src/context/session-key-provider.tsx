@@ -3,6 +3,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
   ReactNode,
@@ -15,10 +16,10 @@ import {
   decryptValueWithVoucher,
   type SessionVoucher,
 } from "@/lib/inco-lite";
+import { SESSION_TTL_HOURS } from "@/lib/constants";
 import clientLogger from "@/lib/logging/client-logger";
 
 // Voucher TTL; signature-free decrypts
-const SESSION_TTL_HOURS = Number(process.env.NEXT_PUBLIC_SESSION_TTL_HOURS) || 4;
 const SESSION_TTL_MS = SESSION_TTL_HOURS * 60 * 60 * 1000;
 
 interface Session {
@@ -56,6 +57,12 @@ export const SessionKeyProvider = ({ children }: { children: ReactNode }) => {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [, forceRender] = useState(0);
 
+  // Drop keys + vouchers on disconnect / account switch
+  useEffect(() => {
+    sessionsRef.current.clear();
+    pendingRef.current = null;
+  }, [address]);
+
   const getValidSession = useCallback((addr?: string): Session | null => {
     if (!addr) return null;
     const session = sessionsRef.current.get(addr.toLowerCase());
@@ -86,7 +93,6 @@ export const SessionKeyProvider = ({ children }: { children: ReactNode }) => {
         expiresAt: expiresAt.getTime(),
       });
       forceRender((n) => n + 1);
-      clientLogger.info("Session key granted", { address });
     })();
     pendingRef.current = grant;
     try {

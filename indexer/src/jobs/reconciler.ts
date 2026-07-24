@@ -1,5 +1,5 @@
 import type { PoolClient } from "pg";
-import { primary, backup } from "../chain.js";
+import { primary, backup, readBlockTimes } from "../chain.js";
 import { fromRpcLog, WATCHED_EVENTS, WATCHED_TOPIC0S } from "../codec.js";
 import { FACTORY_TOPIC } from "@comfy/config";
 import { pool, insertLogs } from "../db.js";
@@ -20,7 +20,8 @@ export async function reconcileOnce(): Promise<void> {
   if (to < from) return;
 
   const logs = await rpc.getLogs({ events: WATCHED_EVENTS, fromBlock: from, toBlock: to });
-  await insertLogs(logs.map(fromRpcLog)); // gap-fill missed webhooks
+  const times = await readBlockTimes(logs.map((l) => l.blockNumber!)); // for the UI's dates
+  await insertLogs(logs.map((l) => fromRpcLog(l, times.get(String(l.blockNumber)) ?? 0)));
 
   const onchain = new Set(logs.map((l) => `${l.blockHash}:${Number(l.logIndex)}`));
   await revertReorged(from, to, onchain);

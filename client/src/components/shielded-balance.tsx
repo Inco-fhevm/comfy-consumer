@@ -1,5 +1,5 @@
 "use client";
-import { Eye, EyeOff, RefreshCw, Lock, Loader2 } from "lucide-react";
+import { Eye, EyeOff, RefreshCw, Lock, LoaderCircle } from "lucide-react";
 import { useBalances, useTokenBalance } from "@/context/token-balances-provider";
 import { formatNumber } from "@/lib/format-number";
 
@@ -29,7 +29,7 @@ export function ShieldedBalance({
             <Lock className="h-3.5 w-3.5" /> Hidden
           </span>
         ) : b.shieldedLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <LoaderCircle className="h-4 w-4 animate-spin text-muted-foreground" />
         ) : (
           <span className="tabular font-medium">
             {formatNumber(b.shielded ?? 0)} {symbol}

@@ -9,10 +9,10 @@ import {
   pad,
   toHex,
 } from "viem";
-import { baseSepolia } from "viem/chains";
+import { ACTIVE_CHAIN, IS_TESTNET, SESSION_VERIFIER } from "@/lib/constants";
 
 const publicClient = createPublicClient({
-  chain: baseSepolia,
+  chain: ACTIVE_CHAIN,
   transport: http(),
 });
 
@@ -22,8 +22,9 @@ let lightningPromise: ReturnType<typeof Lightning.baseSepoliaTestnet> | null =
 
 export async function getConfig() {
   if (!lightningPromise) {
-    console.log(`🔧 Initializing Inco Lightning config for chain: ${baseSepolia.id}`);
-    lightningPromise = Lightning.baseSepoliaTestnet();
+    lightningPromise = IS_TESTNET
+      ? Lightning.baseSepoliaTestnet()
+      : Lightning.baseMainnet();
   }
   return lightningPromise;
 }
@@ -47,36 +48,6 @@ export async function encryptValue({
   return encryptedData as `0x${string}`;
 }
 
-export async function decryptValue({
-  walletClient,
-  handle,
-  decimals = 18,
-}: {
-  walletClient: WalletClient;
-  handle: string;
-  decimals?: number;
-}): Promise<number> {
-  const inco = await getConfig();
-
-  const attestedDecrypt = await inco.attestedDecrypt(
-    // @ts-expect-error - walletClient is not typed
-    walletClient,
-    [handle]
-  );
-
-  console.log("Attested decrypt: ", attestedDecrypt);
-
-  const formattedValue = formatUnits(
-    attestedDecrypt[0].plaintext.value as bigint,
-    decimals
-  );
-
-  return Number(formattedValue);
-}
-
-const DEFAULT_SESSION_VERIFIER =
-  "0xc34569efc25901bdd6b652164a2c8a7228b23005";
-
 export async function grantSessionKey({
   walletClient,
   granteeAddress,
@@ -92,7 +63,7 @@ export async function grantSessionKey({
     walletClient,
     granteeAddress,
     expiresAt,
-    DEFAULT_SESSION_VERIFIER
+    SESSION_VERIFIER
   );
   return voucher;
 }
@@ -133,7 +104,7 @@ export const attestedCompute = async ({
   walletClient: WalletClient;
   lhsHandle: `0x${string}`;
   op: (typeof AttestedComputeSupportedOps)[keyof typeof AttestedComputeSupportedOps];
-  rhsPlaintext: `0x${string}`;
+  rhsPlaintext: bigint;
 }) => {
   const incoConfig = await getConfig();
 
@@ -184,6 +155,5 @@ export async function getFee(): Promise<bigint> {
     functionName: "getFee",
   });
 
-  console.log("Fee: ", fee);
   return fee;
 }

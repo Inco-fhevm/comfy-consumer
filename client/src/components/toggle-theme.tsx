@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useTheme } from "next-themes";
 import { motion } from "motion/react";
 import { Sun, Moon } from "lucide-react";
+import { useMounted } from "@/hooks/use-mounted";
 
 const MODES = [
   { key: "light", Icon: Sun, label: "Light mode" },
@@ -12,9 +13,7 @@ const MODES = [
 
 export default function ThemeToggle() {
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   // Avoid hydration flash
   const current = mounted ? resolvedTheme ?? theme : undefined;

@@ -1,16 +1,18 @@
 import { ADDRESSES } from "@comfy/config";
 
 // One knob: NETWORK.
-const NETWORKS = {
-  testnet: { chainId: ADDRESSES.baseSepolia.chainId, factory: ADDRESSES.baseSepolia.wrapperFactory },
-  mainnet: { chainId: ADDRESSES.base.chainId, factory: ADDRESSES.base.wrapperFactory },
-} as const;
-
-const network = (process.env.NETWORK ?? "testnet") as keyof typeof NETWORKS;
-const net = NETWORKS[network];
-if (!net) throw new Error(`Unknown NETWORK: ${network}`);
+const ADDR_KEY = { testnet: "baseSepolia", mainnet: "base" } as const;
+const network = (process.env.NETWORK ?? "testnet") as keyof typeof ADDR_KEY;
+const netAddr = ADDRESSES[ADDR_KEY[network]];
+if (!netAddr) throw new Error(`Unknown NETWORK: ${network}`);
+const net = { chainId: netAddr.chainId, factory: netAddr.wrapperFactory };
 const factory = net.factory;
 if (!factory) throw new Error(`No factory configured for NETWORK=${network}`);
+
+// Token → mainnet price address.
+const priceRefs = Object.fromEntries(
+  Object.entries(netAddr.priceRefs ?? {}).map(([k, v]) => [k.toLowerCase(), v.toLowerCase()]),
+) as Record<string, string>;
 
 // Empty ⇒ reconciler-only (no webhook).
 const ALL_PROVIDERS = ["quicknode", "alchemy"] as const;
@@ -18,6 +20,10 @@ export type ProviderName = (typeof ALL_PROVIDERS)[number];
 const enabledProviders = (process.env.ENABLED_PROVIDERS ?? "")
   .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean) as ProviderName[];
 for (const p of enabledProviders) if (!ALL_PROVIDERS.includes(p)) throw new Error(`Bad provider: ${p}`);
+
+// Enabled unless explicitly disabled.
+const priceOverride = process.env.PRICES_ENABLED;
+const pricesEnabled = priceOverride != null ? priceOverride === "true" : true;
 
 export const cfg = {
   network,
@@ -37,6 +43,12 @@ export const cfg = {
   databaseUrl: req("DATABASE_URL"),
   port: Number(process.env.PORT ?? 8080),
   corsOrigins: (process.env.CORS_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  // Prices; interval floored at 15s.
+  testnet: netAddr.testnet,
+  priceRefs,
+  pricesEnabled,
+  priceRefreshInterval: Math.max(Number(process.env.PRICE_REFRESH_INTERVAL ?? 60_000), 15_000),
+  priceTtl: Number(process.env.PRICE_TTL_SECONDS ?? 600), // stale threshold (seconds)
 };
 
 // Enabled providers need a key.

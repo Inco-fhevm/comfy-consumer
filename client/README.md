@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# @comfy/web
 
-## Getting Started
+Next.js dApp for confidential ERC-20s on Base — shield (wrap), unshield (unwrap),
+and confidential send, with balances that stay encrypted on-chain and are decrypted
+client-side via Inco session keys.
 
-First, run the development server:
+Part of the [comfy monorepo](../README.md). Data comes from `@comfy/indexer`; addresses,
+ABIs and default tokens come from `@comfy/config`.
+
+## Develop
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install          # from the repo root (links workspaces)
+pnpm dev              # runs this app → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or from here: `cd client && pnpm dev`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm --filter @comfy/web build
+```
 
-## Learn More
+`output: standalone` is used for Docker; Vercel uses its native output.
 
-To learn more about Next.js, take a look at the following resources:
+## Configuration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+One build serves **both networks** (Base Sepolia / Base) — config is read at runtime,
+not baked into the bundle:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **`APP_*`** — read on the server per request and served via `/env`; change them at
+  container start to switch testnet ↔ mainnet. Preferred for deployments.
+- **`NEXT_PUBLIC_*`** — inlined at build; a convenient fallback for local dev.
 
-## Deploy on Vercel
+All values are **public** (chain, browser-facing indexer URL, on-chain addresses). Never
+put secrets (private/keyed RPC, API keys) in either — proxy a keyed RPC through a server
+route instead. See [.env.sample](./.env.sample) for the full list.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16 (App Router) · React 19 · TypeScript
+- wagmi + RainbowKit (injected wallets only) · viem
+- `@inco/lightning-js` for encrypt / attested-decrypt / session keys
+- TanStack Query · Tailwind + Radix (shadcn/ui) · Motion
+- zod for indexer-boundary + form validation

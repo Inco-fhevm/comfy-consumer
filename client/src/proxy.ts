@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Next 16 renamed middleware to proxy
 export function proxy(request: NextRequest) {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 

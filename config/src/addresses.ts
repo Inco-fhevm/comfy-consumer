@@ -16,7 +16,12 @@ export interface NetworkContracts {
   vault?: `0x${string}`;
   // Always surfaced for fresh wallets
   defaultTokens: DefaultToken[];
+  // Token → mainnet price address.
+  priceRefs?: Record<string, `0x${string}`>;
 }
+
+// Circle USDC on Base mainnet.
+export const BASE_MAINNET_USDC: `0x${string}` = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 
 export const ADDRESSES: Record<NetworkName, NetworkContracts> = {
   baseSepolia: {
@@ -32,6 +37,10 @@ export const ADDRESSES: Record<NetworkName, NetworkContracts> = {
       // Circle USDC on Base Sepolia.
       { erc20: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC" },
     ],
+    // Testnet USDC priced via mainnet.
+    priceRefs: {
+      "0x036CbD53842c5426634e7929541eC2318f3dCF7e": BASE_MAINNET_USDC,
+    },
   },
   base: {
     chainId: 8453,

@@ -27,6 +27,7 @@ export interface NormLog {
   blockHash: Hex;
   logIndex: number;
   txHash: Hex;
+  blockTime: number; // unix seconds (UTC); 0 if unknown
 }
 
 // Decode; unknown topic0 → empty name.
@@ -76,7 +77,7 @@ export function fromRpcLog(l: {
   blockHash: Hex | null;
   logIndex: number | null;
   transactionHash: Hex | null;
-}): NormLog {
+}, blockTime = 0): NormLog {
   return {
     address: l.address.toLowerCase() as `0x${string}`,
     topic0: l.topics[0] as Hex,
@@ -86,6 +87,7 @@ export function fromRpcLog(l: {
     blockHash: (l.blockHash ?? "0x") as Hex,
     logIndex: Number(l.logIndex ?? 0),
     txHash: (l.transactionHash ?? "0x") as Hex,
+    blockTime,
   };
 }
 

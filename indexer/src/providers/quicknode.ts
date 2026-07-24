@@ -29,6 +29,7 @@ export const quicknode: Provider = {
         blockHash: log.blockHash as `0x${string}`,
         logIndex: Number(log.logIndex),
         txHash: log.transactionHash as `0x${string}`,
+        blockTime: Number(log.blockTimestamp ?? 0),
       };
     });
   },

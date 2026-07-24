@@ -3,23 +3,13 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { useAccount, useSignMessage } from "wagmi";
 import { recoverMessageAddress } from "viem";
+import { TERMS, termsMessage } from "@comfy/config";
+import { getConsent, postConsent } from "@/lib/indexer";
 import { Button } from "@/components/ui/button";
 import { getCookie, setCookie } from "@/lib/cookies";
 
-// Bump to force re-signing
-const TERMS_VERSION = "1";
 const cookieKey = (addr: string) =>
-  `comfy.terms.${addr.toLowerCase()}.v${TERMS_VERSION}`;
-
-function termsMessage(address: string): string {
-  return [
-    "Comfy - Terms Acceptance",
-    "",
-    "I have read and agree to the Terms of Service and Privacy Policy.",
-    `Version: ${TERMS_VERSION}`,
-    `Address: ${address}`,
-  ].join("\n");
-}
+  `comfy.terms.${addr.toLowerCase()}.v${TERMS.version}`;
 
 const LEGAL_PATHS = ["/terms", "/privacy"];
 
@@ -31,26 +21,36 @@ const TermsGate = () => {
   const [accepted, setAccepted] = React.useState<boolean | null>(null);
   const [error, setError] = React.useState("");
 
+  // Server is source of truth; cookie is offline fallback.
   React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAccepted(address ? getCookie(cookieKey(address)) != null : null);
+    if (!address) {
+      setAccepted(null);
+      return;
+    }
     setError("");
+    const ctrl = new AbortController();
+    getConsent(address, ctrl.signal)
+      .then((r) => {
+        if (r.consented) setCookie(cookieKey(address), JSON.stringify({ address, version: TERMS.version }));
+        setAccepted(r.consented);
+      })
+      .catch(() => setAccepted(getCookie(cookieKey(address)) != null));
+    return () => ctrl.abort();
   }, [address]);
 
   const acceptAndSign = async (): Promise<void> => {
     if (!address) return;
     setError("");
     try {
-      const message = termsMessage(address);
+      const signedAt = Math.floor(Date.now() / 1000);
+      const message = termsMessage({ address, signedAt });
       const signature = await signMessageAsync({ message });
       const recovered = await recoverMessageAddress({ message, signature });
       if (recovered.toLowerCase() !== address.toLowerCase()) {
         throw new Error("Signature check failed.");
       }
-      setCookie(
-        cookieKey(address),
-        JSON.stringify({ address, signature, version: TERMS_VERSION })
-      );
+      await postConsent({ address, signedAt, signature });
+      setCookie(cookieKey(address), JSON.stringify({ address, version: TERMS.version }));
       setAccepted(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Signature rejected.");

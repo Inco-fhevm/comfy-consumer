@@ -1,6 +1,7 @@
 import { buildServer } from "./http/server.js";
 import { processInbox } from "./jobs/worker.js";
 import { reconcileOnce } from "./jobs/reconciler.js";
+import { refreshPrices } from "./jobs/prices.js";
 import { migrate, seedSyncState } from "./db.js";
 import { primary } from "./chain.js";
 import { cfg } from "./config.js";
@@ -19,11 +20,13 @@ async function main() {
 
   every("worker", processInbox, WORKER_EVERY);
   every("reconciler", reconcileOnce, cfg.checkInterval);
+  if (cfg.pricesEnabled) every("prices", refreshPrices, cfg.priceRefreshInterval);
 
   const app = buildServer();
   await app.listen({ host: "0.0.0.0", port: cfg.port });
   const ingest = cfg.enabledProviders.length ? cfg.enabledProviders.join("+") : "reconciler-only";
-  console.log(`indexer[${cfg.network}] on :${cfg.port} (chainId ${cfg.chainId}) ingest=${ingest} checker=${cfg.checkInterval}ms`);
+  const prices = cfg.pricesEnabled ? `${cfg.priceRefreshInterval}ms` : "off";
+  console.log(`indexer[${cfg.network}] on :${cfg.port} (chainId ${cfg.chainId}) ingest=${ingest} checker=${cfg.checkInterval}ms prices=${prices}`);
 }
 
 // Loop forever; failures never kill it.

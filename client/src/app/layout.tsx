@@ -1,5 +1,6 @@
 import { Urbanist } from "next/font/google";
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import TermsGate from "@/components/terms-gate";
@@ -33,6 +34,8 @@ export default function RootLayout({
         className={`${sans.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
+        {/* Runtime config; sets window.__COMFY_ENV__ before hydration */}
+        <Script src="/env/" strategy="beforeInteractive" />
         <QueryProvider>
           <ThemeProvider
             attribute="class"

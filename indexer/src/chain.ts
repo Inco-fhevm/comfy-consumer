@@ -50,3 +50,16 @@ export async function readBalanceHandlesMany(pairs: { ctoken: string; wallet: st
   });
   return out;
 }
+
+// Unix timestamps for the given blocks.
+export async function readBlockTimes(blocks: bigint[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const distinct = [...new Set(blocks.map(String))];
+  await Promise.all(distinct.map(async (b) => {
+    try {
+      const blk = await primary.getBlock({ blockNumber: BigInt(b) });
+      out.set(b, Number(blk.timestamp));
+    } catch { /* leave unset → 0 */ }
+  }));
+  return out;
+}

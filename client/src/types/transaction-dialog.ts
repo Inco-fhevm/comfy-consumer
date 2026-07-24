@@ -1,18 +1,6 @@
 import { TokenInfo } from "@/types/token";
-export type TransactionMode = "shield" | "withdraw" | "deposit";
 
-export interface SelectedAsset {
-  id: string;
-  name: string;
-  symbol: string;
-  amount: string | number;
-  value: string;
-  icon: string;
-  chain: string;
-  chainId: number;
-  decimals: number;
-  address: string;
-}
+export type TransactionMode = "shield" | "withdraw" | "deposit";
 
 export interface TransactionDialogProps {
   open: boolean;
@@ -21,18 +9,4 @@ export interface TransactionDialogProps {
   balance?: string | number | null;
   token: TokenInfo;
   onSuccess?: () => void;
-}
-
-export interface DialogHeaderProps {
-  mode: TransactionMode;
-  selectedAsset: SelectedAsset | null;
-  onClose: () => void;
-}
-
-export interface DialogContentProps {
-  selectedAsset: SelectedAsset | null;
-  mode: TransactionMode;
-  balance: string | number | null;
-  onAssetSelect: (asset: SelectedAsset) => void;
-  onClose: (type?: string) => void;
 }

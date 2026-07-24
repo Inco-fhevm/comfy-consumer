@@ -1,5 +1,5 @@
 "use client";
-import { Loader2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { LoaderCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { formatUsd, formatUsdExact } from "@/lib/prices";
 import { IS_TESTNET } from "@/lib/constants";
 import { useBalances } from "@/context/token-balances-provider";
@@ -52,7 +52,7 @@ const TotalBalance = () => {
         )}
 
         {busy ? (
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <LoaderCircle className="h-5 w-5 animate-spin text-muted-foreground" />
         ) : allRevealed ? (
           <div className="flex items-center gap-1">
             {/* Controls act on all tokens */}
@@ -72,8 +72,9 @@ const TotalBalance = () => {
 
       <p className="mt-2 text-[13px] text-muted-foreground">
         {allRevealed
-          ? `Public and shielded, across all tokens. ${IS_TESTNET ? "(showing total tokens [testnet])":""}`
-          : `Decrypt all tokens to reveal your total. ${IS_TESTNET ? "(showing total tokens [testnet])":""}`}
+          ? "Public and shielded USD, across priced tokens."
+          : "Decrypt all tokens to reveal your total."}
+        {IS_TESTNET && " · Testnet"}
       </p>
     </div>
   );
