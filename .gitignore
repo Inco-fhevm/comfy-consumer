@@ -28,3 +28,5 @@ pnpm-debug.log*
 
 .agents/
 .claude/
+# Claude Code skills lockfile
+skills-lock.json
