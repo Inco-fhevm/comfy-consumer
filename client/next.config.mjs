@@ -33,9 +33,8 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-  // Pin file-tracing to this app; avoids picking a stray parent lockfile
-  outputFileTracingRoot: __dirname,
-  // standalone only for Docker; Vercel uses native output
+  // Docker standalone only; on Vercel let native monorepo tracing win
+  outputFileTracingRoot: process.env.VERCEL ? undefined : __dirname,
   output: process.env.VERCEL ? undefined : "standalone",
   images: {
     unoptimized: true,
