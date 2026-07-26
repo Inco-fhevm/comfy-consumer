@@ -6,8 +6,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DIST = fileURLToPath(new URL("../dist", import.meta.url));
+// Matches both ESM `from "react"` and CJS `require("react")`.
 const CLIENT_IMPORT =
-  /from\s*['"](react|react\/jsx-runtime|react-dom|@tanstack\/react-query|wagmi|motion|motion\/react)['"]/;
+  /(?:from|require\()\s*['"](react|react\/jsx-runtime|react-dom|@tanstack\/react-query|wagmi|motion|motion\/react)['"]/;
 const DIRECTIVE = '"use client";\n';
 
 function walk(dir) {
@@ -17,7 +18,7 @@ function walk(dir) {
       walk(p);
       continue;
     }
-    if (!p.endsWith(".js")) continue;
+    if (!p.endsWith(".js") && !p.endsWith(".cjs")) continue;
     const code = readFileSync(p, "utf8");
     if (code.startsWith('"use client"') || code.startsWith("'use client'")) continue;
     if (CLIENT_IMPORT.test(code)) {

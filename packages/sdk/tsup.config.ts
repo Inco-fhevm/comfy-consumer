@@ -6,7 +6,7 @@ export default defineConfig({
     "react/index": "src/react/index.ts",
     "ui/index": "src/ui/index.ts",
   },
-  format: ["esm"],
+  format: ["esm", "cjs"],
   target: "es2022",
   platform: "neutral",
   dts: true,

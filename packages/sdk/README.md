@@ -123,8 +123,10 @@ import "@comfy/sdk/ui/styles.css"; // once
 - **Confirmations**: writes wait for 5 blocks by default; override with `confirmations` on
   the client / `<ComfyProvider>`.
 - **Smooth pagination**: pass `{ keepPreviousData: true }` to `useHistory` / `useAssets`.
-- Ships compiled ESM `dist` — don't add to Next.js `transpilePackages`.
-- Node scripts need a bundler or `tsx` (Inco's ESM uses extensionless imports).
+- Ships compiled **ESM + CJS** `dist` (dual `import`/`require`, own types) — don't add to
+  Next.js `transpilePackages`.
+- Node scripts: `require("@comfy/sdk")` (CJS) runs directly; ESM `import` needs a bundler or
+  `tsx` (Inco's ESM uses extensionless imports). Requires Node ≥ 20.
 - In a pnpm monorepo, dedupe `wagmi` / `@tanstack/react-query` to the app's copy
   (`config.resolve.alias.wagmi$ = require.resolve("wagmi")`).
 

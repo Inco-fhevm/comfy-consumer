@@ -4,24 +4,33 @@
   "private": true,
   "type": "module",
   "sideEffects": ["**/*.css"],
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
     },
     "./react": {
-      "types": "./dist/react/index.d.ts",
-      "import": "./dist/react/index.js"
+      "import": { "types": "./dist/react/index.d.ts", "default": "./dist/react/index.js" },
+      "require": { "types": "./dist/react/index.d.cts", "default": "./dist/react/index.cjs" }
     },
     "./ui": {
-      "types": "./dist/ui/index.d.ts",
-      "import": "./dist/ui/index.js"
+      "import": { "types": "./dist/ui/index.d.ts", "default": "./dist/ui/index.js" },
+      "require": { "types": "./dist/ui/index.d.cts", "default": "./dist/ui/index.cjs" }
     },
     "./ui/styles.css": "./dist/ui/styles.css",
     "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "react": ["./dist/react/index.d.ts"],
+      "ui": ["./dist/ui/index.d.ts"]
+    }
+  },
+  "engines": {
+    "node": ">=20"
   },
   "files": ["dist"],
   "scripts": {
