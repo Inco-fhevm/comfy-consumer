@@ -43,6 +43,16 @@ export const cfg = {
   databaseUrl: req("DATABASE_URL"),
   port: Number(process.env.PORT ?? 8080),
   corsOrigins: (process.env.CORS_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  // Behind a proxy (Cloudflare/Railway/nginx) so req.ip is the real client.
+  // Set TRUST_PROXY=false only if the indexer is directly internet-exposed.
+  trustProxy: process.env.TRUST_PROXY == null ? true : process.env.TRUST_PROXY === "true",
+  // Per-IP rate limit (excludes the HMAC-verified webhook).
+  rateLimit: {
+    enabled: process.env.RATE_LIMIT_ENABLED == null ? true : process.env.RATE_LIMIT_ENABLED === "true",
+    max: Number(process.env.RATE_LIMIT_MAX ?? 120),
+    timeWindow: process.env.RATE_LIMIT_WINDOW ?? "1 minute",
+    allowList: (process.env.RATE_LIMIT_ALLOWLIST ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  },
   // Prices; interval floored at 15s.
   testnet: netAddr.testnet,
   priceRefs,
