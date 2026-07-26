@@ -35,8 +35,9 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-  // Docker standalone only; on Vercel let native monorepo tracing win
-  outputFileTracingRoot: process.env.VERCEL ? undefined : __dirname,
+  // Docker standalone only; trace from the monorepo root so @comfy/sdk is bundled.
+  // On Vercel, let its native monorepo tracing win.
+  outputFileTracingRoot: process.env.VERCEL ? undefined : path.join(__dirname, ".."),
   output: process.env.VERCEL ? undefined : "standalone",
   images: {
     unoptimized: true,

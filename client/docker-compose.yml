@@ -1,6 +1,9 @@
 services:
   nextjs-app:
-    build: .
+    # Repo-root context so @comfy/config + @comfy/sdk workspaces resolve
+    build:
+      context: ..
+      dockerfile: client/Dockerfile
     ports:
       - "3000:3000"
     environment:

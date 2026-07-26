@@ -1,43 +1,45 @@
-    FROM node:22-alpine AS base
-    
-    FROM base AS deps
-    # Install Python and build tools needed for native packages
-    RUN apk add --no-cache libc6-compat python3 make g++
-    WORKDIR /app
-    COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-    RUN \
-      if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-      elif [ -f package-lock.json ]; then npm ci --legacy-peer-deps; \
-      elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
-      else echo "Lockfile not found." && exit 1; \
-      fi
-    
-    FROM base AS builder
-    WORKDIR /app
-    COPY --from=deps /app/node_modules ./node_modules
-    COPY . .
-    RUN npm run build
-    
-    FROM base AS runner
+FROM node:22-slim AS base
+RUN corepack enable
+WORKDIR /repo
+
+# deps: install the whole workspace from manifests (cached until a manifest changes)
+FROM base AS deps
+# Native addons in the web3 stack need a toolchain
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY config/package.json ./config/
+COPY indexer/package.json ./indexer/
+COPY client/package.json ./client/
+COPY packages/sdk/package.json ./packages/sdk/
+COPY examples/playground/package.json ./examples/playground/
+COPY examples/node/package.json ./examples/node/
+RUN pnpm install --frozen-lockfile
+
+# builder: bring deps + source, build the SDK, then the app
+FROM base AS builder
+COPY --from=deps /repo ./
+COPY . .
+RUN pnpm --filter @comfy/sdk build
+RUN pnpm --filter @comfy/web build
+
+# runner: slim standalone server
+FROM base AS runner
+ENV NODE_ENV=production
+ENV LOG_LEVEL=info
+ENV SERVICE_NAME=comfy-consumer
+ENV APP_VERSION=1.0.0
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+RUN groupadd --system --gid 1001 nodejs \
+  && useradd --system --uid 1001 --gid nodejs nextjs
 WORKDIR /app
-ENV NODE_ENV production
-# Logging defaults (Winston)
-ENV LOG_LEVEL info
-ENV SERVICE_NAME comfy-consumer
-ENV APP_VERSION 1.0.0
-
-# Install curl for health checks
-RUN apk add --no-cache curl
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-COPY --from=builder /app/public ./public
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Standalone is rooted at the repo (outputFileTracingRoot), so paths keep client/*
+COPY --from=builder --chown=nextjs:nodejs /repo/client/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /repo/client/.next/static ./client/.next/static
+COPY --from=builder --chown=nextjs:nodejs /repo/client/public ./client/public
 USER nextjs
 EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-CMD ["node", "server.js"]
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+CMD ["node", "client/server.js"]
