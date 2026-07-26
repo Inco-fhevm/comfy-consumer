@@ -1,6 +1,7 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
@@ -18,20 +19,42 @@ import { ExportTransactionsDialog } from "@/components/export-transactions-dialo
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DesktopRow, MobileRow, pageWindow } from "./transaction-rows";
 
-const PAGE = 19;
+const PAGE = 11;
 
 export default function TransactionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <TransactionsContent />
+    </Suspense>
+  );
+}
+
+function TransactionsContent() {
   const { address, isConnected } = useAccount();
   const { tokens } = useTokenRegistry();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  // Adjust state during render, not effect
-  const [page, setPage] = useState(1);
-  const [prevAddr, setPrevAddr] = useState(address);
-  if (address !== prevAddr) {
-    setPrevAddr(address);
-    setPage(1);
-  }
+  // Page lives in the URL (?page=N) so it's shareable and back/forward works.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+
+  const setPageUrl = (p: number, replace = false) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (p <= 1) params.delete("page");
+    else params.set("page", String(p));
+    const qs = params.toString();
+    const url = qs ? `${pathname}?${qs}` : pathname;
+    if (replace) router.replace(url, { scroll: false });
+    else router.push(url, { scroll: false });
+  };
+
+  // Reset to page 1 on wallet change.
+  useEffect(() => {
+    if (searchParams.get("page")) setPageUrl(1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["transactions", address?.toLowerCase(), page],
@@ -55,7 +78,7 @@ export default function TransactionsPage() {
   const total = data?.total ?? 0;
   const anyConfidential = items.some((tx) => tx.handle);
 
-  const goto = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
+  const goto = (p: number) => setPageUrl(Math.min(Math.max(1, p), totalPages));
 
   const stateCard = (msg: React.ReactNode) => (
     <div className="surface rounded-2xl p-10 text-center text-sm text-muted-foreground">
@@ -76,7 +99,7 @@ export default function TransactionsPage() {
                 onClick={() => refetch()}
                 disabled={isFetching}
                 aria-label="Refresh"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-[0.98] disabled:opacity-60 sm:px-3"
+                className="btn-secondary inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-60 sm:px-3"
               >
                 <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
                 <span className="hidden sm:inline">Refresh</span>
@@ -86,7 +109,7 @@ export default function TransactionsPage() {
               <button
                 onClick={() => setShowAll((v) => !v)}
                 aria-label={showAll ? "Hide amounts" : "Reveal amounts"}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-[0.98] sm:px-3"
+                className="btn-secondary inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium sm:px-3"
               >
                 {showAll ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 <span className="hidden sm:inline">

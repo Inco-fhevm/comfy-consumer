@@ -69,23 +69,28 @@ export function registerReadApi(app: FastifyInstance) {
   app.get("/wallets/:address/transactions", async (req: any) => {
     const wallet = addr(req.params.address);
     const { limit, offset, page } = pageParams(req);
+    // Exclude an unwrap's internal legs (burn flow + transfer to 0x0) so the
+    // count and the rows match what the client shows.
+    const ZERO = "0x0000000000000000000000000000000000000000";
     const total = await count(
-      `SELECT (SELECT count(*) FROM confidential_events WHERE from_addr = $1 OR to_addr = $1)
-            + (SELECT count(*) FROM public_flows WHERE account = $1) AS c`,
-      [wallet],
+      `SELECT (SELECT count(*) FROM confidential_events
+               WHERE (from_addr = $1 OR to_addr = $1) AND (to_addr IS NULL OR to_addr <> $2))
+            + (SELECT count(*) FROM public_flows WHERE account = $1 AND kind <> 'burn') AS c`,
+      [wallet, ZERO],
     );
     const { rows } = await pool.query(
       `WITH tx AS (
          SELECT 'transfer' AS type, child, kind, from_addr, to_addr, handle, NULL::numeric AS amount, block_number, block_time, log_index, tx_hash
-         FROM confidential_events WHERE from_addr = $1 OR to_addr = $1
+         FROM confidential_events
+         WHERE (from_addr = $1 OR to_addr = $1) AND (to_addr IS NULL OR to_addr <> $4)
          UNION ALL
          SELECT 'flow' AS type, child, kind, account, NULL, NULL, amount, block_number, block_time, log_index, tx_hash
-         FROM public_flows WHERE account = $1)
+         FROM public_flows WHERE account = $1 AND kind <> 'burn')
        SELECT tx.type, tx.child AS token, c.symbol, c.decimals, tx.kind, tx.from_addr, tx.to_addr,
               tx.handle, tx.amount, tx.block_number, tx.block_time, tx.tx_hash
        FROM tx JOIN children c ON c.address = tx.child
        ORDER BY tx.block_number DESC, tx.log_index DESC LIMIT $2 OFFSET $3`,
-      [wallet, limit, offset],
+      [wallet, limit, offset, ZERO],
     );
     return paged(rows, total, limit, page);
   });

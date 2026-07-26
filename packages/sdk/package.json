@@ -1,0 +1,66 @@
+{
+  "name": "@comfy/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": ["**/*.css"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "import": "./dist/ui/index.js"
+    },
+    "./ui/styles.css": "./dist/ui/styles.css",
+    "./package.json": "./package.json"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup && node scripts/preserve-use-client.mjs && cp src/ui/styles.css dist/ui/styles.css",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "@inco/lightning-js": "^1.0.0",
+    "@tanstack/react-query": "^5.65.0",
+    "motion": "^12.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "viem": "^2.31.0",
+    "wagmi": "^2.15.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": { "optional": true },
+    "motion": { "optional": true },
+    "react": { "optional": true },
+    "react-dom": { "optional": true },
+    "wagmi": { "optional": true }
+  },
+  "devDependencies": {
+    "@comfy/config": "workspace:*",
+    "@inco/lightning-js": "^1.0.0",
+    "@tanstack/react-query": "^5.65.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.2",
+    "motion": "^12.42.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "viem": "^2.31.0",
+    "wagmi": "^2.15.6"
+  }
+}

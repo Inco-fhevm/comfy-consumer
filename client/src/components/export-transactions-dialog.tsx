@@ -1,13 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, LoaderCircle, CircleCheck, CircleAlert, X } from "lucide-react";
+import { Download, LoaderCircle, CircleCheck, CircleAlert } from "lucide-react";
 import { formatUnits } from "viem";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { getTransactions, type IndexerTx } from "@/lib/indexer";
 import { classifyKind, keepTx, ZERO } from "@/lib/tx-format";
 import clientLogger from "@/lib/logging/client-logger";
@@ -176,29 +171,23 @@ export function ExportTransactionsDialog({
       <button
         onClick={start}
         aria-label="Export transactions"
-        className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-[0.98] sm:px-3"
+        className="btn-secondary inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium"
       >
         <Download className="h-4 w-4" />
         <span className="hidden sm:inline">Export</span>
       </button>
 
-      <Dialog open={open} onOpenChange={(v) => (v ? null : close())}>
-        <DialogContent className="w-[400px] max-w-[calc(100vw-2rem)] gap-0 p-0">
-          <DialogHeader className="flex flex-row items-center justify-between px-6 py-4">
-            <DialogTitle className="text-lg font-semibold">
-              Export transactions
-            </DialogTitle>
-            <button
-              onClick={close}
-              aria-label="Close"
-              disabled={status === "running"}
-              className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-40"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </DialogHeader>
-
-          <div className="space-y-4 px-6 pb-6">
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={(v) => {
+          if (!v) close();
+        }}
+        title="Export transactions"
+        onClose={close}
+        closeDisabled={status === "running"}
+        desktopWidthClassName="w-[400px]"
+      >
+        <div className="space-y-4 px-8 pb-6">
             {status === "running" && (
               <>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -267,9 +256,8 @@ export function ExportTransactionsDialog({
                 </div>
               </>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </ResponsiveDialog>
     </>
   );
 }

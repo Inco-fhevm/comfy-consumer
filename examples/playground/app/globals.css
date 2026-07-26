@@ -1,0 +1,56 @@
+/* HSL design tokens — the widgets read these (hsl(var(--primary)) …).
+   Class-based so the next-themes toggle switches them. */
+:root {
+  color-scheme: light;
+  --background: 240 20% 96%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --primary: 221 90% 59%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 16% 94%;
+  --secondary-foreground: 0 0% 18%;
+  --muted-foreground: 0 0% 34%;
+  --destructive: 0 72% 51%;
+  --success: 145 63% 37%;
+  --border: 240 11% 90%;
+  --input: 240 11% 90%;
+  --ring: 221 90% 59%;
+  --radius: 0.85rem;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: 0 0% 8%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 13%;
+  --card-foreground: 0 0% 98%;
+  --primary: 221 90% 62%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 17%;
+  --secondary-foreground: 0 0% 98%;
+  --muted-foreground: 0 0% 76%;
+  --destructive: 0 62% 52%;
+  --success: 145 55% 55%;
+  --border: 0 0% 18%;
+  --input: 0 0% 20%;
+  --ring: 221 90% 62%;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: system-ui, -apple-system, sans-serif;
+}
+h1 {
+  font-size: 1.6rem;
+}
+h2 {
+  font-size: 1rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.6rem;
+}
