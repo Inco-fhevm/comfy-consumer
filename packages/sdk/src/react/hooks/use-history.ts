@@ -1,5 +1,5 @@
 "use client";
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery, keepPreviousData, type UseQueryResult } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import { useComfy } from "./use-comfy";
 import type { HistoryArgs, TxPage } from "../../core/indexer";
@@ -18,5 +18,6 @@ export function useHistory(
     queryFn: ({ signal }) => comfy.history({ ...args, address: owner, signal }),
     enabled: !!owner && (options?.enabled ?? false),
     refetchInterval: options?.refetchInterval,
+    placeholderData: options?.keepPreviousData ? keepPreviousData : undefined,
   });
 }

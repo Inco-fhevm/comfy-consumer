@@ -12,7 +12,7 @@ export type { TokenMeta } from "./core/token-registry";
 
 export type { Address, Hex, Amount, NetworkName, DepositStep, TokenConfig } from "./core/types";
 export type { ComfyContext } from "./core/context";
-export type { DepositArgs } from "./core/wrap";
+export type { DepositArgs, ApproveArgs } from "./core/wrap";
 export type { WithdrawArgs } from "./core/unwrap";
 export type { SendArgs } from "./core/transfer";
 export type { DecryptArgs } from "./core/decrypt";

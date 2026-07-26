@@ -8,4 +8,6 @@ export interface WriteOptions<TData, TVars> {
 export interface ReadOptions {
   enabled?: boolean;
   refetchInterval?: number;
+  // Keep showing the last page while the next loads (smooth pagination).
+  keepPreviousData?: boolean;
 }

@@ -88,6 +88,9 @@ import "@comfy/sdk/ui/styles.css"; // once
 
 - **Private RPC**: `node({ rpcUrl })`, `browser({ rpcUrl })`, or `<ComfyProvider rpcUrl>`.
   In React, if `rpcUrl` is omitted, reads use your app's wagmi RPC automatically.
+- **Confirmations**: writes wait for 5 blocks by default; override with `confirmations` on
+  the client / `<ComfyProvider>`.
+- **Smooth pagination**: pass `{ keepPreviousData: true }` to `useHistory` / `useAssets`.
 - Ships compiled ESM `dist` — don't add to Next.js `transpilePackages`.
 - Node scripts need a bundler or `tsx` (Inco's ESM uses extensionless imports).
 - In a pnpm monorepo, dedupe `wagmi` / `@tanstack/react-query` to the app's copy

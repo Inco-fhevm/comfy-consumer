@@ -11,6 +11,7 @@ export interface ComfyProviderProps {
   sessionTtlHours?: number;
   // Private RPC for reads. If omitted, the app's wagmi RPC is used.
   rpcUrl?: string;
+  confirmations?: number;
   // Tokens the widgets expose by default.
   tokens?: TokenConfig[];
   children: ReactNode;
@@ -22,6 +23,7 @@ export function ComfyProvider({
   indexerUrl,
   sessionTtlHours,
   rpcUrl,
+  confirmations,
   tokens = [],
   children,
 }: ComfyProviderProps) {
@@ -30,8 +32,8 @@ export function ComfyProvider({
 
   // Rebuilt only on config change.
   const client = useMemo(
-    () => ComfyClient.browser({ network, indexerUrl, sessionTtlHours, rpcUrl }),
-    [network, indexerUrl, sessionTtlHours, rpcUrl]
+    () => ComfyClient.browser({ network, indexerUrl, sessionTtlHours, rpcUrl, confirmations }),
+    [network, indexerUrl, sessionTtlHours, rpcUrl, confirmations]
   );
 
   // Sync wallet; drop stale session.

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@comfy/config": "workspace:*",
+    "@comfy/sdk": "workspace:*",
     "@inco/lightning-js": "^1.0.0",
     "@opentelemetry/api": "^1.9.1",
     "@radix-ui/react-alert-dialog": "^1.1.14",

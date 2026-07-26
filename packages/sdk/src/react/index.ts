@@ -12,6 +12,7 @@ export { useBalance, useBalances } from "./hooks/use-balances";
 export { usePublicBalance } from "./hooks/use-public-balance";
 export { useDecrypt } from "./hooks/use-decrypt";
 export { useDeposit } from "./hooks/use-deposit";
+export { useApprove } from "./hooks/use-approve";
 export { useWithdraw } from "./hooks/use-withdraw";
 export { useConfidentialSend } from "./hooks/use-confidential-send";
 

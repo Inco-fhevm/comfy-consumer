@@ -17,6 +17,7 @@ export interface ComfyContext {
   indexerUrl?: string;
   mode: "browser" | "node";
   sessionTtlHours: number;
+  confirmations: number;
   // Lazy, instance-scoped caches (no module globals).
   incoRef: { current?: Promise<LightningInstance> };
   sessionRef: { current?: Session };

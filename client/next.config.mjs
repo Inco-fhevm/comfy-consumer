@@ -1,7 +1,9 @@
 import path from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 // Report-Only until connect-src (RPC, indexer, Inco) is verified in-app, then enforce
 const csp = [
@@ -56,6 +58,12 @@ const nextConfig = {
     config.resolve.extensionAlias = {
       ...config.resolve.extensionAlias,
       ".js": [".ts", ".tsx", ".js", ".jsx"],
+    };
+    // Dedupe: @comfy/sdk must share the app's wagmi / react-query (React context).
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      wagmi$: require.resolve("wagmi"),
+      "@tanstack/react-query$": require.resolve("@tanstack/react-query"),
     };
     config.plugins.push(
       new webpack.IgnorePlugin({ resourceRegExp: /^@x402\// })

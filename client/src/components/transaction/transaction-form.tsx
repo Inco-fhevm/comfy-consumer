@@ -6,31 +6,17 @@ import {
   MotionConfig,
   useReducedMotion,
 } from "motion/react";
-import {
-  useAccount,
-  useWriteContract,
-  usePublicClient,
-  useWalletClient,
-} from "wagmi";
-import { parseUnits, erc20Abi } from "viem";
 import { Check, LoaderCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import {
-  ERC20_ABI,
-  CTOKEN_ABI,
-  WRAPPER_FACTORY_ABI,
-  WRAPPER_FACTORY_ADDRESS,
-  explorerTx,
-} from "@/lib/constants";
+import { useAccount } from "wagmi";
+import { useApprove, useDeposit, useWithdraw, useComfy } from "@comfy/sdk/react";
+import { explorerTx } from "@/lib/constants";
 import { formatNumber } from "@/lib/format-number";
 import { sanitizeAmountInput } from "@/lib/utils";
-import { confirmTx } from "@/lib/tx";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
 import IconBuilder from "../icon-builder";
 import { ShieldedBalance } from "../shielded-balance";
 import { TokenInfo } from "@/types/token";
-import { attestedCompute } from "@/lib/inco-lite";
-import { AttestedComputeSupportedOps } from "@inco/lightning-js/lite";
 import clientLogger from "@/lib/logging/client-logger";
 import { recordTransaction } from "@/lib/metrics";
 
@@ -54,15 +40,54 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [amount, setAmount] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [phase, setPhase] = useState<ShieldPhase>("idle");
-  const [processing, setProcessing] = useState<boolean>(false);
   const [successHash, setSuccessHash] = useState<string | null>(null);
 
-  const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
-  const { data: walletClient } = useWalletClient();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
   const reduce = useReducedMotion();
+  const { address } = useAccount();
+  const comfy = useComfy();
+
+  const approveMut = useApprove({
+    onSuccess: () => setPhase("approved"),
+    onError: (e) => {
+      clientLogger.error("Approve failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      setError("Approval failed. Please try again.");
+      setPhase("idle");
+    },
+  });
+  const deposit = useDeposit({
+    onSuccess: (d) => {
+      toast.success(`Shielded ${amount} ${token.symbol}`);
+      recordTransaction("shield", "success");
+      onSuccess?.();
+      setSuccessHash(d.hash);
+    },
+    onError: (e) => {
+      clientLogger.error("Wrap failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      recordTransaction("shield", "error");
+      setError("Wrap failed. Please try again.");
+      setPhase("approved");
+    },
+  });
+  const withdraw = useWithdraw({
+    onSuccess: (d) => {
+      toast.success(`Unshielded ${amount} ${token.symbol}`);
+      recordTransaction("unshield", "success");
+      onSuccess?.();
+      setSuccessHash(d.hash);
+    },
+    onError: (e) => {
+      clientLogger.error("Unwrap failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      recordTransaction("unshield", "error");
+      setError("Transaction failed. Please try again.");
+    },
+  });
 
   const walletBalance = Number(currentBalance) || 0;
   const amountNum = Number(amount) || 0;
@@ -79,165 +104,46 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   // Skip approve if already allowed
   useEffect(() => {
-    if (mode !== "shield" || !address || !WRAPPER_FACTORY_ADDRESS || !publicClient) return;
-    if (!validShield || phase === "approving" || phase === "wrapping") return;
+    if (mode !== "shield" || !address || !validShield) return;
+    if (phase === "approving" || phase === "wrapping") return;
     let cancelled = false;
-    (async () => {
-      try {
-        const allowance = (await publicClient.readContract({
-          address: token.erc20Address,
-          abi: erc20Abi,
-          functionName: "allowance",
-          args: [address, WRAPPER_FACTORY_ADDRESS],
-        })) as bigint;
-        if (!cancelled)
-          setPhase(allowance >= parseUnits(amount, token.decimals) ? "approved" : "idle");
-      } catch {
+    comfy
+      .allowanceOf({ token: token.erc20Address, amount })
+      .then((ok) => {
+        if (!cancelled) setPhase(ok ? "approved" : "idle");
+      })
+      .catch(() => {
         // leave phase as-is
-      }
-    })();
+      });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amount, address, mode, token.erc20Address, token.decimals, validShield]);
+  }, [amount, address, mode, token.erc20Address, validShield]);
 
-  // Shield: approve then wrap
+  // Shield step 1: approve the factory
   const approve = async () => {
-    if (!address || !WRAPPER_FACTORY_ADDRESS) return;
     setError("");
+    await checkAndSwitchNetwork();
     setPhase("approving");
-    try {
-      await checkAndSwitchNetwork();
-      const amountWei = parseUnits(amount, token.decimals);
-      const allowance = (await publicClient!.readContract({
-        address: token.erc20Address,
-        abi: erc20Abi,
-        functionName: "allowance",
-        args: [address, WRAPPER_FACTORY_ADDRESS],
-      })) as bigint;
-
-      if (allowance < amountWei) {
-        const hash = await writeContractAsync({
-          address: token.erc20Address,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [WRAPPER_FACTORY_ADDRESS, amountWei],
-        });
-        await confirmTx(publicClient!, hash);
-      }
-      setPhase("approved");
-    } catch (err) {
-      clientLogger.error("Approve failed", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      setError("Approval failed. Please try again.");
-      setPhase("idle");
-    }
+    approveMut.mutate({ token: token.erc20Address, amount });
   };
 
-  const wrap = async () => {
-    if (!address || !WRAPPER_FACTORY_ADDRESS) return;
+  // Shield step 2: wrap (already approved)
+  const wrap = () => {
     setError("");
     setPhase("wrapping");
-    try {
-      const amountWei = parseUnits(amount, token.decimals);
-      const hash = await writeContractAsync({
-        address: WRAPPER_FACTORY_ADDRESS,
-        abi: WRAPPER_FACTORY_ABI,
-        functionName: "wrap",
-        args: [token.erc20Address, amountWei],
-      });
-      await confirmTx(publicClient!, hash);
-      toast.success(`Shielded ${amount} ${token.symbol}`);
-      recordTransaction("shield", "success");
-      onSuccess?.();
-      setSuccessHash(hash);
-    } catch (err) {
-      clientLogger.error("Wrap failed", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      recordTransaction("shield", "error");
-      setError("Wrap failed. Please try again.");
-      setPhase("approved");
-    }
+    deposit.mutate({ token: token.erc20Address, amount });
   };
 
-  // Unshield: attest checkpoint, then unwrap
+  // Unshield: attest checkpoint + unwrap
   const unshield = async () => {
-    if (!address || !walletClient) return;
     setError("");
-    setProcessing(true);
-    try {
-      await checkAndSwitchNetwork();
-      const ctoken = token.encryptedAddress;
-      const amountWei = parseUnits(amount, token.decimals);
-
-      const period = (await publicClient!.readContract({
-        address: ctoken,
-        abi: CTOKEN_ABI,
-        functionName: "periodOfIncreasingBalanceCounter",
-        args: [address],
-      })) as bigint;
-      const counter = (await publicClient!.readContract({
-        address: ctoken,
-        abi: CTOKEN_ABI,
-        functionName: "lastIncomingTransferCounter",
-        args: [address, period],
-      })) as bigint;
-      const checkpointHandle = (await publicClient!.readContract({
-        address: ctoken,
-        abi: CTOKEN_ABI,
-        functionName: "balanceCheckpoint",
-        args: [address, period, counter],
-      })) as `0x${string}`;
-
-      const { attestation, signature } = await attestedCompute({
-        walletClient,
-        lhsHandle: checkpointHandle,
-        op: AttestedComputeSupportedOps.Ge,
-        rhsPlaintext: amountWei,
-      });
-      const args = [
-        address,
-        amountWei,
-        period,
-        counter,
-        { handle: attestation.handle as `0x${string}`, value: attestation.value },
-        signature,
-      ] as const;
-
-      const gas = await publicClient!.estimateContractGas({
-        address: ctoken,
-        abi: CTOKEN_ABI,
-        functionName: "unwrap",
-        args,
-        account: address,
-      });
-      const hash = await writeContractAsync({
-        address: ctoken,
-        abi: CTOKEN_ABI,
-        functionName: "unwrap",
-        args,
-        gas,
-      });
-      await confirmTx(publicClient!, hash);
-      toast.success(`Unshielded ${amount} ${token.symbol}`);
-      recordTransaction("unshield", "success");
-      onSuccess?.();
-      setSuccessHash(hash);
-    } catch (err) {
-      clientLogger.error("Unwrap failed", {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      recordTransaction("unshield", "error");
-      setError("Transaction failed. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
+    await checkAndSwitchNetwork();
+    withdraw.mutate({ token: token.erc20Address, amount });
   };
 
-  const busy = phase === "approving" || phase === "wrapping" || processing;
+  const busy = phase === "approving" || phase === "wrapping" || withdraw.isPending;
   const symbolShown = mode === "shield" ? token.symbol : token.encryptedSymbol;
 
   return (
@@ -356,22 +262,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               </AnimatePresence>
 
               <button
-                onClick={
-                  mode === "withdraw" ? unshield : phase === "approved" ? wrap : approve
-                }
+                onClick={mode === "withdraw" ? unshield : phase === "approved" ? wrap : approve}
                 disabled={(mode === "shield" ? !validShield : !validWithdraw) || busy}
                 className="btn-primary flex h-12 w-full items-center justify-center gap-2 rounded-full font-semibold"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.span
-                    key={`${mode}-${phase}-${processing}`}
+                    key={`${mode}-${phase}-${busy}`}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     className="inline-flex items-center gap-2"
                   >
                     {mode === "withdraw" ? (
-                      processing ? (
+                      withdraw.isPending ? (
                         <>
                           <LoaderCircle className="h-4 w-4 animate-spin" /> Unshielding…
                         </>

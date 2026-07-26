@@ -3,10 +3,10 @@ import type { Account, PublicClient, WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { resolveNetwork, type ResolvedNetwork } from "./network";
 import { makePublicClient } from "./chain";
-import { DEFAULT_SESSION_TTL_HOURS } from "../internal/constants";
+import { DEFAULT_SESSION_TTL_HOURS, TX_CONFIRMATIONS } from "../internal/constants";
 import type { ComfyContext } from "./context";
 import type { Address, Hex, NetworkName } from "./types";
-import { deposit, type DepositArgs } from "./wrap";
+import { deposit, approve, allowanceOf, type DepositArgs, type ApproveArgs } from "./wrap";
 import { withdraw, type WithdrawArgs } from "./unwrap";
 import { confidentialSend, type SendArgs } from "./transfer";
 import { balanceOf, balances, publicBalanceOf } from "./balances";
@@ -30,6 +30,7 @@ export interface BrowserOptions {
   rpcUrl?: string;
   indexerUrl?: string;
   sessionTtlHours?: number;
+  confirmations?: number;
 }
 
 export interface NodeOptions {
@@ -39,6 +40,7 @@ export interface NodeOptions {
   publicClient?: PublicClient;
   rpcUrl?: string;
   indexerUrl?: string;
+  confirmations?: number;
 }
 
 function baseContext(
@@ -46,7 +48,8 @@ function baseContext(
   publicClient: PublicClient,
   indexerUrl: string | undefined,
   mode: "browser" | "node",
-  sessionTtlHours: number
+  sessionTtlHours: number,
+  confirmations: number,
 ): ComfyContext {
   return {
     network: net.network,
@@ -57,6 +60,7 @@ function baseContext(
     indexerUrl,
     mode,
     sessionTtlHours,
+    confirmations,
     incoRef: {},
     sessionRef: {},
     decimalsCache: new Map(),
@@ -74,13 +78,15 @@ export class ComfyClient {
   // Browser: session-key decrypts.
   static browser(opts: BrowserOptions): ComfyClient {
     const net = resolveNetwork(opts.network);
-    const publicClient = opts.publicClient ?? makePublicClient(net.chain, opts.rpcUrl);
+    const publicClient =
+      opts.publicClient ?? makePublicClient(net.chain, opts.rpcUrl);
     const ctx = baseContext(
       net,
       publicClient,
       opts.indexerUrl,
       "browser",
-      opts.sessionTtlHours ?? DEFAULT_SESSION_TTL_HOURS
+      opts.sessionTtlHours ?? DEFAULT_SESSION_TTL_HOURS,
+      opts.confirmations ?? TX_CONFIRMATIONS,
     );
     ctx.walletClient = opts.walletClient;
     ctx.account = opts.walletClient?.account;
@@ -90,13 +96,26 @@ export class ComfyClient {
   // Node: direct signing.
   static node(opts: NodeOptions): ComfyClient {
     const net = resolveNetwork(opts.network);
-    const publicClient = opts.publicClient ?? makePublicClient(net.chain, opts.rpcUrl);
+    const publicClient =
+      opts.publicClient ?? makePublicClient(net.chain, opts.rpcUrl);
     const account =
-      opts.account ?? (opts.privateKey ? privateKeyToAccount(opts.privateKey) : undefined);
-    const ctx = baseContext(net, publicClient, opts.indexerUrl, "node", DEFAULT_SESSION_TTL_HOURS);
+      opts.account ??
+      (opts.privateKey ? privateKeyToAccount(opts.privateKey) : undefined);
+    const ctx = baseContext(
+      net,
+      publicClient,
+      opts.indexerUrl,
+      "node",
+      DEFAULT_SESSION_TTL_HOURS,
+      opts.confirmations ?? TX_CONFIRMATIONS,
+    );
     ctx.account = account;
     ctx.walletClient = account
-      ? createWalletClient({ account, chain: net.chain, transport: http(opts.rpcUrl) })
+      ? createWalletClient({
+          account,
+          chain: net.chain,
+          transport: http(opts.rpcUrl),
+        })
       : undefined;
     return new ComfyClient(ctx);
   }
@@ -104,6 +123,14 @@ export class ComfyClient {
   // Writes
   deposit(args: DepositArgs) {
     return deposit(this.context, args);
+  }
+  // ERC-20 approve to the factory (for the two-step shield UX).
+  approve(args: ApproveArgs) {
+    return approve(this.context, args);
+  }
+  // Is the factory already approved for `amount`?
+  allowanceOf(args: ApproveArgs) {
+    return allowanceOf(this.context, args);
   }
   withdraw(args: WithdrawArgs) {
     return withdraw(this.context, args);

@@ -2,7 +2,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useHistory } from "@comfy/sdk/react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,7 +11,6 @@ import {
   LoaderCircle,
   RefreshCw,
 } from "lucide-react";
-import { getTransactions } from "@/lib/indexer";
 import { useTokenRegistry } from "@/context/token-registry-provider";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { keepTx } from "@/lib/tx-format";
@@ -56,13 +55,10 @@ function TransactionsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]);
 
-  const { data, isLoading, isError, isFetching, refetch } = useQuery({
-    queryKey: ["transactions", address?.toLowerCase(), page],
-    queryFn: ({ signal }) =>
-      getTransactions(address as string, { page, limit: PAGE }, signal),
-    enabled: !!address,
-    placeholderData: (prev) => prev,
-  });
+  const { data, isLoading, isError, isFetching, refetch } = useHistory(
+    { page, limit: PAGE },
+    { enabled: true, keepPreviousData: true }
+  );
 
   // Indexer per-row decimals can be wrong
   const decimalsFor = useMemo(() => {

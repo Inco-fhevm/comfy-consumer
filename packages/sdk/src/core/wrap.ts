@@ -13,6 +13,47 @@ export interface DepositArgs {
   onStep?: (step: DepositStep) => void;
 }
 
+export interface ApproveArgs {
+  token: Address;
+  amount: Amount;
+}
+
+// Is the factory already approved for `amount`?
+export async function allowanceOf(ctx: ComfyContext, args: ApproveArgs): Promise<boolean> {
+  const factory = ctx.addresses.wrapperFactory;
+  if (!factory) return false;
+  const owner = requireAddress(ctx);
+  const decimals = await erc20Decimals(ctx, args.token);
+  const amountWei = toBaseUnits(args.amount, decimals);
+  const allowance = (await ctx.publicClient.readContract({
+    address: args.token,
+    abi: ERC20_ABI,
+    functionName: "allowance",
+    args: [owner, factory],
+  })) as bigint;
+  return allowance >= amountWei;
+}
+
+// Approve the factory to pull `amount` of the ERC-20.
+export async function approve(ctx: ComfyContext, args: ApproveArgs): Promise<{ hash: Hex }> {
+  const factory = ctx.addresses.wrapperFactory;
+  if (!factory) throw new ComfyError("WRAPPER_NOT_FOUND", `No wrapper factory on ${ctx.network}.`);
+  const walletClient = requireWallet(ctx);
+  const account = requireAccount(ctx);
+  const decimals = await erc20Decimals(ctx, args.token);
+  const amountWei = toBaseUnits(args.amount, decimals);
+  const hash = await walletClient.writeContract({
+    address: args.token,
+    abi: ERC20_ABI,
+    functionName: "approve",
+    args: [factory, amountWei],
+    account,
+    chain: ctx.chain,
+  });
+  await confirmTx(ctx.publicClient, hash, ctx.confirmations);
+  return { hash: hash as Hex };
+}
+
 // Approve factory, then wrap.
 export async function deposit(
   ctx: ComfyContext,
@@ -45,7 +86,7 @@ export async function deposit(
       account,
       chain: ctx.chain,
     });
-    await confirmTx(ctx.publicClient, approveHash);
+    await confirmTx(ctx.publicClient, approveHash, ctx.confirmations);
   }
 
   args.onStep?.("wrapping");
@@ -57,6 +98,6 @@ export async function deposit(
     account,
     chain: ctx.chain,
   });
-  await confirmTx(ctx.publicClient, hash);
+  await confirmTx(ctx.publicClient, hash, ctx.confirmations);
   return { hash: hash as Hex, amount: amountWei };
 }

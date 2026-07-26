@@ -6,19 +6,11 @@ import {
   MotionConfig,
   useReducedMotion,
 } from "motion/react";
-import { parseUnits } from "viem";
-import {
-  useAccount,
-  usePublicClient,
-  useWalletClient,
-  useWriteContract,
-} from "wagmi";
 import { toast } from "sonner";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
-import { encryptValue, getFee } from "@/lib/inco-lite";
-import { explorerTx, CTOKEN_ABI } from "@/lib/constants";
-import { confirmTx } from "@/lib/tx";
+import { useConfidentialSend } from "@comfy/sdk/react";
+import { explorerTx } from "@/lib/constants";
 import { addressSchema, amountSchema, firstError } from "@/lib/validation";
 import { sanitizeAmountInput } from "@/lib/utils";
 import { useNetworkSwitch } from "@/hooks/use-network-switch";
@@ -82,33 +74,17 @@ const ConfidentialSendDialog: React.FC<ConfidentialSendDialogProps> = ({
   const busy = phase !== "idle";
   const reduce = useReducedMotion() ?? false;
 
-  const { address: userAddress } = useAccount();
   const { checkAndSwitchNetwork } = useNetworkSwitch();
-  const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
-  const { data: walletClient } = useWalletClient();
+  const send = useConfidentialSend();
 
   const confidentialSend = async (): Promise<void> => {
     await checkAndSwitchNetwork();
-    if (!walletClient?.account) throw new Error("Wallet not connected.");
-
-    const ciphertext = await encryptValue({
-      value: parseUnits(amount, token.decimals),
-      address: userAddress as `0x${string}`,
-      contractAddress: token.encryptedAddress,
+    const { hash } = await send.mutateAsync({
+      token: token.erc20Address,
+      to: address as `0x${string}`,
+      amount,
     });
-
-    const fee = await getFee();
-    const txHash = await writeContractAsync({
-      address: token.encryptedAddress,
-      abi: CTOKEN_ABI,
-      functionName: "confidentialTransfer",
-      args: [address as `0x${string}`, ciphertext],
-      value: fee,
-    });
-
-    await confirmTx(publicClient!, txHash);
-    setHash(txHash);
+    setHash(hash);
   };
 
   const handleSend = async (): Promise<void> => {

@@ -43,6 +43,6 @@ export async function confidentialSend(
     account,
     chain: ctx.chain,
   });
-  await confirmTx(ctx.publicClient, hash);
+  await confirmTx(ctx.publicClient, hash, ctx.confirmations);
   return { hash: hash as Hex };
 }
