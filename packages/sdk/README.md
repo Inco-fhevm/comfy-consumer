@@ -18,13 +18,27 @@ and `motion` are peer deps.
 import { ComfyClient } from "@comfy/sdk";
 
 // browser (popup-free decrypts via a session key)
-const comfy = ComfyClient.browser({ network: "baseSepolia", walletClient });
+const comfy = ComfyClient.browser({
+  network: "baseSepolia", // "base" | "baseSepolia"
+  walletClient,           // viem WalletClient (signer)
+  // optional:
+  rpcUrl,                 // private RPC, else public
+  indexerUrl,             // activity / holdings source
+  confirmations: 5,       // blocks writes wait for
+  sessionTtlHours: 24,    // session-key lifetime
+  publicClient,           // reuse a viem client
+});
 
 // node (signs with a private key)
-const comfy = ComfyClient.node({ network: "base", privateKey: "0x…" });
+const comfy = ComfyClient.node({
+  network: "base",
+  privateKey: "0x…",      // or account: viem Account
+  // optional: rpcUrl, indexerUrl, confirmations, publicClient
+});
 ```
 
-`network`: `"baseSepolia"` (testnet) or `"base"` (mainnet).
+`network`: `"baseSepolia"` (testnet) or `"base"` (mainnet). Only `network` + a signer are
+required; everything else has sane defaults.
 
 ```ts
 comfy.deposit({ token, amount })              // shield
@@ -59,8 +73,26 @@ import { ComfyProvider } from "@comfy/sdk/react";
 </ComfyProvider>
 ```
 
-Hooks: `useDeposit`, `useWithdraw`, `useConfidentialSend`, `useHistory`, `useAssets`,
-`useBalance`, `useBalances`, `usePublicBalance`, `useDecrypt`, `useTokens`, `useComfy`.
+Hooks: `useDeposit`, `useApprove`, `useWithdraw`, `useConfidentialSend`, `useHistory`,
+`useAssets`, `useBalance`, `useBalances`, `usePublicBalance`, `useDecrypt`, `useTokens`,
+`useComfy`.
+
+Writes are mutations; reads are queries:
+
+```tsx
+// write
+const deposit = useDeposit();
+deposit.mutate({ token, amount });   // or await deposit.mutateAsync(...)
+
+// read (off by default)
+const { data, isLoading, refetch } = useHistory(
+  { page: 1, limit: 10 },
+  { enabled: true, keepPreviousData: true },
+);
+
+// escape hatch to the core client
+const comfy = useComfy();
+```
 
 **Reads don't auto-run.** History/balance hooks need `{ enabled: true }` or `refetch()` — no
 background polling by default.
