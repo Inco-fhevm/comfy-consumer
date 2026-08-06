@@ -8,6 +8,7 @@ import { useConfidentialSend } from "../../react/hooks/use-confidential-send";
 import { useChainGuard } from "../../react/hooks/use-chain-guard";
 import { useComfy } from "../../react/hooks/use-comfy";
 import { sanitizeAmountInput } from "../../core/amounts";
+import { amountFontSize } from "../primitives/amount-input";
 import type { Address } from "../../core/types";
 import { TxButton } from "../primitives/tx-button";
 import { SuccessResult } from "../primitives/success-result";
@@ -131,6 +132,7 @@ export function SendView({
           ) : (
             <input
               className="comfy-amount"
+              style={{ fontSize: amountFontSize(amount.length) }}
               inputMode="decimal"
               placeholder="0"
               value={amount}

@@ -264,6 +264,7 @@
   background: transparent;
   border: none;
   outline: none;
+  padding: 0;
   text-align: center;
   font: inherit;
   font-size: 2.5rem; /* overridden inline as digits are added */
