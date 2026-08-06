@@ -11,7 +11,7 @@ export interface AmountInputProps {
 }
 
 const BASE_REM = 2.5;
-const MIN_REM = 1.15;
+const MIN_REM = 1.75;
 const STEP_REM = 0.05;
 
 // useLayoutEffect warns during SSR.
