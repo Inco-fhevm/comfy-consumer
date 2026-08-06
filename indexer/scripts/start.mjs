@@ -12,15 +12,19 @@ function run() {
     const child = spawn(
       "ponder",
       ["start", "--port", String(PORT), "--schema", SCHEMA],
-      { stdio: ["inherit", "inherit", "pipe"], env: process.env },
+      { stdio: ["inherit", "pipe", "pipe"], env: process.env },
     );
 
+    // Ponder's logger writes to stdout, so watch both streams.
     let conflict = false;
-    child.stderr.on("data", (chunk) => {
-      const text = chunk.toString();
-      if (CONFLICT.test(text)) conflict = true;
-      process.stderr.write(text);
-    });
+    const watch = (src, sink) =>
+      src.on("data", (chunk) => {
+        const text = chunk.toString();
+        if (CONFLICT.test(text)) conflict = true;
+        sink.write(text);
+      });
+    watch(child.stdout, process.stdout);
+    watch(child.stderr, process.stderr);
 
     const forward = (sig) => child.kill(sig);
     for (const sig of ["SIGTERM", "SIGINT"]) process.on(sig, () => forward(sig));
