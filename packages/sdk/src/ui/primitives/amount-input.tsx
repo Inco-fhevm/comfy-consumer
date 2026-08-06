@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { sanitizeAmountInput } from "../../core/amounts";
 
 export interface AmountInputProps {
@@ -11,22 +12,35 @@ export interface AmountInputProps {
 
 const BASE_REM = 2.5;
 const MIN_REM = 1.15;
-// Chars that still fit at full size.
-const FITS = 9;
+const STEP_REM = 0.05;
 
-// Shrink proportionally so the text keeps roughly one width, then stop and let
-// it overflow as before rather than becoming unreadable.
-export function amountFontSize(length: number): string {
-  if (length <= FITS) return `${BASE_REM}rem`;
-  return `${Math.max(MIN_REM, (BASE_REM * FITS) / length).toFixed(3)}rem`;
+// useLayoutEffect warns during SSR.
+const useFitEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+// Shrink only once the text actually overflows, measured — box width, font and
+// digit widths all vary, so a character count cannot predict it.
+export function useAutoFitFont(ref: RefObject<HTMLInputElement | null>, value: string) {
+  useFitEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let size = BASE_REM;
+    el.style.fontSize = `${size}rem`;
+    while (size > MIN_REM && el.scrollWidth > el.clientWidth) {
+      size = Math.max(MIN_REM, size - STEP_REM);
+      el.style.fontSize = `${size}rem`;
+    }
+  }, [ref, value]);
 }
 
 export function AmountInput({ value, onChange, symbol, disabled, autoFocus }: AmountInputProps) {
+  const ref = useRef<HTMLInputElement>(null);
+  useAutoFitFont(ref, value);
+
   return (
     <div className="comfy-amount-box">
       <input
+        ref={ref}
         className="comfy-amount"
-        style={{ fontSize: amountFontSize(value.length) }}
         inputMode="decimal"
         placeholder="0"
         value={value}

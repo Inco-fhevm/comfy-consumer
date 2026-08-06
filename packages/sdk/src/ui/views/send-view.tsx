@@ -1,6 +1,6 @@
 "use client";
 import { humanizeError } from "../../core/errors";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { formatEther, isAddress } from "viem";
@@ -8,7 +8,7 @@ import { useConfidentialSend } from "../../react/hooks/use-confidential-send";
 import { useChainGuard } from "../../react/hooks/use-chain-guard";
 import { useComfy } from "../../react/hooks/use-comfy";
 import { sanitizeAmountInput } from "../../core/amounts";
-import { amountFontSize } from "../primitives/amount-input";
+import { useAutoFitFont } from "../primitives/amount-input";
 import type { Address } from "../../core/types";
 import { TxButton } from "../primitives/tx-button";
 import { SuccessResult } from "../primitives/success-result";
@@ -33,6 +33,7 @@ export function SendView({
   const reduce = useReducedMotion() ?? false;
   const comfy = useComfy();
   const [amount, setAmount] = useState("");
+  const amountRef = useRef<HTMLInputElement>(null);
   const [to, setTo] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [hash, setHash] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export function SendView({
     },
   });
   const busy = phase !== "idle";
+  useAutoFitFont(amountRef, busy ? "" : amount);
 
   useEffect(() => {
     onBusyChange?.(busy);
@@ -131,8 +133,8 @@ export function SendView({
             </motion.div>
           ) : (
             <input
+              ref={amountRef}
               className="comfy-amount"
-              style={{ fontSize: amountFontSize(amount.length) }}
               inputMode="decimal"
               placeholder="0"
               value={amount}
