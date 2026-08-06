@@ -155,3 +155,17 @@ export function BaseIcon({ size = 16 }: { size?: number }) {
     </svg>
   );
 }
+
+export function IncoIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true">
+      <path
+        fill="#3673F5"
+        d="M0 6.4C0 2.86538 2.86538 0 6.4 0H33.6C37.1346 0 40 2.86538 40 6.4V33.6C40 37.1346 37.1346 40 33.6 40H6.4C2.86538 40 0 37.1346 0 33.6V6.4Z"
+      />
+      <path fill="#fff" d="M7.6001 27.5999L11.6321 12.3999H16.0001L11.9681 27.5999H7.6001Z" />
+      <path fill="#fff" d="M16.0001 27.5999L20.0321 12.3999H24.4001L20.3681 27.5999H16.0001Z" />
+      <path fill="#fff" d="M24.4001 27.5999L28.4321 12.3999H32.8001L28.7681 27.5999H24.4001Z" />
+    </svg>
+  );
+}

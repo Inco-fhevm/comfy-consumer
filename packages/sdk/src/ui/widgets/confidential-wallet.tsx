@@ -11,9 +11,10 @@ import { SendView } from "../views/send-view";
 import { HistoryView } from "../views/history-view";
 import { TokenSelectView } from "../views/token-select-view";
 import { Trigger, type TriggerProps } from "../primitives/dialog-trigger";
+import { IncoIcon } from "../primitives/icons";
 
 const TITLES: Record<WalletView, string> = {
-  home: "Confidential Wallet",
+  home: "Inco",
   shield: "Shield",
   unshield: "Unshield",
   send: "Send",
@@ -41,7 +42,11 @@ export function ConfidentialWallet({
   maxVisibleTokens,
   discoverTokens,
   trigger,
-  triggerLabel = "Confidential Wallet",
+  triggerLabel = (
+    <>
+      <IncoIcon /> Inco
+    </>
+  ),
   triggerClassName,
 }: ConfidentialWalletProps) {
   const configured = useResolvedTokens(tokens, { token, symbol });

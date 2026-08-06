@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export interface TriggerProps {
   // Fully custom trigger element (overrides the default button).
   trigger?: ReactNode;
-  triggerLabel?: string;
+  triggerLabel?: ReactNode;
   triggerClassName?: string;
 }
 
