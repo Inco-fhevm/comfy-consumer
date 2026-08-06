@@ -266,10 +266,16 @@
   outline: none;
   text-align: center;
   font: inherit;
-  font-size: 2.5rem;
+  font-size: 2.5rem; /* overridden inline as digits are added */
   font-weight: 600;
   letter-spacing: -0.01em;
   color: inherit;
+  transition: font-size 0.12s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .comfy-amount {
+    transition: none;
+  }
 }
 .comfy-amount:disabled {
   opacity: 0.6;
