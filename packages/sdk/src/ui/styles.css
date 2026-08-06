@@ -248,7 +248,7 @@
 .comfy-amount-box {
   border: 1px solid hsl(var(--border, 240 11% 90%));
   border-radius: calc(var(--comfy-radius) + 0.2rem);
-  padding: 1.65rem;
+  padding: 1.65rem 0;
   text-align: center;
   transition:
     border-color 0.15s ease,
