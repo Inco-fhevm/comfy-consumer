@@ -1,5 +1,5 @@
 import { createPublicClient, http } from "viem";
-import type { Chain, Hash, PublicClient } from "viem";
+import type { Chain, Hash, PublicClient, TransactionReceipt } from "viem";
 import { TX_CONFIRMATIONS } from "../internal/constants";
 import { ComfyError } from "./errors";
 import type { ComfyContext } from "./context";
@@ -14,11 +14,12 @@ export async function confirmTx(
   publicClient: PublicClient,
   hash: Hash,
   confirmations = TX_CONFIRMATIONS
-): Promise<void> {
+): Promise<TransactionReceipt> {
   const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations });
   if (receipt.status !== "success") {
     throw new ComfyError("TX_REVERTED", "Transaction reverted", { cause: receipt });
   }
+  return receipt;
 }
 
 // viem asserts the chain, never switches.

@@ -5,6 +5,7 @@ import { erc20Decimals, confidentialOf, deployedWrapperOf } from "./tokens";
 import { toBaseUnits } from "./amounts";
 import { confirmTx, ensureChain } from "./chain";
 import { ComfyError } from "./errors";
+import { decodeEventLog, getAddress, type TransactionReceipt } from "viem";
 import type { Address, Amount, DepositStep, Hex } from "./types";
 
 export interface DepositArgs {
@@ -83,9 +84,13 @@ export async function ensureWrapper(
     account,
     chain: ctx.chain,
   });
-  await confirmTx(ctx.publicClient, hash, SETUP_CONFIRMATIONS);
+  const receipt = await confirmTx(ctx.publicClient, hash, SETUP_CONFIRMATIONS);
 
-  const created = await deployedWrapperOf(ctx, token);
+  // Read it from the receipt; a load-balanced RPC may lag a read-back.
+  const fromLog = wrapperFromReceipt(receipt, factory);
+  if (fromLog) return fromLog;
+
+  const created = await pollForWrapper(ctx, token);
   if (!created) {
     throw new ComfyError(
       "WRAPPER_NOT_FOUND",
@@ -93,6 +98,33 @@ export async function ensureWrapper(
     );
   }
   return created;
+}
+
+function wrapperFromReceipt(receipt: TransactionReceipt, factory: Address): Address | null {
+  for (const log of receipt.logs) {
+    if (log.address.toLowerCase() !== factory.toLowerCase()) continue;
+    try {
+      const { eventName, args } = decodeEventLog({
+        abi: WRAPPER_FACTORY_ABI,
+        topics: log.topics,
+        data: log.data,
+      });
+      if (eventName === "WrapperCreated") return getAddress((args as any).ctoken) as Address;
+    } catch {
+      // Not our event.
+    }
+  }
+  return null;
+}
+
+// The registry write may not be visible on the node we read next.
+async function pollForWrapper(ctx: ComfyContext, token: Address): Promise<Address | null> {
+  for (let i = 0; i < 8; i++) {
+    const found = await deployedWrapperOf(ctx, token).catch(() => null);
+    if (found) return found;
+    await new Promise((r) => setTimeout(r, 1_000));
+  }
+  return null;
 }
 
 // Is the cToken already approved for `amount`?
