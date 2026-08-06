@@ -18,6 +18,8 @@ build/
 # Test / coverage
 coverage/
 
+indexer/.ponder/
+
 # Logs
 *.log
 npm-debug.log*

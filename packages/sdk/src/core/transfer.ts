@@ -5,9 +5,21 @@ import { CTOKEN_ABI } from "./abis";
 import { confidentialOf, erc20Decimals } from "./tokens";
 import { encryptAmount, getFee } from "./inco";
 import { toBaseUnits } from "./amounts";
-import { confirmTx } from "./chain";
+import { confirmTx, ensureChain } from "./chain";
 import { ComfyError } from "./errors";
 import type { Address, Amount, Hex } from "./types";
+
+// Narrow to the payable overload.
+type PayableTransfer = Extract<
+  (typeof CTOKEN_ABI)[number],
+  { name: "confidentialTransfer"; stateMutability: "payable" }
+>;
+const CONFIDENTIAL_TRANSFER_ABI = CTOKEN_ABI.filter(
+  (item): item is PayableTransfer =>
+    item.type === "function" &&
+    item.name === "confidentialTransfer" &&
+    item.stateMutability === "payable",
+);
 
 export interface SendArgs {
   token: Address;
@@ -31,12 +43,13 @@ export async function confidentialSend(
   const decimals = await erc20Decimals(ctx, args.token);
   const amountWei = toBaseUnits(args.amount, decimals);
 
+  await ensureChain(ctx);
   const ciphertext = await encryptAmount(ctx, amountWei, from, cToken);
   const fee = await getFee(ctx);
 
   const hash = await walletClient.writeContract({
     address: cToken,
-    abi: CTOKEN_ABI,
+    abi: CONFIDENTIAL_TRANSFER_ABI,
     functionName: "confidentialTransfer",
     args: [args.to, ciphertext],
     value: fee,

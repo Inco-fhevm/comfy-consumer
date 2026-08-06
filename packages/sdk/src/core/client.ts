@@ -5,13 +5,21 @@ import { resolveNetwork, type ResolvedNetwork } from "./network";
 import { makePublicClient } from "./chain";
 import { DEFAULT_SESSION_TTL_HOURS, TX_CONFIRMATIONS } from "../internal/constants";
 import type { ComfyContext } from "./context";
-import type { Address, Hex, NetworkName } from "./types";
-import { deposit, approve, allowanceOf, type DepositArgs, type ApproveArgs } from "./wrap";
+import type { Address, DepositStep, Hex, NetworkName } from "./types";
+import {
+  deposit,
+  approve,
+  allowanceOf,
+  ensureWrapper,
+  type DepositArgs,
+  type ApproveArgs,
+} from "./wrap";
 import { withdraw, type WithdrawArgs } from "./unwrap";
 import { confidentialSend, type SendArgs } from "./transfer";
-import { balanceOf, balances, publicBalanceOf } from "./balances";
+import { getFee } from "./inco";
+import { balanceOf, balances, publicBalanceOf, publicBalances } from "./balances";
 import { decryptValue, decryptHandles, type DecryptArgs } from "./decrypt";
-import { confidentialOf, underlyingOf } from "./tokens";
+import { confidentialOf, underlyingOf, deployedWrapperOf } from "./tokens";
 import {
   history,
   assets,
@@ -124,19 +132,27 @@ export class ComfyClient {
   deposit(args: DepositArgs) {
     return deposit(this.context, args);
   }
-  // ERC-20 approve to the factory (for the two-step shield UX).
+  // ERC-20 approve to the cToken (for the two-step shield UX).
   approve(args: ApproveArgs) {
     return approve(this.context, args);
   }
-  // Is the factory already approved for `amount`?
+  // Is the cToken already approved for `amount`?
   allowanceOf(args: ApproveArgs) {
     return allowanceOf(this.context, args);
+  }
+  // Deploy this token's wrapper if it has none.
+  ensureWrapper(args: { token: Address; onStep?: (step: DepositStep) => void }) {
+    return ensureWrapper(this.context, args.token, args.onStep);
   }
   withdraw(args: WithdrawArgs) {
     return withdraw(this.context, args);
   }
   confidentialSend(args: SendArgs) {
     return confidentialSend(this.context, args);
+  }
+  // Inco ciphertext fee (wei) a confidential send pays.
+  networkFee() {
+    return getFee(this.context);
   }
 
   // History (indexer)
@@ -165,6 +181,10 @@ export class ComfyClient {
     return balances(this.context, args.tokens);
   }
   // Public wallet balance of the underlying ERC-20.
+  publicBalances(args: { tokens: Address[] }) {
+    return publicBalances(this.context, args.tokens);
+  }
+
   publicBalanceOf(args: { token: Address }) {
     return publicBalanceOf(this.context, args.token);
   }
@@ -172,6 +192,10 @@ export class ComfyClient {
   // Resolvers
   confidentialOf(args: { token: Address }) {
     return confidentialOf(this.context, args.token);
+  }
+  // Deployed cToken, or null if not created yet.
+  wrapperOf(args: { token: Address }) {
+    return deployedWrapperOf(this.context, args.token);
   }
   underlyingOf(args: { cToken: Address }) {
     return underlyingOf(this.context, args.cToken);

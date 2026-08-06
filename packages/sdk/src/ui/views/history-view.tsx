@@ -1,4 +1,5 @@
 "use client";
+import { humanizeError } from "../../core/errors";
 import { useEffect, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
@@ -43,7 +44,7 @@ export function HistoryView({ address, pageSize = 8, pollMs = 0 }: HistoryViewPr
     setShowAll(false);
   }
 
-  const { data, isLoading, isError, isFetching } = useQuery({
+  const { data, isLoading, isError, isFetching, error } = useQuery({
     queryKey: ["comfy", "history", owner?.toLowerCase(), page, pageSize],
     queryFn: ({ signal }) => comfy.history({ address: owner, page, limit: pageSize, signal }),
     enabled: !!owner,
@@ -88,7 +89,12 @@ export function HistoryView({ address, pageSize = 8, pollMs = 0 }: HistoryViewPr
         <SpinnerIcon size={20} />
       </div>
     );
-  if (isError) return <div className="comfy-error comfy-center">Failed to load history.</div>;
+  if (isError)
+    return (
+      <div className="comfy-error comfy-center">
+        {humanizeError(error) ?? "Failed to load history."}
+      </div>
+    );
   if (items.length === 0) return <div className="comfy-muted comfy-center">No activity yet.</div>;
 
   const goto = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
@@ -126,7 +132,10 @@ export function HistoryView({ address, pageSize = 8, pollMs = 0 }: HistoryViewPr
                 : null;
 
           return (
-            <div className="comfy-item" key={`${tx.tx_hash}-${tx.block_number}-${tx.log_index ?? i}`}>
+            <div
+              className="comfy-item comfy-row-in"
+              key={`${tx.tx_hash}-${tx.block_number}-${tx.log_index ?? i}`}
+            >
               <div className="comfy-row">
                 <span className="comfy-badge">{k.label}</span>
                 <div>
@@ -140,8 +149,11 @@ export function HistoryView({ address, pageSize = 8, pollMs = 0 }: HistoryViewPr
               <div className="comfy-row">
                 {value != null ? (
                   <span
-                    className={k.direction === "in" ? "comfy-success" : undefined}
-                    style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}
+                    // Decrypted amounts ease into focus; public ones are already visible.
+                    className={`comfy-tabular${k.direction === "in" ? " comfy-success" : ""}${
+                      tx.amount == null ? " comfy-reveal" : ""
+                    }`}
+                    style={{ fontWeight: 600 }}
                   >
                     {sign}
                     {fmt(value)}

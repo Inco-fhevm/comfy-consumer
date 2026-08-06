@@ -198,7 +198,7 @@
         "internalType": "euint256"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -256,7 +256,7 @@
         "internalType": "euint256"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -319,7 +319,7 @@
         "internalType": "euint256"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -829,6 +829,33 @@
   },
   {
     "type": "error",
+    "name": "ERC7984AccountUninitialized",
+    "inputs": [
+      {
+        "name": "holder",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC7984InsufficientFeePayment",
+    "inputs": [
+      {
+        "name": "required",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "provided",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "ERC7984InvalidDecryptionAttestation",
     "inputs": []
   },
@@ -851,6 +878,17 @@
         "name": "sender",
         "type": "address",
         "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC7984TokenUnauthorizedUseOfEncryptedAmount",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "bytes32",
+        "internalType": "euint256"
       }
     ]
   },
@@ -899,17 +937,6 @@
   },
   {
     "type": "error",
-    "name": "ERC7984ZeroBalance",
-    "inputs": [
-      {
-        "name": "holder",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
     "name": "HandleMismatch",
     "inputs": []
   },
@@ -935,6 +962,16 @@
   },
   {
     "type": "error",
+    "name": "ReentrantCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RefundFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "SafeERC20FailedOperation",
     "inputs": [
       {
@@ -952,6 +989,11 @@
   {
     "type": "error",
     "name": "WrapperFactoryIsZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAmount",
     "inputs": []
   }
 ]

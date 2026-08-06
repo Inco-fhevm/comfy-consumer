@@ -4,7 +4,7 @@ import { CTOKEN_ABI } from "./abis";
 import { confidentialOf, erc20Decimals } from "./tokens";
 import { attestedGe } from "./inco";
 import { toBaseUnits } from "./amounts";
-import { confirmTx } from "./chain";
+import { confirmTx, ensureChain } from "./chain";
 import type { Address, Amount, Hex } from "./types";
 
 export interface WithdrawArgs {
@@ -44,6 +44,7 @@ export async function withdraw(
     args: [owner, period, counter],
   })) as Hex;
 
+  await ensureChain(ctx);
   const { attestation, signature } = await attestedGe(ctx, checkpointHandle, amountWei);
 
   const unwrapArgs = [

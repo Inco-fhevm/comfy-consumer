@@ -1,7 +1,3 @@
-import factoryAbi from "../abis/WrapperFactory.json" with { type: "json" };
-import ctokenAbi from "../abis/CToken.json" with { type: "json" };
-import erc20Abi from "../abis/ERC20.json" with { type: "json" };
-
-export const WRAPPER_FACTORY_ABI = factoryAbi;
-export const CTOKEN_ABI = ctokenAbi;
-export const ERC20_ABI = erc20Abi;
+export { cTokenAbi as CTOKEN_ABI } from "./generated/cToken.js";
+export { wrapperFactoryAbi as WRAPPER_FACTORY_ABI } from "./generated/wrapperFactory.js";
+export { erc20Abi as ERC20_ABI } from "./generated/erc20.js";

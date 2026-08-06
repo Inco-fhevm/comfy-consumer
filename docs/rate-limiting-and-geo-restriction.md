@@ -1,6 +1,6 @@
 # Rate limiting & geo restriction
 
-How to protect the **indexer** (Fastify + Postgres, public read API) and the **app**
+How to protect the **indexer** (Ponder + Hono + Postgres, public read API) and the **app**
 (Next.js on Vercel) from abuse and restrict access by country.
 
 > **CORS is not a control.** It's browser-enforced only and trivially bypassed by
@@ -9,7 +9,7 @@ How to protect the **indexer** (Fastify + Postgres, public read API) and the **a
 ## Recommended architecture
 
 Put the indexer **behind Cloudflare** (free tier is enough to start) and do rate limiting
-+ geo blocking at the edge, before traffic reaches Fastify. Then **lock the origin** to
++ geo blocking at the edge, before traffic reaches the indexer. Then **lock the origin** to
 only accept Cloudflare IPs (host firewall or Cloudflare Tunnel) — otherwise people bypass
 every rule by hitting the origin IP directly.
 
@@ -32,25 +32,25 @@ Cloudflare → Security → Rate limiting rules, e.g. *">60 req/min from one IP 
 `/wallets/*` → block 10 min"*. Zero server load, stops distributed abuse.
 
 ### Indexer (implemented — defense-in-depth)
-`@fastify/rate-limit`, registered in `indexer/src/http/server.ts`, per-IP, all env-tunable:
+A Hono middleware in `indexer/src/api/rate-limit.ts`, per-IP fixed window, env-tunable:
 
 | Env | Default | Meaning |
 | --- | --- | --- |
 | `RATE_LIMIT_ENABLED` | `true` | Toggle the limiter |
 | `RATE_LIMIT_MAX` | `120` | Requests per window per IP |
-| `RATE_LIMIT_WINDOW` | `1 minute` | Window (`@fastify/rate-limit` syntax) |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Window in milliseconds |
 | `RATE_LIMIT_ALLOWLIST` | — | Comma-separated IPs never limited |
-| `TRUST_PROXY` | `true` | Read real client IP from `X-Forwarded-For` |
 
-The `/webhook*` routes opt out (`config: { rateLimit: false }`) — they're HMAC-verified
-and providers send bursts; anything dropped is backfilled by the reconciler.
+The client IP is the first `X-Forwarded-For` hop, so it is only meaningful behind a proxy
+that sets it. Directly internet-exposed, clients can spoof the header — put Cloudflare or
+another edge in front and lock the origin.
 
-> **Critical:** behind any proxy, every request looks like the proxy's IP unless
-> `trustProxy` is on — otherwise you rate-limit *everyone as one client*. Keep
-> `TRUST_PROXY=true` behind Cloudflare/Railway/nginx; set it `false` **only** if the
-> indexer is directly internet-exposed (else clients can spoof `X-Forwarded-For`).
+> **Not covered:** Ponder serves `/health`, `/ready`, `/metrics` and `/status` itself,
+> outside the Hono app this middleware is mounted on. Block `/metrics` at the edge — it
+> exposes indexing internals.
 
-Multi-instance? Give the limiter a shared Redis store so counts are global, not per-pod.
+The counter is in-process, so limits are per-instance. `ponder serve` replicas each get
+their own budget; enforce the real ceiling at the edge.
 
 ---
 
@@ -75,17 +75,19 @@ export function middleware(req: Request) {
 export const config = { matcher: ["/((?!_next|favicon.ico|icon).*)"] };
 ```
 
-### Indexer — Fastify hook
-Behind Cloudflare, `CF-IPCountry` is added for free (or block at the WAF and write no code):
+### Indexer — Hono middleware
+Behind Cloudflare, `CF-IPCountry` is added for free (or block at the WAF and write no code).
+Register in `indexer/src/api/index.ts`, before the routes:
 ```ts
-app.addHook("onRequest", async (req, reply) => {
-  const c = req.headers["cf-ipcountry"] as string | undefined;
-  if (allowed.size && c && c !== "XX" && !allowed.has(c)) {
-    return reply.code(451).send({ error: "Region not supported" });
+app.use("*", async (c, next) => {
+  const country = c.req.header("cf-ipcountry");
+  if (allowed.size && country && country !== "XX" && !allowed.has(country)) {
+    return c.json({ error: "Region not supported" }, 451);
   }
+  return next();
 });
 ```
-Without Cloudflare: use a local GeoIP DB (`maxmind` + GeoLite2) keyed on `req.ip`.
+Without Cloudflare: use a local GeoIP DB (`maxmind` + GeoLite2) keyed on the client IP.
 
 **Best:** a Cloudflare **WAF geo rule** — one dashboard rule covers both app and API, at
 the edge, harder to bypass than a header check.
@@ -106,7 +108,8 @@ the edge, harder to bypass than a header check.
 
 ## Status
 
-- [x] Indexer per-IP rate limit (`@fastify/rate-limit`, env-tunable, `trustProxy`, webhook exempt)
+- [x] Indexer per-IP rate limit (Hono middleware, env-tunable, per-instance)
+- [ ] Block Ponder's `/metrics` at the edge
 - [ ] Cloudflare in front of the indexer + origin lock
 - [ ] Cloudflare WAF geo rule (or `CF-IPCountry` hook)
 - [ ] App `middleware.ts` geo gate

@@ -1,6 +1,7 @@
-# Local dev: postgres + the indexer. Point a testnet webhook (QuickNode or Alchemy,
-# filtered by the factory + child addresses) at http://<tunnel>/webhook, or just let the
-# reconciler backfill from Base Sepolia RPC (set START_BLOCK to the factory deploy block).
+# Local dev: postgres + the indexer. Ponder backfills from START_BLOCK and then
+# follows head; ingestion, reorgs and the RPC cache are all Ponder's job.
+# Without a DATABASE_URL the indexer falls back to embedded PGlite, so this
+# compose file is only needed if you want a real Postgres locally.
 services:
   postgres:
     image: postgres:16
@@ -9,7 +10,9 @@ services:
       POSTGRES_PASSWORD: indexer
       POSTGRES_DB: indexer
     volumes:
-      - pgdata:/var/lib/postgresql/data   # survives rebuilds & `compose down` (not `down -v`)
+      # Holds ponder_sync (the RPC cache). Keep it — dropping it forces a full
+      # re-fetch on the next boot. `compose down -v` will wipe it.
+      - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -26,10 +29,12 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - .env                 # NETWORK, ENABLED_PROVIDERS, keys, RPC URLs, START_BLOCK, PORT
+      - .env.local           # NETWORK, RPC URLs, START_BLOCK, CORS_ORIGINS
     environment:
-      # DB lives in this compose network — override whatever .env says (host uses localhost).
       DATABASE_URL: postgres://indexer:indexer@postgres:5432/indexer
+      DATABASE_SCHEMA: comfy
+      OFFCHAIN_SCHEMA: comfy_offchain
+      PORT: 8080
     ports:
       - "8080:8080"
 

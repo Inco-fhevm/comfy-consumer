@@ -6,6 +6,8 @@ import { Modal } from "../primitives/modal";
 import { AnimatedView } from "../motion/animated-view";
 import { TokenSelectView } from "../views/token-select-view";
 import { Trigger, type TriggerProps } from "../primitives/dialog-trigger";
+import { useChainGuard } from "../../react/hooks/use-chain-guard";
+import { SpinnerIcon, BaseIcon } from "../primitives/icons";
 import type { ViewProps } from "../views/shield-view";
 
 export interface ActionWidgetProps extends TriggerProps {
@@ -28,7 +30,13 @@ export function ActionModal({
   triggerClassName,
   title,
   View,
-}: ActionWidgetProps & { title: string; View: ComponentType<ViewProps> }) {
+  balanceKind = "shielded",
+}: ActionWidgetProps & {
+  title: string;
+  View: ComponentType<ViewProps>;
+  balanceKind?: "shielded" | "public";
+}) {
+  const chain = useChainGuard();
   const list = useResolvedTokens(tokens, { token, symbol });
   const multi = list.length > 1;
 
@@ -36,17 +44,31 @@ export function ActionModal({
   const [selectedErc20, setSelectedErc20] = useState<Address | undefined>(list[0]?.erc20);
   const [selecting, setSelecting] = useState(false);
   const [direction, setDirection] = useState(1);
+  const [busy, setBusy] = useState(false);
 
   const selected =
     list.find((t) => t.erc20.toLowerCase() === selectedErc20?.toLowerCase()) ?? list[0];
 
   const close = () => {
+    if (busy) return;
     setOpen(false);
     setTimeout(() => {
       setSelecting(false);
       setDirection(1);
     }, 200);
   };
+
+  if (chain.wrongNetwork) {
+    return (
+      <button
+        className={triggerClassName ?? "comfy-btn comfy-btn-primary"}
+        onClick={chain.switchNetwork}
+        disabled={chain.switching}
+      >
+        {chain.switching ? <SpinnerIcon /> : <BaseIcon />} Switch network to {chain.chainName}
+      </button>
+    );
+  }
 
   return (
     <>
@@ -59,6 +81,7 @@ export function ActionModal({
       <Modal
         open={open}
         onClose={close}
+        dismissDisabled={busy}
         title={selecting ? "Select token" : title}
         onBack={
           selecting
@@ -76,6 +99,8 @@ export function ActionModal({
             {selecting ? (
               <TokenSelectView
                 tokens={list}
+                showBalances
+                balanceKind={balanceKind}
                 selected={selected.erc20}
                 onSelect={(erc20) => {
                   setSelectedErc20(erc20);
@@ -89,6 +114,7 @@ export function ActionModal({
                 symbol={selected.symbol}
                 icon={selected.icon}
                 onSuccess={onSuccess}
+                onBusyChange={setBusy}
                 onDone={close}
                 onChangeToken={
                   multi

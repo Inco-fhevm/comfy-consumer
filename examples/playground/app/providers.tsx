@@ -25,10 +25,13 @@ const wagmiConfig = getDefaultConfig({
 
 const INDEXER_URL = process.env.NEXT_PUBLIC_INDEXER_URL ?? "http://localhost:8080";
 
-// Add your own tokens here — the picker appears once there's more than one.
+// The three canonical Base Sepolia ERC-20s (all verified on-chain). `priority`
+// orders the portfolio — higher first, ties keep array order. Names and icons
+// come from the SDK's built-in registry, so only erc20 + symbol are needed.
 const TOKENS: TokenConfig[] = [
-  { erc20: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC" },
-  { erc20: "0x4200000000000000000000000000000000000006", symbol: "WETH" },
+  { erc20: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC", priority: 10 },
+  { erc20: "0x4200000000000000000000000000000000000006", symbol: "WETH", priority: 5 },
+  { erc20: "0x808456652fdb597867f38412077A9182bf77359F", symbol: "EURC" },
 ];
 
 // RainbowKit theme follows next-themes.

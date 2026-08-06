@@ -11,10 +11,10 @@ export function useHistory(
   options?: ReadOptions
 ): UseQueryResult<TxPage> {
   const comfy = useComfy();
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   const owner = args.address ?? address;
   return useQuery({
-    queryKey: ["comfy", "history", owner?.toLowerCase(), args.page ?? 1, args.limit ?? null],
+    queryKey: ["comfy", "history", chainId, owner?.toLowerCase(), args.page ?? 1, args.limit ?? null],
     queryFn: ({ signal }) => comfy.history({ ...args, address: owner, signal }),
     enabled: !!owner && (options?.enabled ?? false),
     refetchInterval: options?.refetchInterval,

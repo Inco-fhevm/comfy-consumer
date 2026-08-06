@@ -7,8 +7,9 @@ export function SuccessCheck() {
   const reduce = useReducedMotion() ?? false;
   return (
     <motion.div
-      initial={reduce ? false : { scale: 0 }}
-      animate={{ scale: 1 }}
+      // Not from scale(0) — nothing appears out of nothing.
+      initial={reduce ? false : { scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
       transition={SUCCESS_SPRING}
       className="comfy-check"
     >

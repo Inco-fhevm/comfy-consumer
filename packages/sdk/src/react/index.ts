@@ -17,3 +17,4 @@ export { useWithdraw } from "./hooks/use-withdraw";
 export { useConfidentialSend } from "./hooks/use-confidential-send";
 
 export type { WriteOptions, ReadOptions } from "./hooks/shared";
+export { useChainGuard, type ChainGuard } from "./hooks/use-chain-guard";

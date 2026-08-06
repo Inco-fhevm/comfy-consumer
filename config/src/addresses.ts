@@ -30,9 +30,8 @@ export const ADDRESSES: Record<NetworkName, NetworkContracts> = {
     testnet: true,
     explorer: "https://sepolia.basescan.org",
     usdcFaucet: "https://faucet.circle.com/",
-    // Audited payable factory (old one broken)
-    wrapperFactory: "0x75a85c9B885fC5eb1a258ffaA0a9A1ef5DE9b768",
-    vault: "0x25044490E040f619B6288a3a17042a30c48Ec154",
+    wrapperFactory: "0x8d50a8bFC5962cA0DA66003cA0111639d9cb4AEe",
+    vault: "0x1061a5451B54E70AC6BEe01F3A56B30e2E6a781A",
     defaultTokens: [
       // Circle USDC on Base Sepolia.
       { erc20: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", symbol: "USDC" },

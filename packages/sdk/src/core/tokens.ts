@@ -9,6 +9,23 @@ export function isRealHandle(handle?: string | null): handle is Hex {
   return !!handle && handle !== ZERO_HANDLE;
 }
 
+// ERC-20 → deployed cToken, or null.
+// Registered means deployed; safe to write against.
+export async function deployedWrapperOf(
+  ctx: ComfyContext,
+  token: Address
+): Promise<Address | null> {
+  const factory = ctx.addresses.wrapperFactory;
+  if (!factory) throw new ComfyError("WRAPPER_NOT_FOUND", `No wrapper factory on ${ctx.network}.`);
+  const wrapper = (await ctx.publicClient.readContract({
+    address: factory,
+    abi: WRAPPER_FACTORY_ABI,
+    functionName: "getWrapper",
+    args: [token],
+  })) as Address;
+  return !wrapper || wrapper === zeroAddress ? null : getAddress(wrapper);
+}
+
 // ERC-20 → cToken (via factory).
 export async function confidentialOf(ctx: ComfyContext, token: Address): Promise<Address> {
   const factory = ctx.addresses.wrapperFactory;

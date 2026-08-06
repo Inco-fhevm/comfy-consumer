@@ -1,17 +1,20 @@
 "use client";
-import { useState } from "react";
-import { useReducedMotion } from "motion/react";
-import { isAddress } from "viem";
+import { humanizeError } from "../../core/errors";
+import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
+import { formatEther, isAddress } from "viem";
 import { useConfidentialSend } from "../../react/hooks/use-confidential-send";
+import { useChainGuard } from "../../react/hooks/use-chain-guard";
 import { useComfy } from "../../react/hooks/use-comfy";
 import { sanitizeAmountInput } from "../../core/amounts";
 import type { Address } from "../../core/types";
 import { TxButton } from "../primitives/tx-button";
 import { SuccessResult } from "../primitives/success-result";
-import { TokenSelectButton } from "../primitives/token-select-button";
-import { ShieldedBalance } from "../primitives/shielded-balance";
+import { ShieldedTokenCard } from "../primitives/shielded-token-card";
+import { FormError } from "../primitives/form-error";
 import { EncryptingAmount } from "../motion/encrypting";
-import { LockIcon, SpinnerIcon } from "../primitives/icons";
+import { LockIcon, SpinnerIcon, BaseIcon } from "../primitives/icons";
 import type { ViewProps } from "./shield-view";
 
 type Phase = "idle" | "encrypting" | "sending";
@@ -24,6 +27,7 @@ export function SendView({
   onSuccess,
   onDone,
   onChangeToken,
+  onBusyChange,
 }: ViewProps) {
   const reduce = useReducedMotion() ?? false;
   const comfy = useComfy();
@@ -32,6 +36,13 @@ export function SendView({
   const [phase, setPhase] = useState<Phase>("idle");
   const [hash, setHash] = useState<string | null>(null);
 
+  // Inco ciphertext fee, paid in ETH with the send.
+  const { data: fee } = useQuery({
+    queryKey: ["comfy", "network-fee", comfy.context.network],
+    queryFn: () => comfy.networkFee(),
+    staleTime: 5 * 60_000,
+  });
+
   const send = useConfidentialSend({
     onSuccess: (d) => {
       setHash(d.hash);
@@ -39,9 +50,15 @@ export function SendView({
     },
   });
   const busy = phase !== "idle";
+
+  useEffect(() => {
+    onBusyChange?.(busy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
   const valid = Number(amount) > 0 && isAddress(to);
-  const errText =
-    send.error instanceof Error ? send.error.message : "Send failed. Please try again.";
+  const chain = useChainGuard();
+
+  const errText = humanizeError(send.error);
 
   const submit = async () => {
     if (!valid) return;
@@ -78,41 +95,69 @@ export function SendView({
 
   return (
     <div className="comfy-stack">
-      {onChangeToken && (
-        <TokenSelectButton symbol={symbol} icon={icon} seed={token} onClick={onChangeToken} />
-      )}
-      <ShieldedBalance token={token} symbol={symbol} onMax={(v) => setAmount(String(v))} />
-      <input
-        className="comfy-field"
-        placeholder="Recipient address"
-        value={to}
-        disabled={busy}
-        onChange={(e) => setTo(e.target.value.trim())}
-      />
-      <div className="comfy-amount-box">
-        {busy ? (
-          <div className="comfy-amount">
-            <EncryptingAmount active={phase === "encrypting"} reduce={reduce} />
+      <div className={`comfy-dimmable${busy ? " comfy-dim" : ""}`}>
+        <div className="comfy-stack">
+          <div>
+            <label className="comfy-label" htmlFor="comfy-send-to">
+              To
+            </label>
+            <input
+              id="comfy-send-to"
+              className="comfy-field"
+              placeholder="Recipient wallet address"
+              value={to}
+              disabled={busy}
+              onChange={(e) => setTo(e.target.value.trim())}
+            />
           </div>
-        ) : (
-          <input
-            className="comfy-amount"
-            inputMode="decimal"
-            placeholder="0"
-            value={amount}
-            autoFocus
-            onChange={(e) => setAmount(sanitizeAmountInput(e.target.value))}
+          <ShieldedTokenCard
+            token={token}
+            symbol={symbol}
+            icon={icon}
+            onChangeToken={onChangeToken}
+            onMax={(v) => setAmount(String(v))}
           />
-        )}
-        <div
-          className="comfy-amount-sym comfy-success"
-          style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-        >
-          {busy && <LockIcon size={12} />} encrypted amount
+        </div>
+
+        <div className="comfy-focal comfy-amount-box">
+          {busy ? (
+            <motion.div
+              className="comfy-amount"
+              animate={reduce ? {} : { filter: ["blur(0px)", "blur(4px)", "blur(0px)"] }}
+              transition={{ duration: 0.5, ease: [0.77, 0, 0.175, 1] }}
+            >
+              <EncryptingAmount active={phase === "encrypting"} reduce={reduce} />
+            </motion.div>
+          ) : (
+            <input
+              className="comfy-amount"
+              inputMode="decimal"
+              placeholder="0"
+              value={amount}
+              autoFocus
+              aria-label={`Amount to send in ${symbol}`}
+              onChange={(e) => setAmount(sanitizeAmountInput(e.target.value))}
+            />
+          )}
+          <div className="comfy-amount-cipher">
+            {busy && <LockIcon size={12} />} encrypted amount
+          </div>
         </div>
       </div>
-      {send.isError && <p className="comfy-error comfy-center">{errText}</p>}
-      <TxButton onClick={submit} disabled={!valid} busy={busy} phaseKey={phase}>
+
+      <FormError>{errText}</FormError>
+
+      <div className="comfy-meta-row">
+        <span>Network fee</span>
+        <span className="comfy-tabular">{fee == null ? "—" : `${formatEther(fee)} ETH`}</span>
+      </div>
+
+      <TxButton
+        onClick={chain.wrongNetwork ? chain.switchNetwork : submit}
+        disabled={chain.wrongNetwork ? false : !valid}
+        busy={chain.wrongNetwork ? chain.switching : busy}
+        phaseKey={chain.wrongNetwork ? "switch" : phase}
+      >
         {phase === "encrypting" ? (
           <>
             <LockIcon size={16} /> Encrypting…
@@ -125,6 +170,8 @@ export function SendView({
           "Send"
         )}
       </TxButton>
+
+      <p className="comfy-note">Your send amount will be hidden onchain.</p>
     </div>
   );
 }

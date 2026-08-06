@@ -10,10 +10,29 @@ export function usePublicBalance(
   options?: { enabled?: boolean }
 ): UseQueryResult<number> {
   const comfy = useComfy();
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   return useQuery({
-    queryKey: ["comfy", "public-balance", address?.toLowerCase(), token.toLowerCase()],
+    queryKey: ["comfy", "public-balance", chainId, address?.toLowerCase(), token.toLowerCase()],
     queryFn: () => comfy.publicBalanceOf({ token }),
     enabled: !!address && (options?.enabled ?? true),
+  });
+}
+
+export function usePublicBalances(
+  tokens: Address[],
+  options?: { enabled?: boolean }
+): UseQueryResult<Record<Address, number>> {
+  const comfy = useComfy();
+  const { address, chainId } = useAccount();
+  return useQuery({
+    queryKey: [
+      "comfy",
+      "public-balances",
+      chainId,
+      address?.toLowerCase(),
+      [...tokens].map((t) => t.toLowerCase()).sort(),
+    ],
+    queryFn: () => comfy.publicBalances({ tokens }),
+    enabled: !!address && tokens.length > 0 && (options?.enabled ?? true),
   });
 }

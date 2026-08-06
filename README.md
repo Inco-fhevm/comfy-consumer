@@ -5,9 +5,8 @@ pnpm monorepo:
 ```
 config/       Single source of truth: ABIs, deployed addresses, event topic0 hashes,
               and the TokenInfo type — shared everywhere (@comfy/config).
-indexer/      Webhook-based EVM factory indexer (GCP Cloud Run) — indexes the official
-              ConfidentialERC20WrapperFactory and its child wrappers. Stores handles only,
-              never decrypted amounts. See indexer/README.md and the BUILD SPEC.
+indexer/      Ponder indexer for the WrapperFactory and every cToken it deploys. Stores
+              handles only, never decrypted amounts. See indexer/README.md.
 client/       Next.js dApp (mint, shield/unshield, confidential send, add/deploy tokens).
 packages/sdk/ @comfy/sdk — confidential-token SDK (core client + React hooks + UI widgets).
 examples/     A Next.js playground and a Node script that consume the SDK.
@@ -21,10 +20,9 @@ pnpm install                # links workspaces + installs everything
 pnpm dev                    # runs the web app (client/)
 ```
 
-> The client currently ships with its own `node_modules` (migrated from the old
-> single-repo layout) so it runs without a workspace install. Run `pnpm install` at the
-> root once to unify dependencies and wire the `@comfy/config` workspace link that the
-> client and indexer both consume.
+> `@comfy/sdk` resolves through its exports map to `dist/`, which is gitignored. The
+> app `build`/`dev` scripts build it first, so a clean checkout works without a
+> separate step.
 
 ## SDK — `@comfy/sdk`
 

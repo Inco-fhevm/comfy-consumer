@@ -12,11 +12,13 @@ export function useBalance(
   options?: { enabled?: boolean }
 ): UseQueryResult<number> {
   const comfy = useComfy();
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   return useQuery({
-    queryKey: ["comfy", "balance", address?.toLowerCase(), token.toLowerCase()],
+    queryKey: ["comfy", "balance", chainId, address?.toLowerCase(), token.toLowerCase()],
     queryFn: () => comfy.balanceOf({ token }),
     enabled: !!address && (options?.enabled ?? false),
+    // Retry would re-prompt the wallet.
+    retry: false,
   });
 }
 
@@ -25,15 +27,17 @@ export function useBalances(
   options?: { enabled?: boolean }
 ): UseQueryResult<Record<Address, number>> {
   const comfy = useComfy();
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   return useQuery({
     queryKey: [
       "comfy",
       "balances",
+      chainId,
       address?.toLowerCase(),
       [...tokens].map((t) => t.toLowerCase()).sort(),
     ],
     queryFn: () => comfy.balances({ tokens }),
     enabled: !!address && tokens.length > 0 && (options?.enabled ?? false),
+    retry: false,
   });
 }

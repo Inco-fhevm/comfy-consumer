@@ -28,7 +28,7 @@ interface TransactionFormProps {
   onSuccess?: () => void;
 }
 
-type ShieldPhase = "idle" | "approving" | "approved" | "wrapping";
+type ShieldPhase = "idle" | "approving" | "approved" | "creating" | "wrapping";
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   mode,
@@ -133,7 +133,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const wrap = () => {
     setError("");
     setPhase("wrapping");
-    deposit.mutate({ token: token.erc20Address, amount });
+    // Deploys the wrapper first if this token has none.
+    deposit.mutate({ token: token.erc20Address, amount, onStep: setPhase });
   };
 
   // Unshield: attest checkpoint + unwrap
@@ -143,7 +144,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     withdraw.mutate({ token: token.erc20Address, amount });
   };
 
-  const busy = phase === "approving" || phase === "wrapping" || withdraw.isPending;
+  const busy =
+    phase === "approving" ||
+    phase === "creating" ||
+    phase === "wrapping" ||
+    withdraw.isPending;
   const symbolShown = mode === "shield" ? token.symbol : token.encryptedSymbol;
 
   return (
@@ -285,6 +290,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     ) : phase === "approving" ? (
                       <>
                         <LoaderCircle className="h-4 w-4 animate-spin" /> Approving {token.symbol}…
+                      </>
+                    ) : phase === "creating" ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" /> Creating wrapper…
                       </>
                     ) : phase === "wrapping" ? (
                       <>

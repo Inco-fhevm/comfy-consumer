@@ -11,7 +11,8 @@
     "./abis/*": "./abis/*"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:abis": "node scripts/gen-abis.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0"

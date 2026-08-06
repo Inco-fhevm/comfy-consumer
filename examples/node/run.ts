@@ -9,8 +9,10 @@ async function main() {
 
   // Reads that need no wallet.
   const cToken = await comfy.confidentialOf({ token: USDC });
-  console.log("confidentialOf(USDC):", cToken);
-  console.log("underlyingOf(cUSDC):", await comfy.underlyingOf({ cToken }));
+  const deployed = await comfy.wrapperOf({ token: USDC });
+  console.log("confidentialOf(USDC):", cToken, deployed ? "(deployed)" : "(predicted — wrapper not created yet)");
+  // Only a deployed wrapper answers calls.
+  if (deployed) console.log("underlyingOf(cUSDC):", await comfy.underlyingOf({ cToken: deployed }));
 
   if (indexerUrl) {
     const page = await comfy.history({ address: pk ? undefined : USDC, limit: 3 });

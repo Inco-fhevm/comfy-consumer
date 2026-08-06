@@ -4,8 +4,8 @@ import { useTokens } from "./use-tokens";
 import { enrichToken } from "../../core/token-registry";
 import type { Address, TokenConfig } from "../../core/types";
 
-// Resolve the token list (override → single → provider) and fill icon/symbol
-// from the built-in registry.
+// Resolve the token list (override → single → provider), fill icon/symbol from
+// the built-in registry, and order it by the dev's `priority`.
 export function useResolvedTokens(
   override?: TokenConfig[],
   single?: { token?: Address; symbol?: string }
@@ -20,5 +20,8 @@ export function useResolvedTokens(
       ? [{ erc20: single.token, symbol: single.symbol ?? "" }]
       : provider;
 
-  return base.map((t) => enrichToken(network, t));
+  // Stable sort: equal priorities keep the order the dev wrote them in.
+  return base
+    .map((t) => enrichToken(network, t))
+    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 }

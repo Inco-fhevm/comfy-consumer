@@ -1,13 +1,15 @@
 "use client";
-import { useState } from "react";
+import { humanizeError } from "../../core/errors";
+import { useEffect, useState } from "react";
 import { useWithdraw } from "../../react/hooks/use-withdraw";
+import { useChainGuard } from "../../react/hooks/use-chain-guard";
 import { useComfy } from "../../react/hooks/use-comfy";
 import { AmountInput } from "../primitives/amount-input";
 import { TxButton } from "../primitives/tx-button";
 import { SuccessResult } from "../primitives/success-result";
-import { TokenSelectButton } from "../primitives/token-select-button";
-import { ShieldedBalance } from "../primitives/shielded-balance";
-import { SpinnerIcon } from "../primitives/icons";
+import { ShieldedTokenCard } from "../primitives/shielded-token-card";
+import { FormError } from "../primitives/form-error";
+import { SpinnerIcon, BaseIcon } from "../primitives/icons";
 import type { ViewProps } from "./shield-view";
 
 // Unshield form (modal body).
@@ -18,6 +20,7 @@ export function UnshieldView({
   onSuccess,
   onDone,
   onChangeToken,
+  onBusyChange,
 }: ViewProps) {
   const comfy = useComfy();
   const [amount, setAmount] = useState("");
@@ -29,8 +32,13 @@ export function UnshieldView({
     },
   });
   const busy = withdraw.isPending;
-  const errText =
-    withdraw.error instanceof Error ? withdraw.error.message : "Withdrawal failed. Please try again.";
+  const chain = useChainGuard();
+
+  useEffect(() => {
+    onBusyChange?.(busy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
+  const errText = humanizeError(withdraw.error);
 
   if (hash) {
     return (
@@ -50,19 +58,38 @@ export function UnshieldView({
 
   return (
     <div className="comfy-stack">
-      {onChangeToken && (
-        <TokenSelectButton symbol={symbol} icon={icon} seed={token} onClick={onChangeToken} />
-      )}
-      <ShieldedBalance token={token} symbol={symbol} onMax={(v) => setAmount(String(v))} />
-      <AmountInput value={amount} onChange={setAmount} symbol={symbol} disabled={busy} autoFocus />
-      {withdraw.isError && <p className="comfy-error comfy-center">{errText}</p>}
+      <div className={`comfy-dimmable${busy ? " comfy-dim" : ""}`}>
+        <ShieldedTokenCard
+          token={token}
+          symbol={symbol}
+          icon={icon}
+          onChangeToken={onChangeToken}
+          onMax={(v) => setAmount(String(v))}
+        />
+        <div className="comfy-focal">
+          <AmountInput
+            value={amount}
+            onChange={setAmount}
+            symbol={symbol}
+            disabled={busy}
+            autoFocus
+          />
+        </div>
+      </div>
+      <FormError>{errText}</FormError>
       <TxButton
-        onClick={() => withdraw.mutate({ token, amount })}
-        disabled={!(Number(amount) > 0)}
-        busy={busy}
-        phaseKey={busy ? "busy" : "idle"}
+        onClick={
+          chain.wrongNetwork ? chain.switchNetwork : () => withdraw.mutate({ token, amount })
+        }
+        disabled={chain.wrongNetwork ? false : !(Number(amount) > 0)}
+        busy={chain.wrongNetwork ? chain.switching : busy}
+        phaseKey={chain.wrongNetwork ? "switch" : busy ? "busy" : "idle"}
       >
-        {busy ? (
+        {chain.wrongNetwork ? (
+          <>
+            <BaseIcon /> Switch network to {chain.chainName}
+          </>
+        ) : busy ? (
           <>
             <SpinnerIcon /> Unshielding…
           </>
@@ -70,6 +97,7 @@ export function UnshieldView({
           "Unshield"
         )}
       </TxButton>
+      <p className="comfy-note">The amount you unshield becomes public.</p>
     </div>
   );
 }

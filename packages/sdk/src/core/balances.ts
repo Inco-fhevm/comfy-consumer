@@ -1,7 +1,7 @@
 import type { ComfyContext } from "./context";
 import { requireAddress } from "./context";
 import { ERC20_ABI } from "./abis";
-import { confidentialOf, erc20Decimals, balanceHandleOf } from "./tokens";
+import { deployedWrapperOf, erc20Decimals, balanceHandleOf } from "./tokens";
 import { decryptHandles } from "./decrypt";
 import { fromBaseUnits } from "./amounts";
 import type { Address, Hex } from "./types";
@@ -21,14 +21,36 @@ export async function publicBalanceOf(ctx: ComfyContext, token: Address): Promis
   return fromBaseUnits(raw, decimals);
 }
 
+export async function publicBalances(
+  ctx: ComfyContext,
+  tokens: Address[]
+): Promise<Record<Address, number>> {
+  const out = {} as Record<Address, number>;
+  await Promise.all(
+    tokens.map(async (token) => {
+      out[token] = await publicBalanceOf(ctx, token).catch(() => 0);
+    })
+  );
+  return out;
+}
+
+// Undeployed wrapper holds nothing.
+async function handleOf(
+  ctx: ComfyContext,
+  token: Address,
+  owner: Address
+): Promise<{ handle: Hex | null; decimals: number }> {
+  const decimals = await erc20Decimals(ctx, token);
+  const cToken = await deployedWrapperOf(ctx, token);
+  if (!cToken) return { handle: null, decimals };
+  const handle = await balanceHandleOf(ctx, cToken, owner).catch(() => null);
+  return { handle, decimals };
+}
+
 // Read + decrypt one balance.
 export async function balanceOf(ctx: ComfyContext, token: Address): Promise<number> {
   const owner = requireAddress(ctx);
-  const cToken = await confidentialOf(ctx, token);
-  const [handle, decimals] = await Promise.all([
-    balanceHandleOf(ctx, cToken, owner),
-    erc20Decimals(ctx, token),
-  ]);
+  const { handle, decimals } = await handleOf(ctx, token, owner);
   if (!handle) return 0;
   const [value] = await decryptHandles(ctx, [handle]);
   return fromBaseUnits(value, decimals);
@@ -41,14 +63,7 @@ export async function balances(
 ): Promise<Record<Address, number>> {
   const owner = requireAddress(ctx);
   const entries = await Promise.all(
-    tokens.map(async (token) => {
-      const cToken = await confidentialOf(ctx, token);
-      const [handle, decimals] = await Promise.all([
-        balanceHandleOf(ctx, cToken, owner),
-        erc20Decimals(ctx, token),
-      ]);
-      return { token, handle, decimals };
-    })
+    tokens.map(async (token) => ({ token, ...(await handleOf(ctx, token, owner)) }))
   );
 
   const realHandles = entries.filter((e) => e.handle).map((e) => e.handle as Hex);

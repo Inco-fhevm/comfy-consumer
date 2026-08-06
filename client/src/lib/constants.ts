@@ -1,6 +1,4 @@
-import CTOKEN_ABI from "@comfy/config/abis/CToken.json";
-import WRAPPER_FACTORY_ABI from "@comfy/config/abis/WrapperFactory.json";
-import ERC20_ABI from "@comfy/config/abis/ERC20.json";
+import { CTOKEN_ABI, WRAPPER_FACTORY_ABI, ERC20_ABI } from "@comfy/config";
 import { ADDRESSES, type NetworkName } from "@comfy/config/addresses";
 import { base, baseSepolia } from "viem/chains";
 import type { Chain } from "viem";

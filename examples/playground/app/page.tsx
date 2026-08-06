@@ -48,7 +48,7 @@ export default function Page() {
       {isConnected && (
         <>
           <section style={{ marginTop: "2rem" }}>
-            <h2>ConfidentialWallet (popup — token picker + activity)</h2>
+            <h2>ConfidentialWallet (popup — portfolio + activity)</h2>
             <ConfidentialWallet />
           </section>
 

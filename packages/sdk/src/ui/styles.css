@@ -7,14 +7,36 @@
 
 .comfy {
   --comfy-radius: var(--radius, 0.85rem);
+  --comfy-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --comfy-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   color: hsl(var(--card-foreground, 0 0% 9%));
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans, system-ui), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .comfy *,
 .comfy *::before,
 .comfy *::after {
   box-sizing: border-box;
+}
+/* UA paragraph margins would fight the stack gaps. */
+.comfy p {
+  margin: 0;
+}
+
+/* Focus ring, shared by every interactive element. */
+.comfy-btn:focus-visible,
+.comfy-action:focus-visible,
+.comfy-icon-btn:focus-visible,
+.comfy-page:focus-visible,
+.comfy-chip:focus-visible,
+.comfy-token-row:focus-visible,
+.comfy-token-select:focus-visible,
+.comfy-token-card-btn:focus-visible,
+.comfy-max:focus-visible,
+.comfy-linkbtn:focus-visible,
+.comfy-link:focus-visible {
+  outline: 2px solid hsl(var(--ring, 221 90% 59%));
+  outline-offset: 2px;
 }
 
 @keyframes comfy-spin {
@@ -24,6 +46,60 @@
 }
 .comfy-spin {
   animation: comfy-spin 0.8s linear infinite;
+}
+
+/* A hidden value eases into focus when revealed — the privacy signature. */
+@keyframes comfy-reveal {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.comfy-reveal {
+  animation: comfy-reveal 280ms var(--comfy-ease-out) both;
+}
+
+/* Staggered row entrance — transform + opacity only. */
+@keyframes comfy-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.comfy-row-in {
+  animation: comfy-row-in 240ms var(--comfy-ease-out) both;
+}
+.comfy-row-in:nth-child(1) {
+  animation-delay: 0ms;
+}
+.comfy-row-in:nth-child(2) {
+  animation-delay: 40ms;
+}
+.comfy-row-in:nth-child(3) {
+  animation-delay: 80ms;
+}
+.comfy-row-in:nth-child(4) {
+  animation-delay: 120ms;
+}
+.comfy-row-in:nth-child(5) {
+  animation-delay: 160ms;
+}
+.comfy-row-in:nth-child(6) {
+  animation-delay: 200ms;
+}
+.comfy-row-in:nth-child(7) {
+  animation-delay: 240ms;
+}
+.comfy-row-in:nth-child(n + 8) {
+  animation-delay: 280ms;
 }
 
 .comfy-surface {
@@ -49,7 +125,7 @@
 }
 
 .comfy-card {
-  padding: 1.25rem;
+  padding: 1.5rem;
 }
 
 /* Flat bordered card — no gradient/shadow. */
@@ -59,8 +135,27 @@
   border-radius: calc(var(--comfy-radius) + 0.4rem);
 }
 
-.comfy-stack > * + * {
-  margin-top: 1rem;
+/* Flex gap, not margins — margin collapsing through wrappers made the
+   spacing above and below the focal input silently unequal. */
+.comfy-stack,
+.comfy-dimmable {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* The hero input gets more room than the rest of the stack. */
+.comfy-focal {
+  margin: 0.4rem 0;
+}
+
+/* Dim a form while its transaction is in flight. */
+.comfy-dim {
+  pointer-events: none;
+  opacity: 0.5;
+}
+.comfy-dimmable {
+  transition: opacity 0.2s ease;
 }
 
 /* Buttons */
@@ -69,7 +164,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  height: 3rem;
+  height: 3.25rem;
   width: 100%;
   padding: 0 1.25rem;
   border-radius: 9999px;
@@ -78,7 +173,7 @@
   cursor: pointer;
   transition:
     filter 0.15s ease,
-    transform 0.1s ease;
+    transform 0.1s var(--comfy-ease-out);
 }
 .comfy-btn:disabled {
   opacity: 0.5;
@@ -101,9 +196,6 @@
     0 1px 2px hsl(var(--primary, 221 90% 59%) / 0.35),
     0 6px 16px -6px hsl(var(--primary, 221 90% 59%) / 0.5);
 }
-.comfy-btn-primary:hover:not(:disabled) {
-  filter: brightness(1.05);
-}
 .comfy-btn-secondary {
   background-image: linear-gradient(
     to bottom,
@@ -116,16 +208,10 @@
     inset 0 1px 0 hsl(0 0% 100% / 0.5),
     0 1px 2px hsl(0 0% 0% / 0.05);
 }
-.comfy-btn-secondary:hover:not(:disabled) {
-  filter: brightness(0.98);
-}
 .dark .comfy-btn-secondary {
   box-shadow:
     inset 0 1px 0 hsl(0 0% 100% / 0.06),
     0 1px 2px hsl(0 0% 0% / 0.25);
-}
-.dark .comfy-btn-secondary:hover:not(:disabled) {
-  filter: brightness(1.15);
 }
 .comfy-btn-label {
   display: inline-flex;
@@ -134,26 +220,44 @@
 }
 
 /* Inputs */
+.comfy-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: hsl(var(--muted-foreground, 0 0% 34%));
+  font-size: 0.9rem;
+}
 .comfy-field {
   width: 100%;
-  height: 3rem;
-  padding: 0 0.9rem;
+  height: 3.25rem;
+  padding: 0 1rem;
   border: 1px solid hsl(var(--input, 240 11% 90%));
   border-radius: calc(var(--comfy-radius) * 0.9);
   background: transparent;
   color: inherit;
   font: inherit;
   outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .comfy-field:focus {
   border-color: hsl(var(--ring, 221 90% 59%));
+  box-shadow: 0 0 0 3px hsl(var(--ring, 221 90% 59%) / 0.2);
 }
 
 .comfy-amount-box {
   border: 1px solid hsl(var(--border, 240 11% 90%));
   border-radius: calc(var(--comfy-radius) + 0.2rem);
-  padding: 1.4rem 1rem;
+  padding: 1.65rem;
   text-align: center;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+/* The amount input has no ring of its own — the box carries it. */
+.comfy-amount-box:focus-within {
+  border-color: hsl(var(--ring, 221 90% 59%));
+  box-shadow: 0 0 0 3px hsl(var(--ring, 221 90% 59%) / 0.2);
 }
 .comfy-amount {
   width: 100%;
@@ -162,7 +266,7 @@
   outline: none;
   text-align: center;
   font: inherit;
-  font-size: 2.4rem;
+  font-size: 2.5rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: inherit;
@@ -171,9 +275,167 @@
   opacity: 0.6;
 }
 .comfy-amount-sym {
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
   font-size: 0.85rem;
   color: hsl(var(--muted-foreground, 0 0% 34%));
+}
+/* "encrypted amount" — reads as a cipher label, not body copy. */
+.comfy-amount-cipher {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(var(--success, 145 63% 37%));
+}
+
+/* Token identity + balance — one compact strip atop an action view. */
+.comfy-token-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid hsl(var(--border, 240 11% 90%));
+  border-radius: calc(var(--comfy-radius) * 0.9);
+  background: hsl(var(--secondary, 240 16% 94%) / 0.4);
+}
+.comfy-token-card-id {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-align: left;
+}
+/* Tappable only when there's another token to switch to. */
+.comfy-token-card-btn {
+  border: none;
+  background: transparent;
+  font: inherit;
+  border-radius: calc(var(--comfy-radius) * 0.6);
+  cursor: pointer;
+}
+.comfy-token-card-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+/* Terminates the tappable region, before any trailing action. */
+.comfy-token-card-chev {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground, 0 0% 34%));
+}
+.comfy-token-card-sym {
+  font-weight: 600;
+}
+.comfy-token-card-meta {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground, 0 0% 34%));
+}
+.comfy-token-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Portfolio — every shielded balance at once. */
+.comfy-portfolio {
+  border: 1px solid hsl(var(--border, 240 11% 90%));
+  border-radius: calc(var(--comfy-radius) + 0.4rem);
+  background: hsl(var(--card, 0 0% 100%));
+  padding: 0.85rem 0.85rem 0.5rem;
+}
+.comfy-portfolio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.35rem 0.4rem;
+}
+.comfy-portfolio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.comfy-portfolio-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.6rem 0.35rem;
+  border: none;
+  border-radius: calc(var(--comfy-radius) * 0.75);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+button.comfy-portfolio-row {
+  cursor: pointer;
+}
+.comfy-portfolio-row-active {
+  background: hsl(var(--primary, 221 90% 59%) / 0.09);
+}
+.comfy-portfolio-row:focus-visible {
+  outline: 2px solid hsl(var(--ring, 221 90% 59%));
+  outline-offset: -2px;
+}
+.comfy-portfolio-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+.comfy-portfolio-sym {
+  font-weight: 600;
+}
+.comfy-portfolio-name {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground, 0 0% 34%));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comfy-portfolio-bal {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 1.5rem;
+}
+.comfy-portfolio-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.comfy-portfolio-more {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.55rem;
+  border: none;
+  border-top: 1px solid hsl(var(--border, 240 11% 90%));
+  border-radius: 0 0 calc(var(--comfy-radius) * 0.6) calc(var(--comfy-radius) * 0.6);
+  background: transparent;
+  color: hsl(var(--primary, 221 90% 59%));
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.comfy-portfolio-more:focus-visible {
+  outline: 2px solid hsl(var(--ring, 221 90% 59%));
+  outline-offset: -2px;
 }
 
 /* Balance rows (shield = public, unshield/send = shielded) */
@@ -182,17 +444,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.55rem 0.75rem;
+  padding: 0.6rem 0.85rem;
   border: 1px solid hsl(var(--border, 240 11% 90%));
   border-radius: calc(var(--comfy-radius) * 0.9);
   background: hsl(var(--secondary, 240 16% 94%) / 0.4);
   font-size: 0.85rem;
 }
 .comfy-max {
-  padding: 0.1rem 0.45rem;
+  padding: 0.15rem 0.55rem;
   border: none;
   border-radius: 9999px;
-  background: transparent;
+  background: hsl(var(--secondary, 240 16% 94%));
   color: hsl(var(--primary, 221 90% 59%));
   font: inherit;
   font-size: 0.72rem;
@@ -200,8 +462,19 @@
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.comfy-max:hover {
-  background: hsl(var(--secondary, 240 16% 94%));
+
+/* Meta row (network fee, etc.) */
+.comfy-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground, 0 0% 34%));
+}
+.comfy-note {
+  text-align: center;
+  font-size: 0.85rem;
+  color: hsl(var(--muted-foreground, 0 0% 34%));
 }
 
 /* Rows / meta */
@@ -234,6 +507,11 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.25em;
 }
+/* Aligned figures for money — no digit jitter as values change. */
+.comfy-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
 
 /* Success check */
 .comfy-check {
@@ -251,20 +529,18 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 1.5rem 0;
+  padding: 1.75rem 0;
   text-align: center;
 }
 .comfy-link {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  border-radius: 0.25rem;
   color: hsl(var(--primary, 221 90% 59%));
   font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
-}
-.comfy-link:hover {
-  text-decoration: underline;
 }
 
 /* History */
@@ -277,7 +553,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem 0;
+  padding: 0.8rem 0;
   border-top: 1px solid hsl(var(--border, 240 11% 90%));
 }
 .comfy-item:first-child {
@@ -306,9 +582,7 @@
   background: transparent;
   color: hsl(var(--muted-foreground, 0 0% 34%));
   cursor: pointer;
-}
-.comfy-icon-btn:hover {
-  background: hsl(var(--secondary, 240 16% 94%));
+  transition: background 0.15s ease;
 }
 
 /* Reveal-amounts toggle */
@@ -317,6 +591,7 @@
   align-items: center;
   gap: 0.35rem;
   border: none;
+  border-radius: 0.25rem;
   background: transparent;
   color: hsl(var(--muted-foreground, 0 0% 34%));
   font: inherit;
@@ -324,9 +599,6 @@
   font-weight: 500;
   cursor: pointer;
   transition: color 0.15s ease;
-}
-.comfy-linkbtn:hover {
-  color: hsl(var(--foreground, 0 0% 9%));
 }
 
 /* Pagination */
@@ -356,10 +628,6 @@
     background 0.15s ease,
     color 0.15s ease;
 }
-.comfy-page:hover:not(:disabled) {
-  background: hsl(var(--secondary, 240 16% 94%));
-  color: hsl(var(--foreground, 0 0% 9%));
-}
 .comfy-page:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -367,10 +635,6 @@
 .comfy-page-active {
   background: hsl(var(--primary, 221 90% 59%));
   border-color: hsl(var(--primary, 221 90% 59%));
-  color: hsl(var(--primary-foreground, 0 0% 100%));
-}
-.comfy-page-active:hover {
-  background: hsl(var(--primary, 221 90% 59%));
   color: hsl(var(--primary-foreground, 0 0% 100%));
 }
 
@@ -389,7 +653,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 420px;
+  max-width: 448px;
   max-height: 90vh;
   overflow: hidden;
   background: hsl(var(--card, 0 0% 100%));
@@ -397,25 +661,27 @@
   border-radius: calc(var(--comfy-radius) + 0.6rem);
   box-shadow: 0 8px 32px hsl(240 14% 12% / 0.18);
 }
+.comfy-modal:focus {
+  outline: none;
+}
+/* Separated by space, not rules. */
 .comfy-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 1rem 1.1rem;
-  border-bottom: 1px solid hsl(var(--border, 240 11% 90%));
+  padding: 1.6rem 2rem 0.5rem;
 }
 .comfy-modal-title {
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 1.35rem;
 }
 .comfy-modal-body {
-  padding: 1.25rem;
+  padding: 1rem 2rem 2rem;
   overflow-y: auto;
 }
 .comfy-modal-footer {
-  padding: 0.9rem 1.25rem;
-  border-top: 1px solid hsl(var(--border, 240 11% 90%));
+  padding: 1rem 2rem;
 }
 @media (max-width: 640px) {
   .comfy-overlay {
@@ -425,6 +691,15 @@
   .comfy-modal {
     max-width: 100%;
     border-radius: calc(var(--comfy-radius) + 0.6rem) calc(var(--comfy-radius) + 0.6rem) 0 0;
+  }
+  .comfy-modal-header {
+    padding: 1.25rem 1.5rem 0.5rem;
+  }
+  .comfy-modal-body {
+    padding: 1rem 1.5rem 1.5rem;
+  }
+  .comfy-modal-footer {
+    padding: 1rem 1.5rem;
   }
 }
 
@@ -452,9 +727,6 @@
     background 0.15s ease,
     border-color 0.15s ease;
 }
-.comfy-chip:hover {
-  background: hsl(var(--secondary, 240 16% 94%) / 0.5);
-}
 .comfy-chip-active {
   background: hsl(var(--primary, 221 90% 59%) / 0.12);
   border-color: hsl(var(--primary, 221 90% 59%) / 0.5);
@@ -467,8 +739,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 2.75rem;
-  padding: 0 0.9rem;
+  height: 3rem;
+  padding: 0 1rem;
   border: 1px solid hsl(var(--border, 240 11% 90%));
   border-radius: calc(var(--comfy-radius) * 0.9);
   background: hsl(var(--secondary, 240 16% 94%) / 0.4);
@@ -476,9 +748,6 @@
   font: inherit;
   cursor: pointer;
   transition: background 0.15s ease;
-}
-.comfy-token-select:hover {
-  background: hsl(var(--secondary, 240 16% 94%) / 0.75);
 }
 .comfy-token-select-value {
   display: inline-flex;
@@ -505,7 +774,7 @@
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  padding: 0.7rem 0.6rem;
+  padding: 0.75rem 0.65rem;
   border: none;
   border-radius: calc(var(--comfy-radius) * 0.75);
   background: transparent;
@@ -515,12 +784,15 @@
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.comfy-token-row:hover {
-  background: hsl(var(--secondary, 240 16% 94%) / 0.6);
-}
 .comfy-token-row-main {
   flex: 1;
   min-width: 0;
+}
+.comfy-token-row-bal {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 1.25rem;
 }
 .comfy-token-row-active {
   background: hsl(var(--primary, 221 90% 59%) / 0.1);
@@ -538,7 +810,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.9rem 0.5rem;
+  padding: 1rem 0.5rem;
   border: 1px solid hsl(var(--border, 240 11% 90%));
   border-radius: calc(var(--comfy-radius) * 0.9);
   background-image: linear-gradient(
@@ -554,10 +826,7 @@
   cursor: pointer;
   transition:
     filter 0.15s ease,
-    transform 0.1s ease;
-}
-.comfy-action:hover {
-  filter: brightness(0.98);
+    transform 0.1s var(--comfy-ease-out);
 }
 .comfy-action:active {
   transform: scale(0.98);
@@ -565,6 +834,99 @@
 .dark .comfy-action {
   box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
 }
-.dark .comfy-action:hover {
-  filter: brightness(1.15);
+
+/* Hover only where there's a real pointer — a tap shouldn't stick a hover state. */
+@media (hover: hover) and (pointer: fine) {
+  .comfy-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+  .comfy-btn-secondary:hover:not(:disabled) {
+    filter: brightness(0.98);
+  }
+  .dark .comfy-btn-secondary:hover:not(:disabled) {
+    filter: brightness(1.15);
+  }
+  .comfy-max:hover {
+    background: hsl(var(--secondary, 240 16% 94%) / 0.7);
+  }
+  .comfy-icon-btn:hover {
+    background: hsl(var(--secondary, 240 16% 94%));
+  }
+  .comfy-linkbtn:hover {
+    color: hsl(var(--foreground, 0 0% 9%));
+  }
+  .comfy-link:hover {
+    text-decoration: underline;
+  }
+  .comfy-page:hover:not(:disabled) {
+    background: hsl(var(--secondary, 240 16% 94%));
+    color: hsl(var(--foreground, 0 0% 9%));
+  }
+  .comfy-page-active:hover {
+    background: hsl(var(--primary, 221 90% 59%));
+    color: hsl(var(--primary-foreground, 0 0% 100%));
+  }
+  .comfy-chip:hover {
+    background: hsl(var(--secondary, 240 16% 94%) / 0.5);
+  }
+  .comfy-token-select:hover {
+    background: hsl(var(--secondary, 240 16% 94%) / 0.75);
+  }
+  .comfy-token-card-btn:hover {
+    background: hsl(var(--secondary, 240 16% 94%) / 0.7);
+  }
+  button.comfy-portfolio-row:hover {
+    background: hsl(var(--secondary, 240 16% 94%) / 0.55);
+  }
+  button.comfy-portfolio-row.comfy-portfolio-row-active:hover {
+    background: hsl(var(--primary, 221 90% 59%) / 0.13);
+  }
+  .comfy-portfolio-more:hover {
+    background: hsl(var(--secondary, 240 16% 94%) / 0.6);
+  }
+  .comfy-token-row:hover {
+    background: hsl(var(--secondary, 240 16% 94%) / 0.6);
+  }
+  .comfy-action:hover {
+    filter: brightness(0.98);
+  }
+  .dark .comfy-action:hover {
+    filter: brightness(1.15);
+  }
+}
+
+/* Fewer and gentler, not zero — opacity stays, movement goes. */
+@media (prefers-reduced-motion: reduce) {
+  .comfy *,
+  .comfy *::before,
+  .comfy *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .comfy-spin {
+    animation: comfy-spin 1.2s linear infinite !important;
+  }
+  .comfy-reveal {
+    animation: comfy-reveal 200ms linear both !important;
+    filter: none;
+  }
+  .comfy-row-in {
+    animation: none !important;
+  }
+  .comfy-btn:active:not(:disabled),
+  .comfy-action:active {
+    transform: none;
+  }
+}
+
+/* Inline retry affordance for a failed reveal. */
+.comfy .comfy-link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--comfy-danger, #dc2626);
+  cursor: pointer;
+  text-decoration: underline;
 }

@@ -9,7 +9,9 @@ import {
 import { toast } from "sonner";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
-import { useConfidentialSend } from "@comfy/sdk/react";
+import { useConfidentialSend, useComfy } from "@comfy/sdk/react";
+import { useQuery } from "@tanstack/react-query";
+import { formatEther } from "viem";
 import { explorerTx } from "@/lib/constants";
 import { addressSchema, amountSchema, firstError } from "@/lib/validation";
 import { sanitizeAmountInput } from "@/lib/utils";
@@ -76,6 +78,14 @@ const ConfidentialSendDialog: React.FC<ConfidentialSendDialogProps> = ({
 
   const { checkAndSwitchNetwork } = useNetworkSwitch();
   const send = useConfidentialSend();
+  const comfy = useComfy();
+
+  // Inco ciphertext fee, paid in ETH with the send.
+  const { data: fee } = useQuery({
+    queryKey: ["comfy", "network-fee"],
+    queryFn: () => comfy.networkFee(),
+    staleTime: 5 * 60_000,
+  });
 
   const confidentialSend = async (): Promise<void> => {
     await checkAndSwitchNetwork();
@@ -277,6 +287,13 @@ const ConfidentialSendDialog: React.FC<ConfidentialSendDialogProps> = ({
                         </motion.p>
                       )}
                     </AnimatePresence>
+
+                    <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Network fee</span>
+                      <span className="tabular">
+                        {fee == null ? "—" : `${formatEther(fee)} ETH`}
+                      </span>
+                    </div>
 
                     <button
                       onClick={handleSend}

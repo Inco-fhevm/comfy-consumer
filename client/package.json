@@ -6,8 +6,8 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "dev": "pnpm --filter @comfy/sdk build && next dev --webpack",
+    "build": "pnpm --filter @comfy/sdk build && next build --webpack",
     "start": "next start",
     "lint": "eslint . -f compact"
   },

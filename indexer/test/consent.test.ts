@@ -2,7 +2,7 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { privateKeyToAccount } from "viem/accounts";
 import { termsMessage } from "@comfy/config";
-import { verifyConsent } from "../src/consent.js";
+import { verifyConsent } from "../src/lib/consent.js";
 
 const account = privateKeyToAccount(("0x" + "1".repeat(64)) as `0x${string}`);
 const other = privateKeyToAccount(("0x" + "2".repeat(64)) as `0x${string}`);

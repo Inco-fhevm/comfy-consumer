@@ -6,5 +6,5 @@ export type DepositWidgetProps = ActionWidgetProps;
 
 // Trigger → modal shield form (with token selection).
 export function DepositWidget(props: DepositWidgetProps) {
-  return <ActionModal {...props} title="Shield" View={ShieldView} />;
+  return <ActionModal {...props} title="Shield" View={ShieldView} balanceKind="public" />;
 }

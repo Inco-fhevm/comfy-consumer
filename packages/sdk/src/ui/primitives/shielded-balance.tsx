@@ -1,4 +1,5 @@
 "use client";
+import { humanizeError } from "../../core/errors";
 import { useState } from "react";
 import { useBalance } from "../../react/hooks/use-balances";
 import type { Address } from "../../core/types";
@@ -28,8 +29,17 @@ export function ShieldedBalance({ token, symbol, onMax }: ShieldedBalanceProps) 
           </span>
         ) : q.isFetching ? (
           <SpinnerIcon size={14} />
+        ) : q.isError ? (
+          <button
+            type="button"
+            className="comfy-link-btn"
+            title={humanizeError(q.error) ?? undefined}
+            onClick={() => q.refetch()}
+          >
+            Failed — retry
+          </button>
         ) : (
-          <span style={{ fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
+          <span className="comfy-tabular comfy-reveal" style={{ fontWeight: 500 }}>
             {fmt(bal)} {symbol}
           </span>
         )}

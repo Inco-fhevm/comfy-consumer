@@ -13,7 +13,13 @@ export interface TxKind {
 
 // Public shield/unshield vs confidential send/receive.
 export function classifyKind(tx: Tx, me: string): TxKind {
-  if (tx.type === "flow") return { label: "Unshielded", direction: "in", counterparty: null };
+  // Shield is a flow too.
+  if (tx.type === "flow")
+    return {
+      label: tx.kind === "wrap" ? "Shielded" : "Unshielded",
+      direction: "in",
+      counterparty: null,
+    };
   if (isZero(tx.from_addr)) return { label: "Shielded", direction: "in", counterparty: null };
   if (tx.from_addr?.toLowerCase() === me.toLowerCase())
     return { label: "Sent", direction: "out", counterparty: tx.to_addr };

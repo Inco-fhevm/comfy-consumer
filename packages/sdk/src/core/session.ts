@@ -4,6 +4,7 @@ import type { ComfyContext } from "./context";
 import { requireWallet } from "./context";
 import { getInco, type LightningInstance } from "./inco";
 import { SESSION_VERIFIER } from "../internal/constants";
+import { ensureChain } from "./chain";
 import { ComfyError } from "./errors";
 
 type Voucher = Awaited<ReturnType<LightningInstance["grantSessionKeyAllowanceVoucher"]>>;
@@ -20,6 +21,7 @@ export async function ensureSession(ctx: ComfyContext): Promise<Session> {
   if (existing && existing.expiresAt > Date.now()) return existing;
 
   const walletClient = requireWallet(ctx);
+  await ensureChain(ctx);
   const inco = await getInco(ctx);
   try {
     // Throwaway account; the voucher authorizes it.

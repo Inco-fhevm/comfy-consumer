@@ -43,8 +43,18 @@ export function AnimatedView({ viewKey, direction = 1, children }: AnimatedViewP
   );
 }
 
+const TRAVEL = 30;
+
 const variants = {
-  initial: (direction: number) => ({ x: `${110 * direction}%`, opacity: 0, filter: "blur(4px)" }),
+  initial: (direction: number) => ({
+    x: `${TRAVEL * direction}%`,
+    opacity: 0,
+    filter: "blur(4px)",
+  }),
   active: { x: "0%", opacity: 1, filter: "blur(0px)" },
-  exit: (direction: number) => ({ x: `${-110 * direction}%`, opacity: 0, filter: "blur(4px)" }),
+  exit: (direction: number) => ({
+    x: `${-TRAVEL * direction}%`,
+    opacity: 0,
+    filter: "blur(4px)",
+  }),
 };

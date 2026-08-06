@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "tsx run.ts"
+    "start": "tsx run.ts",
+    "smoke": "tsx smoke.ts"
   },
   "devDependencies": {
     "@types/node": "^20",

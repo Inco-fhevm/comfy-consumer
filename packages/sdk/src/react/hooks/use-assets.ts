@@ -11,10 +11,10 @@ export function useAssets(
   options?: ReadOptions
 ): UseQueryResult<Asset[]> {
   const comfy = useComfy();
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
   const owner = args.address ?? address;
   return useQuery({
-    queryKey: ["comfy", "assets", owner?.toLowerCase()],
+    queryKey: ["comfy", "assets", chainId, owner?.toLowerCase()],
     queryFn: ({ signal }) => comfy.assets({ ...args, address: owner, signal }),
     enabled: !!owner && (options?.enabled ?? false),
     refetchInterval: options?.refetchInterval,
